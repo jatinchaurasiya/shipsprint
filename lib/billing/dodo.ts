@@ -109,5 +109,5 @@ export async function createCustomerPortal(
     return_url: returnUrl,
   });
 
-  return portalSession.url;
+  return portalSession.link;
 }
