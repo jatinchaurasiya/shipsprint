@@ -35,6 +35,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/site") ||
     pathname.includes(".");
 
   if (!isStaticOrApi) {

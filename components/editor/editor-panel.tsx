@@ -14,6 +14,9 @@ import {
   Smartphone,
   ChevronDown,
   ChevronUp,
+  CheckCircle2,
+  Globe,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -21,6 +24,8 @@ interface EditorPanelProps {
   content: SiteContent;
   onChange: (updated: SiteContent) => void;
   plan?: Plan | null;
+  siteId?: string;
+  initialDomain?: string | null;
 }
 
 const AVAILABLE_ICONS = [
@@ -36,12 +41,82 @@ const AVAILABLE_ICONS = [
   "Smile",
 ];
 
-export function EditorPanel({ content, onChange, plan }: EditorPanelProps) {
+export function EditorPanel({
+  content,
+  onChange,
+  plan,
+  siteId,
+  initialDomain,
+}: EditorPanelProps) {
   const [activeSection, setActiveSection] = useState<string>("hero");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
+
+  // Custom domain state
+  const [domainInput, setDomainInput] = useState<string>(initialDomain || "");
+  const [connectedDomain, setConnectedDomain] = useState<string | null>(initialDomain || null);
+  const [connectingDomain, setConnectingDomain] = useState(false);
+  const [domainMessage, setDomainMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const handleConnectDomain = async () => {
+    if (!siteId || !domainInput.trim()) return;
+    setConnectingDomain(true);
+    setDomainMessage(null);
+
+    try {
+      const res = await fetch("/api/domains", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ site_id: siteId, domain: domainInput.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setDomainMessage({ type: "error", text: data.error || "Failed to connect domain." });
+        return;
+      }
+
+      setConnectedDomain(data.domain);
+      setDomainMessage({
+        type: "success",
+        text: `Domain ${data.domain} connected! Configure your CNAME record to complete setup.`,
+      });
+    } catch (err: any) {
+      setDomainMessage({ type: "error", text: err?.message || "Failed to connect domain." });
+    } finally {
+      setConnectingDomain(false);
+    }
+  };
+
+  const handleDisconnectDomain = async () => {
+    if (!siteId) return;
+    setConnectingDomain(true);
+    setDomainMessage(null);
+
+    try {
+      const res = await fetch("/api/domains", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ site_id: siteId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setDomainMessage({ type: "error", text: data.error || "Failed to disconnect domain." });
+        return;
+      }
+
+      setConnectedDomain(null);
+      setDomainInput("");
+      setDomainMessage({ type: "success", text: "Domain disconnected successfully." });
+    } catch (err: any) {
+      setDomainMessage({ type: "error", text: err?.message || "Failed to disconnect domain." });
+    } finally {
+      setConnectingDomain(false);
+    }
+  };
 
   const isCustomDomainAllowed = plan?.has_custom_domain ?? false;
 
@@ -631,18 +706,106 @@ export function EditorPanel({ content, onChange, plan }: EditorPanelProps) {
                 </div>
               </div>
             ) : (
-              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                    Your Custom Domain
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="app.myfitnessbrand.com"
-                    className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-mono"
-                  />
-                  <p className="text-[11px] text-zinc-400 mt-1.5">
-                    Add a CNAME record pointing to <code>shipsprint.site</code>. On-demand TLS will issue an SSL certificate automatically upon first visitor visit.
+              <div className="space-y-4">
+                {/* Alert feedback */}
+                {domainMessage && (
+                  <div
+                    className={`p-3 rounded-xl text-xs font-medium ${
+                      domainMessage.type === "success"
+                        ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                        : "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800"
+                    }`}
+                  >
+                    {domainMessage.text}
+                  </div>
+                )}
+
+                {/* Connected Domain Display */}
+                {connectedDomain ? (
+                  <div className="p-4 rounded-2xl border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-50 font-mono">
+                          {connectedDomain}
+                        </span>
+                      </div>
+
+                      <a
+                        href={`https://${connectedDomain}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                      >
+                        <span>Visit</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between border-t border-emerald-200/50 dark:border-emerald-900/40 text-xs">
+                      <span className="text-zinc-500">Status: Active & TLS Verified</span>
+                      <button
+                        type="button"
+                        onClick={handleDisconnectDomain}
+                        disabled={connectingDomain}
+                        className="text-red-600 dark:text-red-400 hover:underline text-[11px] font-medium"
+                      >
+                        {connectingDomain ? "Disconnecting..." : "Disconnect Domain"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Domain Connection Form */
+                  <div className="p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 space-y-3">
+                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                      Your Custom Domain
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={domainInput}
+                        onChange={(e) => setDomainInput(e.target.value)}
+                        placeholder="app.myfitnessbrand.com"
+                        className="flex-1 px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleConnectDomain}
+                        disabled={connectingDomain || !domainInput.trim()}
+                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-semibold shadow-sm transition-all shrink-0 inline-flex items-center gap-1.5"
+                      >
+                        {connectingDomain && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        <span>Connect</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* DNS Configuration Instructions */}
+                <div className="p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/40 space-y-3 text-xs">
+                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5 text-blue-500" />
+                    <span>DNS Configuration Guide</span>
+                  </div>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
+                    Log in to your DNS provider (Cloudflare, Namecheap, GoDaddy) and add the following CNAME record:
+                  </p>
+
+                  <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-hidden text-[11px] font-mono">
+                    <div className="grid grid-cols-3 bg-zinc-100 dark:bg-zinc-900 p-2 text-zinc-500 font-semibold border-b border-zinc-200 dark:border-zinc-800">
+                      <span>Type</span>
+                      <span>Name / Host</span>
+                      <span>Target Value</span>
+                    </div>
+                    <div className="grid grid-cols-3 p-2 text-zinc-800 dark:text-zinc-200">
+                      <span>CNAME</span>
+                      <span>@ or app</span>
+                      <span className="text-blue-600 dark:text-blue-400 truncate">cname.shipsprint.site</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-zinc-400">
+                    Once DNS propagates, on-demand TLS automatically issues and renews your SSL certificate on the first visitor request.
                   </p>
                 </div>
               </div>

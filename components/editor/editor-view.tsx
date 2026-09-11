@@ -180,7 +180,13 @@ export function EditorView({ site, plan }: EditorViewProps) {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Side: Editor Form Panel */}
         <div className="w-full md:w-[450px] lg:w-[500px] shrink-0 h-full overflow-hidden">
-          <EditorPanel content={content} onChange={setContent} plan={plan} />
+          <EditorPanel
+            content={content}
+            onChange={setContent}
+            plan={plan}
+            siteId={site.id}
+            initialDomain={site.custom_domain}
+          />
         </div>
 
         {/* Right Side: Live Zero-Drift Preview */}
