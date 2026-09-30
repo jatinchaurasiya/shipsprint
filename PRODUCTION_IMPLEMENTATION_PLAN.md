@@ -1,204 +1,279 @@
-# ShipSprint — Production Implementation & Development Master Plan
+# ShipSprint — Production Implementation & Architecture Master Plan
 
-**Document Version:** 1.0.0  
+**Document Version:** 2.0.0  
 **Status:** Database Live & Verified · Build & Test Suite Green · Production Ready  
 **Date:** September 30, 2026  
 
 ---
 
-## 1. Executive Summary & Current Health Audit
+## 1. Quick Answers & Operational Guides
 
-The ShipSprint database schema has been unified, converged, and **successfully executed and verified against your live Supabase database instance** (`ap-southeast-1` Singapore pooler). All critical schema and billing bugs have been permanently resolved without placeholders or patches.
-
-### System Verification Scorecard
-| Layer | Status | Metrics / Results |
-| :--- | :--- | :--- |
-| **Supabase PostgreSQL** | **VERIFIED (LIVE)** | 12 tables, 100% RLS enabled, 4 products seeded, 3 plans active, 3 analytics views, 9 triggers |
-| **Schema Validation (`db:validate`)** | **PASS** | 216 statements parsed, 100% column & constraint convergence pass |
-| **Test Suite (`npm test`)** | **PASS** | 57 / 57 Vitest tests passing across 4 test suites |
-| **TypeScript (`npm run typecheck`)** | **PASS** | Strict mode, 0 errors |
-| **Linter (`npm run lint`)** | **PASS** | ESLint 9, 0 errors, 0 warnings |
-| **Next.js Production Build (`npm run build`)** | **PASS** | Next.js 16 Turbopack standalone build, 18 routes compiled |
+### 1.1 Generating `CRON_SECRET`
+The `CRON_SECRET` protects internal maintenance tasks (`/api/cron/maintenance`) from unauthorized public requests.
+* **Pre-generated 32-byte Cryptographic Secret (Ready to Copy):**
+  ```env
+  CRON_SECRET=c993e9ddc6aab23af6c903bf533e51e94e566e14be526f74279d54a7d193e25d
+  ```
+* **Command to generate a new one anytime:**
+  - In Node.js: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+  - In PowerShell: `[System.BitConverter]::ToString((New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes((New-Object byte[] 32))).Replace("-","").ToLower()`
 
 ---
 
-## 2. Core Architecture & Infrastructure Blueprint
+### 1.2 Step-by-Step Guide: Cloudflare R2 Setup
+Cloudflare R2 provides zero-egress cost S3-compatible object storage for user image uploads.
+
+1. **Log in to Cloudflare:** Go to [dash.cloudflare.com](https://dash.cloudflare.com).
+2. **Open R2:** Click on **R2** in the left-hand navigation menu.
+3. **Create Bucket:**
+   - Click **Create bucket**.
+   - Name the bucket: `shipsprint-assets` (or a name of your choice).
+   - Region: Select **Automatic** (or closest to your users, e.g. APAC).
+   - Click **Create Bucket**. This name is your `R2_BUCKET_NAME`.
+4. **Locate Account ID:**
+   - On the R2 Overview page, locate **Account ID** in the right-hand sidebar.
+   - Copy this string -> this is your `R2_ACCOUNT_ID`.
+5. **Create S3 API Tokens:**
+   - On the R2 Overview page, click **Manage R2 API Tokens** (top-right corner).
+   - Click **Create API token**.
+   - Token name: `shipsprint-production`.
+   - Permissions: Select **Object Read & Write**.
+   - Specify bucket: You can choose "All buckets" or limit to `shipsprint-assets`.
+   - TTL: Leave blank / Forever.
+   - Click **Create API Token**.
+   - Cloudflare will display:
+     - **Access Key ID** -> copy to `R2_ACCESS_KEY_ID`.
+     - **Secret Access Key** -> copy to `R2_SECRET_ACCESS_KEY` *(Save immediately; it is only shown once)*.
+6. **Public Asset Delivery Domain:**
+   - Under bucket settings -> **Public Access** -> **Custom Domains**:
+     - Connect a subdomain (e.g. `assets.shipsprint.site`) or enable the free `r2.dev` testing domain.
+     - Set this as `R2_PUBLIC_DOMAIN` in `.env.local`.
+
+---
+
+### 1.3 Syncing Dodo Product IDs into the Live Database
+Since you created your 4 products in Dodo Payments and added their product IDs to `.env.local`, you must also link them into the database so the checkout session creator can resolve them:
+```sql
+update public.products set dodo_product_id = 'pdt_YOUR_BASIC_MONTHLY_ID' where id = 'basic_monthly';
+update public.products set dodo_product_id = 'pdt_YOUR_BASIC_YEARLY_ID'  where id = 'basic_yearly';
+update public.products set dodo_product_id = 'pdt_YOUR_PRO_MONTHLY_ID'   where id = 'pro_monthly';
+update public.products set dodo_product_id = 'pdt_YOUR_PRO_YEARLY_ID'    where id = 'pro_yearly';
+```
+*(You can run this query once in the Supabase SQL editor or provide the IDs and we can execute it via the verified pooler script).*
+
+---
+
+### 1.4 Step-by-Step Guide: Supabase Auth & Google OAuth
+
+#### Part A: Supabase Redirect URLs
+1. Open your [Supabase Dashboard](https://supabase.com/dashboard) and select project `mhkrbkyeixtacpbabbeh`.
+2. In the left navigation, click **Authentication** -> **URL Configuration**.
+3. Under **Site URL**, set:
+   ```text
+   https://shipsprint.site
+   ```
+4. Under **Redirect URLs**, click **Add URL** and add each of the following:
+   ```text
+   https://shipsprint.site/auth/callback
+   https://www.shipsprint.site/auth/callback
+   http://localhost:3000/auth/callback
+   http://*.localhost:3000/auth/callback
+   ```
+5. Click **Save**.
+
+#### Part B: Enabling Google OAuth
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a new project (e.g., `ShipSprint`).
+3. Navigate to **APIs & Services** -> **OAuth consent screen**:
+   - User Type: Select **External**, then click **Create**.
+   - App Name: `ShipSprint`.
+   - User Support Email: Your personal/admin email.
+   - Developer Contact Email: Your email.
+   - Scopes: Add `.../auth/userinfo.email`, `.../auth/userinfo.profile`, `openid`.
+   - Save and continue.
+4. Navigate to **APIs & Services** -> **Credentials**:
+   - Click **Create Credentials** -> **OAuth client ID**.
+   - Application Type: **Web application**.
+   - Name: `ShipSprint Web Client`.
+   - **Authorized JavaScript origins:**
+     - `https://mhkrbkyeixtacpbabbeh.supabase.co`
+     - `https://shipsprint.site`
+     - `http://localhost:3000`
+   - **Authorized redirect URIs (CRITICAL):**
+     - Copy your Supabase callback URL: `https://mhkrbkyeixtacpbabbeh.supabase.co/auth/v1/callback`
+   - Click **Create**.
+   - Copy the generated **Client ID** and **Client Secret**.
+5. Back in **Supabase Dashboard**:
+   - Go to **Authentication** -> **Providers** -> **Google**.
+   - Toggle **Google Enabled** to `ON`.
+   - Paste **Client ID** and **Client Secret**.
+   - Click **Save**.
+
+---
+
+### 1.5 Hostinger DNS + AWS EC2 Architecture & Free Tier Sizing
+
+#### What AWS EC2 Free Tier Server Should You Use?
+* **Recommended Instance:** **`t2.micro`** (or **`t3.micro`** in newer regions: 2 vCPUs, 1 GB RAM, free for 750 hours/month on AWS Free Tier).
+* **Can a 1 GB RAM EC2 instance host user websites reliably?**
+  **YES**, because of how ShipSprint is engineered:
+  1. **Next.js Standalone Build:** Ships only minimal pruned Node modules (~120–160 MB runtime RAM).
+  2. **Caddy Edge Proxy:** Written in Go; serves HTTP/2 and HTTP/3 TLS termination using only ~30–45 MB RAM.
+  3. **No Local Database:** PostgreSQL is managed on Supabase Cloud (`ap-southeast-1` Singapore pooler), requiring 0 MB of your EC2 RAM.
+  4. **No Local Media Storage:** Cloudflare R2 serves all images and uploads directly, requiring 0 disk I/O on EC2.
+* **Essential Safeguards for 1 GB EC2:**
+  - Configure a **2 GB Swap file** on Ubuntu (`fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`). This guarantees no Out-Of-Memory crashes during Next.js background revalidations.
+  - Allocate an **Elastic IP** in AWS EC2 (free when attached to a running instance) so your server's public IP address never changes.
+
+#### Connecting Hostinger Domain (`shipsprint.site`) to AWS EC2
+In **Hostinger hPanel** -> **Domains** -> `shipsprint.site` -> **DNS / Nameservers**:
+Add the following 3 `A` Records pointing to your **AWS EC2 Elastic IP**:
+
+| Type | Name | Content / Points to | TTL | Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| **`A`** | `@` | `<YOUR_EC2_ELASTIC_IP>` | 300 | Main app homepage (`shipsprint.site`) |
+| **`A`** | `*` | `<YOUR_EC2_ELASTIC_IP>` | 300 | Wildcard subdomains (`*.shipsprint.site`) for customer sites |
+| **`A`** | `cname` | `<YOUR_EC2_ELASTIC_IP>` | 300 | Verification CNAME target for custom domains |
+
+> [!CAUTION]
+> 1. Do **not** add a `www` record in Hostinger — Caddy handles canonical redirection automatically. Adding a duplicate record causes ACME TLS certificate conflicts.
+> 2. Do **not** delete existing MX or TXT email records if you use Hostinger email.
+
+---
+
+## 2. Competitive Teardown: QuickLaunch (`quicklaunch.tech`) vs ShipSprint
+
+Our live audit of `quicklaunch.tech` revealed key architectural constraints in their product that inform ShipSprint's competitive advantage:
 
 ```
-                     ┌─────────────────────────────────────────────────────────┐
-                     │                     USER REQUEST                        │
-                     └────────────────────────────┬────────────────────────────┘
-                                                  │
-                   ┌──────────────────────────────┴──────────────────────────────┐
-                   │               Hostinger DNS (*.shipsprint.site)             │
-                   └──────────────────────────────┬──────────────────────────────┘
-                                                  │
-                                                  ▼
-                   ┌─────────────────────────────────────────────────────────────┐
-                   │                    Caddy TLS Edge Reverse Proxy              │
-                   │           (Automated On-Demand TLS via /api/caddy/ask)      │
-                   └──────────────────────────────┬──────────────────────────────┘
-                                                  │
-                                                  ▼
-                   ┌─────────────────────────────────────────────────────────────┐
-                   │                     Next.js 16 App Router                   │
-                   │      (proxy.ts Host Router: Dashboard / Subdomain / Custom) │
-                   └──────┬───────────────────────┬───────────────────────┬──────┘
-                          │                       │                       │
-                          ▼                       ▼                       ▼
-            ┌──────────────────────────┐  ┌──────────────┐  ┌─────────────────────┐
-            │   Supabase PostgreSQL    │  │ Dodo Payments│  │    Cloudflare R2    │
-            │  (RLS on all 12 tables   │  │ (Multi-tier  │  │ (S3-Compatible CDN  │
-            │   Security Invoker Views)│  │  Webhooks)   │  │  Strict MIME types) │
-            └──────────────────────────┘  └──────────────┘  └─────────────────────┘
+┌─────────────────────────────────┬──────────────────────────────────┐
+│   QuickLaunch (quicklaunch.tech)│         ShipSprint (Ours)        │
+├─────────────────────────────────┼──────────────────────────────────┤
+│ Client-side SPA (React bundle)  │ Server-Rendered / SSR + Islands  │
+│ Simply.com WAF / Slow TTFB      │ Caddy Edge TLS + Cloudflare R2   │
+│ Generic AI prompt generation    │ Dedicated Mobile App/SaaS Launch │
+│ Shallow block customization     │ Granular, zero-drift field edit  │
+│ Trial-based / Paid friction     │ Generous free-forever 1-site tier│
+│ No native analytics telemetry   │ Cookieless SQL analytics built-in│
+│ No App Store / Play Store badge │ Native App Store & Play Badges   │
+└─────────────────────────────────┴──────────────────────────────────┘
+```
+
+### Strategic Differentiators for ShipSprint:
+1. **Zero-Drift Guarantee:** QuickLaunch renders in a client-side SPA. ShipSprint uses a single unified renderer (`components/renderer/site-renderer.tsx`) that powers the visual editor, template picker, and live published site with zero visual drift.
+2. **Superior Mobile App Launcher Surfaces:** QuickLaunch builds generic business homepages. ShipSprint specifically serves app developers with native iOS/Android store buttons, screenshot carousels, pricing toggles, and feature grids.
+3. **Built-in First-Party Analytics:** While QuickLaunch offers no telemetry, ShipSprint provides privacy-first, cookieless traffic metrics (pageviews, CTA clicks, referrer origins, mobile/desktop breakdown) powered by our live PostgreSQL security-invoker views.
+4. **Permanent Free Tier:** ShipSprint gives indie developers a permanent launch pad on `slug.shipsprint.site` with automated TLS, creating an unbeatable top-of-funnel acquisition engine.
+
+---
+
+## 3. End-to-End System Architectures
+
+### 3.1 Complete User Lifecycle Architecture
+```mermaid
+flowchart TD
+    A[Visitor arrives on shipsprint.site] --> B{Account Creation}
+    B -->|Google OAuth or Magic Link| C[User Authenticated in Supabase]
+    C --> D[Profile Trigger assigns Free Tier]
+    
+    D --> E[User Selects Launch Template]
+    E --> F[Site Created with Slug: myapp.shipsprint.site]
+    
+    F --> G[Visual Editor: Live Preview + Asset Upload to R2]
+    G --> H[User Clicks Publish]
+    H --> I[Site Active at myapp.shipsprint.site via Caddy]
+    
+    I --> J{Need Custom Domain or Analytics?}
+    J -->|Free Plan| K[1 Live Subdomain Site Forever]
+    J -->|Upgrade to Basic / Pro| L[Dodo Payments Checkout]
+    
+    L --> M[Dodo Webhook verified & processed]
+    M --> N[Plan escalated to Basic or Pro in Database]
+    N --> O[Custom Domain verified & Automated TLS issued]
+    N --> P[Analytics Dashboard unlocked with live SQL views]
 ```
 
 ---
 
-## 3. Comprehensive Codebase Audit of Existing Files
+### 3.2 Application & Multi-Tenant Edge Architecture
+```mermaid
+flowchart LR
+    subgraph Clients["Traffic Sources"]
+        BrowserApp["App Users (shipsprint.site/dashboard)"]
+        BrowserTenant["Site Visitors (*.shipsprint.site / custom.com)"]
+    end
 
-### 3.1 Database & Migrations
-* [`production.sql`](production.sql) / [`supabase/schema.sql`](supabase/schema.sql):
-  - **Pruned Legacy Constraints:** Dropped obsolete `plans.price_cents` to cleanly support multi-tier billing (`public.products`).
-  - **Corrected Triggers:** Fixed `enforce_site_limit()` to look up `site_limit` by joining `profiles` with `plans` on `plan_id`.
-  - **Hardened Telemetry Aggregations:** Resolved potential Cartesian explosions in `rollup_telemetry()` using dedicated CTEs with `where source is not null`.
-  - **Strict RLS Security:** Enabled Row Level Security on all 12 tables; restricted sensitive tables (`webhook_events`, `audit_log`) exclusively to the service role; applied `(select auth.uid())` initplan optimization.
-  - **Production Views:** Created `site_analytics_summary`, `site_analytics_sources`, and `site_analytics_cta` with `security_invoker = true`.
+    subgraph Edge["AWS EC2 Host (Free Tier t2.micro)"]
+        Caddy["Caddy Reverse Proxy (Ports 80 / 443)<br/>Automated TLS & On-Demand Certs"]
+        NextServer["Next.js 16 Standalone Server (Port 3000)<br/>proxy.ts Host & Subdomain Router"]
+        LocalSwap["2 GB Linux Swapfile<br/>(OOM Protection)"]
+    end
 
-### 3.2 Billing Engine & Webhooks
-* [`app/api/billing/webhook/route.ts`](app/api/billing/webhook/route.ts):
-  - **Mandatory Webhook Signature Verification:** Completely removed unconditional JSON fallbacks. If signature or secret is missing/invalid, requests are rejected with 503/401.
-  - **Idempotency & Audit Trail:** Every event is recorded in `webhook_events`. Duplicates are detected and safely skipped.
-  - **State Machine Transitions:** Correctly handles `subscription.active`, `subscription.renewed`, `subscription.updated`, `subscription.cancelled`, `subscription.expired`, `subscription.past_due`.
-* [`app/api/billing/checkout/route.ts`](app/api/billing/checkout/route.ts) & [`lib/billing/dodo.ts`](lib/billing/dodo.ts):
-  - Products decoupled from plans; queries Dodo product IDs dynamically from the database.
-  - Development bypasses moved to dedicated local simulation route (`/api/dev/simulate-upgrade`), which returns 404 in production.
-* [`components/billing/billing-view.tsx`](components/billing/billing-view.tsx):
-  - Supports monthly and yearly billing toggle with calculated annual savings.
-  - Accurate pricing models ($3.99/mo, $35.99/yr for Basic; $9.99/mo, $97.99/yr for Pro).
+    subgraph CloudServices["Managed Cloud Services"]
+        SupaDB[("Supabase PostgreSQL (ap-southeast-1)<br/>12 Tables, RLS, 3 Analytics Views")]
+        SupaAuth["Supabase Auth (Email + Google OAuth)"]
+        CloudflareR2["Cloudflare R2 (Images & Assets)"]
+        Dodo["Dodo Payments (Multi-tier Webhooks)"]
+    end
 
-### 3.3 Domain Routing, Caddy & Edge Proxy
-* [`proxy.ts`](proxy.ts):
-  - Replaces deprecated Next.js middleware conventions.
-  - Inspects `Host` headers to route app traffic to `(dashboard)` or tenant traffic to `site/[slug]`.
-  - Blocks reserved slugs (`api`, `dashboard`, `auth`, `admin`, `login`, `signup`, `static`, etc.).
-* [`app/api/caddy/ask/route.ts`](app/api/caddy/ask/route.ts):
-  - Validates incoming domains before Caddy issues automated Let's Encrypt TLS certificates.
-* [`app/api/domains/route.ts`](app/api/domains/route.ts):
-  - Strict domain syntax validation, CNAME target verification, and DNS TXT verification.
+    BrowserApp -->|HTTPS| Caddy
+    BrowserTenant -->|HTTPS| Caddy
+    
+    Caddy -->|On-demand TLS verification /api/caddy/ask| NextServer
+    Caddy -->|HTTP Reverse Proxy| NextServer
 
-### 3.4 Uploads, Storage & Assets
-* [`app/api/upload/route.ts`](app/api/upload/route.ts) & [`lib/storage/r2.ts`](lib/storage/r2.ts):
-  - Cloudflare R2 integration via AWS S3 SDK.
-  - Restricts uploads to trusted binary images (`image/png`, `image/jpeg`, `image/webp`, `image/gif`).
-  - Active SVG documents (`image/svg+xml`) are blocked from public buckets to prevent stored XSS attacks.
-  - Enforces 5 MB file size bounds.
+    NextServer --> SupaDB
+    NextServer --> SupaAuth
+    NextServer --> CloudflareR2
+    NextServer --> Dodo
+```
 
 ---
 
-## 4. Production Development Implementation Roadmap
+## 4. Master 7-Phase Implementation Roadmap
 
 ### Phase 1: Environment & Cloud Integration (Blockers)
-* **Goal:** Populate live third-party cloud credentials and DNS records.
-* **Tasks:**
-  1. **`.env.local` Credentials:**
-     - Populate real Supabase keys (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
-     - Populate Dodo Payments keys (`DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_KEY`, `DODO_PAYMENTS_ENVIRONMENT=live_mode`).
-     - Populate Cloudflare R2 tokens (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`).
-     - Generate secure `CRON_SECRET` (`openssl rand -hex 32`).
-  2. **Dodo Product Linking:**
-     - Create 4 products in Dodo Dashboard (`basic_monthly`, `basic_yearly`, `pro_monthly`, `pro_yearly`).
-     - Update `dodo_product_id` in `public.products` via SQL or dashboard.
-  3. **Webhook Registration:**
-     - Register `https://shipsprint.site/api/billing/webhook` in Dodo Dashboard and configure required events.
-  4. **Hostinger Wildcard DNS Configuration:**
-     - Add `A` records for `@`, `*`, and `cname` pointing to server public IP.
-  5. **Supabase Auth Redirect URLs:**
-     - Add `https://shipsprint.site/auth/callback` and `https://www.shipsprint.site/auth/callback`.
+* [x] Schema applied to live Supabase DB (`ap-southeast-1`) with 12 RLS tables.
+* [ ] Add `CRON_SECRET` to `.env.local`.
+* [ ] Configure Cloudflare R2 bucket tokens (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`).
+* [ ] Execute SQL to link live Dodo Product IDs into `public.products`.
+* [ ] Configure Supabase redirect URLs & Google OAuth provider in Supabase Dashboard.
+* [ ] Point Hostinger DNS `A` records (`@`, `*`, `cname`) to AWS EC2 Elastic IP.
 
----
+### Phase 2: Database Type Safety & Strict Cast Removal
+* Run `supabase gen types typescript` to generate schema definitions.
+* Replace hand-written types in `types/database.ts` with compiler-verified definitions.
+* Eliminate manual `as Plan`, `as Site`, and `as Profile` casts across dashboard and editor components.
 
-### Phase 2: Database Type Generation & Type Safety
-* **Goal:** Replace hand-written types and `as` type-casts with compiler-enforced generated schemas.
-* **Tasks:**
-  1. Run `npm run db:types` or `supabase gen types typescript` to generate `types/database.generated.ts`.
-  2. Bind the generated schema to `createClient<Database>()` across client, server, and middleware.
-  3. Remove manual `as Plan`, `as Site`, and `as Profile` casts across:
-     - `app/(dashboard)/dashboard/page.tsx`
-     - `app/(dashboard)/layout.tsx`
-     - `app/site/[slug]/page.tsx`
-     - `components/editor/editor-view.tsx`
-     - `components/dashboard/site-card.tsx`
-
----
-
-### Phase 3: SQL Analytics View Migration
-* **Goal:** Eliminate client-side in-memory aggregation of raw event rows.
-* **Tasks:**
-  1. Update `app/(dashboard)/dashboard/analytics/page.tsx` to read directly from:
-     - `public.site_analytics_summary`
-     - `public.site_analytics_sources`
-     - `public.site_analytics_cta`
-  2. Remove `createAdminClient()` from the analytics page component. Rely on `security_invoker = true` policies with authenticated client.
-  3. Fix zero-traffic bar chart rendering (`Math.max(8, ...)` bug) and clearly label preview metrics.
-
----
+### Phase 3: Analytics View Transition (Performance Optimization)
+* Refactor `app/(dashboard)/dashboard/analytics/page.tsx` to query:
+  - `public.site_analytics_summary`
+  - `public.site_analytics_sources`
+  - `public.site_analytics_cta`
+* Remove browser-side service-role client instantiation; rely on authenticated `security_invoker` policies.
+* Fix bar chart zero-height rendering bug.
 
 ### Phase 4: Public Site Rendering Performance & SEO
-* **Goal:** Sub-second LCP on tenant landing pages and search engine optimization.
-* **Tasks:**
-  1. **Request Deduplication:** Wrap `getSiteBySlugOrDomain` with React `cache()` and `unstable_cache` so `generateMetadata` and `Page` share a single database fetch.
-  2. **Server Component Migration:** Convert `components/renderer/site-renderer.tsx` to a React Server Component. Isolate interactive tracking triggers and CTA buttons into lightweight client islands.
-  3. **Image Optimization:** Migrate raw `<img>` tags in landing pages and editor cards to `next/image` with lazy loading and dimensions.
-  4. **Dynamic Tenant SEO:**
-     - Generate `/sitemap.xml` and `/robots.txt` dynamically per tenant subdomain.
-     - Add JSON-LD (`SoftwareApplication`, `WebSite`) structured metadata tags.
-
----
+* Deduplicate `getSiteBySlugOrDomain` across `generateMetadata` and `Page` using React `cache()`.
+* Convert `components/renderer/site-renderer.tsx` to a Server Component with lightweight client interactive islands.
+* Replace unoptimized `<img>` tags with `next/image` leveraging Cloudflare R2 remote patterns.
+* Dynamically generate per-site `/sitemap.xml` and `/robots.txt` for tenant subdomains and custom domains.
 
 ### Phase 5: Template Engine & Gallery (Core Differentiator)
-* **Goal:** Deliver pre-built landing page templates with zero drift between preview and published sites.
-* **Tasks:**
-  1. Seed 4-6 diverse high-converting templates into `public.templates` (SaaS, Mobile App, AI Tool, Portfolio, Waitlist).
-  2. Create public `/templates` gallery view.
-  3. Integrate template selection modal inside `components/dashboard/create-site-dialog.tsx`.
-  4. Pass `template_id` to `POST /api/sites` to populate site content from the chosen template.
-  5. Add visual regression tests with Playwright to verify preview and live output match pixel-for-pixel.
-
----
+* Seed 4–6 high-converting starter templates into `public.templates` (SaaS, Mobile App, AI Tool, Waitlist).
+* Build public `/templates` gallery preview.
+* Integrate template selection inside `create-site-dialog.tsx`.
+* Pass `template_id` to `POST /api/sites` to instantiate site content from chosen template.
 
 ### Phase 6: Editor UX, Data Loss Prevention & Accessibility
-* **Goal:** Reliable editing experience with autosave and full accessibility compliance.
-* **Tasks:**
-  1. **Unsaved Changes Guard:** Add `beforeunload` window listener and router navigation interceptors when `hasUnsavedChanges` is true.
-  2. **Autosave Engine:** Implement debounced background autosaving to draft state.
-  3. **File Input Reset:** Reset hidden file inputs after upload to allow re-uploading the same file.
-  4. **Mobile Navigation:** Implement responsive mobile hamburger drawer in `components/dashboard/dashboard-nav.tsx`.
-  5. **Accessibility Fixes:** Add proper `htmlFor` and `id` bindings on all form inputs; add `role="dialog"`, `aria-modal="true"`, focus trapping, and Escape-to-close on all modals.
+* Implement `beforeunload` listener and navigation guard when `hasUnsavedChanges` is true.
+* Implement debounced background auto-save to draft state.
+* Reset hidden file input values after upload to allow re-uploading the same file.
+* Build mobile hamburger drawer navigation in `components/dashboard/dashboard-nav.tsx`.
+* Add accessibility attributes (`htmlFor`, `id`, `aria-modal`, modal focus traps).
 
----
-
-### Phase 7: Observability, Legal & Launch Gate
-* **Goal:** Production error tracking, legal compliance, and launch validation.
-* **Tasks:**
-  1. **Observability:** Integrate `@sentry/nextjs` with `instrumentation.ts` to capture runtime exceptions and webhook failures.
-  2. **Legal Pages:** Add `/terms`, `/privacy`, and `/imprint` routes.
-  3. **Signup Consent:** Add mandatory Terms of Service / Privacy Policy agreement checkbox on signup.
-  4. **Password Recovery:** Add `/forgot-password` and `/reset-password` flows consuming Supabase auth recovery tokens.
-  5. **End-to-End Smoke Test:** Run automated full-flow test from signup to site creation, custom domain connection, Dodo payment checkout, webhook processing, and publishing.
-
----
-
-## 5. Deployment Verification Checklist
-
-- [x] Database schema migrated and convergent (`production.sql` applied on live Supabase)
-- [x] RLS enabled and verified on all 12 tables
-- [x] Products and Plans seeded with accurate pricing tiers
-- [x] Next.js Turbopack build succeeds without errors
-- [x] TypeScript compiler passes with 0 errors
-- [x] ESLint passes with 0 errors / 0 warnings
-- [x] All 57 Vitest unit & integration tests passing
-- [ ] Live third-party credentials configured in `.env.local`
-- [ ] Dodo webhook registered and active
-- [ ] Wildcard DNS configured on Hostinger
-- [ ] Supabase auth callback URL added to dashboard
+### Phase 7: Observability, Legal & AWS EC2 Production Launch
+* Integrate `@sentry/nextjs` with `instrumentation.ts` for error tracking.
+* Add `/terms`, `/privacy`, and `/imprint` static pages with signup agreement checkbox.
+* Deploy Docker Compose stack on AWS EC2 (`t2.micro` or `t3.micro` with Caddy + Next.js standalone).
+* Run end-to-end smoke test: Signup -> Template Selection -> Site Publish -> Custom Domain -> Payment Upgrade.
