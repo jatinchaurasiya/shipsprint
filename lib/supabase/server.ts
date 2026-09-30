@@ -1,12 +1,16 @@
+import "server-only";
+
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { publicEnv } from "@/lib/env";
 
 export async function createClient() {
   const cookieStore = await cookies();
+  const env = publicEnv();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -18,8 +22,11 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // Handled safely if session refreshing is performed in middleware.
+            // Server Components cannot write cookies. Supabase docs specify
+            // swallowing this: the session refresh is performed by the edge
+            // middleware, which forwards refreshed cookies via its response.
+            // Never throw here or every Server Component render that happens to
+            // touch an auth-scoped client would 500.
           }
         },
       },

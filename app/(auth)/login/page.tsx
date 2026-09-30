@@ -4,12 +4,13 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { safeRedirectPath } from "@/lib/redirect";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/dashboard";
+  const next = safeRedirectPath(searchParams.get("next"));
   const errorParam = searchParams.get("error");
 
   const [email, setEmail] = useState("");
@@ -22,7 +23,9 @@ function LoginForm() {
       : null
   );
 
-  const supabase = createClient();
+  // Created on demand rather than during render: this component is evaluated
+  // during static prerendering, where the browser client cannot be constructed.
+  const supabase = () => createClient();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +33,7 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase().auth.signInWithPassword({
         email,
         password,
       });
@@ -43,8 +46,8 @@ function LoginForm() {
 
       router.push(next);
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "An unexpected error occurred.");
+    } catch (err) {
+      setError((err instanceof Error ? err.message : undefined) || "An unexpected error occurred.");
       setLoading(false);
     }
   };
@@ -55,7 +58,7 @@ function LoginForm() {
 
     const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
 
-    const { error: oAuthError } = await supabase.auth.signInWithOAuth({
+    const { error: oAuthError } = await supabase().auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: redirectUrl,

@@ -30,8 +30,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+# ...but the template must be committed, otherwise the required variables are
+# only discoverable by grepping source.
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +42,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# supabase cli cache
+supabase/.temp/
+
+# github workflows (requires workflow OAuth scope)
+.github/

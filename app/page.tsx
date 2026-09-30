@@ -1,17 +1,45 @@
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
+import { fetchCatalogue, groupTiers } from "@/lib/catalogue";
+import { FREE_PLAN, formatPrice, PLAN_FEATURES, planForDisplay } from "@/lib/plans";
+import { yearlySavingPercent } from "@/types/billing";
 import {
   Sparkles,
   ArrowRight,
-  Shield,
   Zap,
   Globe,
-  Smartphone,
   BarChart3,
   Check,
-  ChevronRight,
 } from "lucide-react";
 
-export default function HomePage() {
+/**
+ * Prices come from the `products` table, not from literals in this file.
+ *
+ * They were previously hardcoded in four places: here, in `billing-view.tsx`,
+ * in `lib/billing/dodo.ts`, and in a `plans.price_cents` column nobody read.
+ * Changing a price required editing three components and redeploying.
+ *
+ * Cached for five minutes so the marketing page stays a static, cacheable
+ * document rather than a per-request render.
+ */
+const getCatalogue = unstable_cache(fetchCatalogue, ["pricing-catalogue"], {
+  revalidate: 300,
+  tags: ["catalogue"],
+});
+
+export default async function HomePage() {
+  const { plans, products } = await getCatalogue();
+
+  const freePlan = plans.find((p) => p.id === "free") ?? FREE_PLAN;
+
+  const tiers = groupTiers(plans, products, planForDisplay).map((tier) => ({
+    ...tier,
+    savingPercent: yearlySavingPercent(
+      tier.monthly.price_cents,
+      tier.yearly.price_cents
+    ),
+  }));
+
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 selection:bg-zinc-900 selection:text-white dark:selection:bg-zinc-100 dark:selection:text-zinc-900">
       {/* Top Navbar */}
@@ -229,22 +257,34 @@ export default function HomePage() {
                 <span className="text-xs text-zinc-400">/ forever</span>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6">
-                Perfect for launching your very first app prototype.
+                {freePlan.tagline}
               </p>
 
               <ul className="space-y-3 text-xs text-zinc-700 dark:text-zinc-300">
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span>1 Published Landing Page</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span>Subdomain (slug.shipsprint.site)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span>High-speed global CDN</span>
-                </li>
+                {PLAN_FEATURES.map((feature) => {
+                  const value = feature.get(freePlan);
+                  return (
+                    <li
+                      key={feature.label}
+                      className={`flex items-center gap-2.5 ${
+                        value ? "" : "text-zinc-400"
+                      }`}
+                    >
+                      {value ? (
+                        <Check className="w-4 h-4 text-blue-500 shrink-0" />
+                      ) : (
+                        <span className="w-4 shrink-0 text-center" aria-hidden>
+                          &ndash;
+                        </span>
+                      )}
+                      <span>
+                        {typeof value === "number"
+                          ? `${feature.label} (${value})`
+                          : feature.label}
+                      </span>
+                    </li>
+                  );
+                })}
                 <li className="flex items-center gap-2.5 text-zinc-400">
                   <span>ShipSprint watermark included</span>
                 </li>
@@ -261,101 +301,103 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Basic Tier */}
-          <div className="flex flex-col justify-between p-7 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm">
-            <div>
-              <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
-                Basic
-              </div>
-              <div className="flex items-baseline gap-1 mb-4">
-                <span className="text-4xl font-bold text-zinc-950 dark:text-zinc-50">$4.99</span>
-                <span className="text-xs text-zinc-400">/ month</span>
-              </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6">
-                Great for indie developers with a growing catalog.
-              </p>
-
-              <ul className="space-y-3 text-xs text-zinc-700 dark:text-zinc-300">
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span>Up to 3 Published Sites</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span className="font-medium">No Watermark Badge</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span>Subdomain (slug.shipsprint.site)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span>Unlimited bandwidth</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="mt-8">
-              <Link
-                href="/signup"
-                className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-xs font-medium text-zinc-900 dark:text-zinc-100 transition-colors shadow-sm"
+          {tiers.map((tier) => {
+            const isPro = tier.plan.id === "pro";
+            return (
+              <div
+                key={tier.plan.id}
+                className={
+                  isPro
+                    ? "relative flex flex-col justify-between p-7 rounded-2xl bg-zinc-950 dark:bg-zinc-900 text-white border-2 border-blue-500 shadow-xl"
+                    : "flex flex-col justify-between p-7 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm"
+                }
               >
-                Choose Basic
-              </Link>
-            </div>
-          </div>
+                {isPro && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-blue-500 text-[10px] font-semibold tracking-wide uppercase text-white shadow-sm">
+                    Most Popular
+                  </div>
+                )}
 
-          {/* Pro Tier (Featured) */}
-          <div className="relative flex flex-col justify-between p-7 rounded-2xl bg-zinc-950 dark:bg-zinc-900 text-white border-2 border-blue-500 shadow-xl">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-blue-500 text-[10px] font-semibold tracking-wide uppercase text-white shadow-sm">
-              Most Popular
-            </div>
+                <div>
+                  <div
+                    className={`text-xs font-semibold uppercase tracking-wider mb-2 ${
+                      isPro ? "text-blue-400" : "text-zinc-500 dark:text-zinc-400"
+                    }`}
+                  >
+                    {tier.plan.name}
+                  </div>
 
-            <div>
-              <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">
-                Pro Tier
+                  <div className="mb-3">
+                    <div className="flex items-baseline gap-1">
+                      <span
+                        className={`text-4xl font-bold ${
+                          isPro ? "text-white" : "text-zinc-950 dark:text-zinc-50"
+                        }`}
+                      >
+                        {formatPrice(tier.monthly.price_cents)}
+                      </span>
+                      <span className="text-xs text-zinc-400">/ month</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-1">
+                      or {formatPrice(tier.yearly.price_cents)}/year
+                      {tier.savingPercent ? ` — save ${tier.savingPercent}%` : ""}
+                    </p>
+                  </div>
+
+                  <p
+                    className={`text-xs mb-6 ${
+                      isPro ? "text-zinc-400" : "text-zinc-500 dark:text-zinc-400"
+                    }`}
+                  >
+                    {tier.plan.tagline}
+                  </p>
+
+                  <ul
+                    className={`space-y-3 text-xs ${
+                      isPro ? "text-zinc-200" : "text-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    {PLAN_FEATURES.map((feature) => {
+                      const value = feature.get(tier.plan);
+                      return (
+                        <li key={feature.label} className="flex items-center gap-2.5">
+                          {value ? (
+                            <Check
+                              className={`w-4 h-4 shrink-0 ${
+                                isPro ? "text-blue-400" : "text-blue-500"
+                              }`}
+                            />
+                          ) : (
+                            <span className="w-4 shrink-0 text-center" aria-hidden>
+                              &ndash;
+                            </span>
+                          )}
+                          <span className={value ? "" : "text-zinc-400"}>
+                            {typeof value === "number"
+                              ? `${feature.label} (${value})`
+                              : feature.label}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                <div className="mt-8">
+                  <Link
+                    href={`/signup?plan=${tier.yearly.id}`}
+                    className={
+                      isPro
+                        ? "w-full inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-colors shadow-sm"
+                        : "w-full inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-xs font-medium text-zinc-900 dark:text-zinc-100 transition-colors shadow-sm"
+                    }
+                  >
+                    Get Started with {tier.plan.name}
+                  </Link>
+                </div>
               </div>
-              <div className="flex items-baseline gap-1 mb-4">
-                <span className="text-4xl font-bold text-white">$9.99</span>
-                <span className="text-xs text-zinc-400">/ month</span>
-              </div>
-              <p className="text-xs text-zinc-400 mb-6">
-                Complete custom domain freedom with deep analytics.
-              </p>
-
-              <ul className="space-y-3 text-xs text-zinc-200">
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span>Up to 10 Published Sites</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span className="font-semibold text-white">Custom Domains (auto-SSL)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span className="font-semibold text-white">Full Analytics Dashboard</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span>No Watermark Badge</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span>Priority Support</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="mt-8">
-              <Link
-                href="/signup"
-                className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-colors shadow-sm"
-              >
-                Get Started with Pro
-              </Link>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </section>
 

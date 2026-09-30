@@ -1,9 +1,14 @@
 "use client";
 
-import React, { useRef, useState } from "react";
-import type { SiteContent, FeatureItem, Plan } from "@/types/database";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type {
+  SiteContent,
+  FeatureItem,
+  Plan,
+  DomainStatus,
+  SslStatus,
+} from "@/types/database";
 import {
-  Sparkles,
   Upload,
   Plus,
   Trash2,
@@ -11,12 +16,9 @@ import {
   ArrowUpRight,
   Loader2,
   Image as ImageIcon,
-  Smartphone,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle2,
   Globe,
   ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -26,6 +28,55 @@ interface EditorPanelProps {
   plan?: Plan | null;
   siteId?: string;
   initialDomain?: string | null;
+}
+
+interface DnsInstructions {
+  ownership: { type: string; name: string; value: string; note: string };
+  routing: { type: string; name: string; value: string; note: string };
+}
+
+interface DomainState {
+  status: DomainStatus | null;
+  ssl_status: SslStatus | null;
+  dns_resolves?: boolean;
+  instructions?: DnsInstructions | null;
+}
+
+/** Human-readable status. Never claims a certificate exists before it does. */
+function domainStatusCopy(state: DomainState | null): {
+  label: string;
+  detail: string;
+  tone: "amber" | "emerald" | "red";
+} {
+  switch (state?.status) {
+    case "active":
+      return {
+        label: "Active",
+        detail: "DNS verified and a certificate has been issued.",
+        tone: "emerald",
+      };
+    case "pending_validation":
+      return {
+        label: "Waiting for DNS",
+        detail:
+          "Ownership verified. Add the routing record so traffic reaches this site.",
+        tone: "amber",
+      };
+    case "failed":
+      return {
+        label: "Verification failed",
+        detail: "The expected DNS records were not found. Check them and retry.",
+        tone: "red",
+      };
+    case "pending_dns":
+    default:
+      return {
+        label: "Pending DNS",
+        detail:
+          "Add the ownership TXT record below. Nothing goes live until DNS resolves.",
+        tone: "amber",
+      };
+  }
 }
 
 const AVAILABLE_ICONS = [
@@ -59,6 +110,46 @@ export function EditorPanel({
   const [connectedDomain, setConnectedDomain] = useState<string | null>(initialDomain || null);
   const [connectingDomain, setConnectingDomain] = useState(false);
   const [domainMessage, setDomainMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  // Real verification state, fetched from the API. The previous UI hardcoded
+  // "Active & TLS Verified" the moment Connect was clicked, before any DNS
+  // record existed.
+  const [domainState, setDomainState] = useState<DomainState | null>(null);
+
+  const refreshDomainState = useCallback(async () => {
+    if (!siteId || !connectedDomain) return;
+    try {
+      const res = await fetch(
+        `/api/domains?site_id=${encodeURIComponent(siteId)}`,
+        { cache: "no-store" }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      setDomainState({
+        status: data.status,
+        ssl_status: data.ssl_status,
+        dns_resolves: data.dns_resolves,
+        instructions: data.instructions,
+      });
+    } catch {
+      // Leave the last known state in place; DNS checks are best-effort.
+    }
+  }, [siteId, connectedDomain]);
+
+  // Poll while the domain is not yet active. DNS propagation and on-demand TLS
+  // issuance are both asynchronous, so a one-shot read is not enough.
+  useEffect(() => {
+    if (!connectedDomain || domainState?.status === "active") return;
+
+    // Deferred rather than called inline: the first check happens on a timer so
+    // this effect does not synchronously schedule a state update.
+    const initial = setTimeout(() => void refreshDomainState(), 400);
+    const timer = setInterval(refreshDomainState, 15000);
+
+    return () => {
+      clearTimeout(initial);
+      clearInterval(timer);
+    };
+  }, [connectedDomain, domainState?.status, refreshDomainState]);
 
   const handleConnectDomain = async () => {
     if (!siteId || !domainInput.trim()) return;
@@ -79,12 +170,21 @@ export function EditorPanel({
       }
 
       setConnectedDomain(data.domain);
+      setDomainState({
+        status: data.status,
+        ssl_status: data.ssl_status,
+        dns_resolves: undefined,
+        instructions: data.instructions,
+      });
       setDomainMessage({
         type: "success",
-        text: `Domain ${data.domain} connected! Configure your CNAME record to complete setup.`,
+        text:
+          data.status === "active"
+            ? `${data.domain} is live with a valid certificate.`
+            : `${data.domain} added. Add the DNS records below, then publish your site.`,
       });
-    } catch (err: any) {
-      setDomainMessage({ type: "error", text: err?.message || "Failed to connect domain." });
+    } catch (err) {
+      setDomainMessage({ type: "error", text: (err instanceof Error ? err.message : undefined) || "Failed to connect domain." });
     } finally {
       setConnectingDomain(false);
     }
@@ -111,8 +211,8 @@ export function EditorPanel({
       setConnectedDomain(null);
       setDomainInput("");
       setDomainMessage({ type: "success", text: "Domain disconnected successfully." });
-    } catch (err: any) {
-      setDomainMessage({ type: "error", text: err?.message || "Failed to disconnect domain." });
+    } catch (err) {
+      setDomainMessage({ type: "error", text: (err instanceof Error ? err.message : undefined) || "Failed to disconnect domain." });
     } finally {
       setConnectingDomain(false);
     }
@@ -120,6 +220,9 @@ export function EditorPanel({
 
   const isCustomDomainAllowed = plan?.has_custom_domain ?? false;
 
+  // Derived once, used by the status panel and the DNS table.
+  const domainCopy = domainStatusCopy(domainState);
+  const domainInstructions = domainState?.instructions ?? null;
   const updateContent = (updater: (prev: SiteContent) => SiteContent) => {
     const updated = updater(content);
     onChange(updated);
@@ -149,8 +252,8 @@ export function EditorPanel({
       }
 
       onSuccess(data.url);
-    } catch (err: any) {
-      alert(err?.message || "Failed to upload file");
+    } catch (err) {
+      alert((err instanceof Error ? err.message : undefined) || "Failed to upload file");
     } finally {
       setLoading(false);
     }
@@ -196,8 +299,10 @@ export function EditorPanel({
   };
 
   const addFeature = () => {
+    // `Date.now()` is not unique: two adds in the same millisecond produce
+    // duplicate React keys and duplicate feature ids.
     const newFeature: FeatureItem = {
-      id: `feat-${Date.now()}`,
+      id: `feat-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
       icon: "Sparkles",
       title: "New Feature",
       description: "Explain how this feature benefits your users.",
@@ -216,7 +321,9 @@ export function EditorPanel({
   ) => {
     updateContent((prev) => {
       const updated = [...prev.features];
-      updated[index] = { ...updated[index], [field]: value };
+      const existing = updated[index];
+      if (!existing) return prev;
+      updated[index] = { ...existing, [field]: value };
       return { ...prev, features: updated };
     });
   };
@@ -722,36 +829,73 @@ export function EditorPanel({
 
                 {/* Connected Domain Display */}
                 {connectedDomain ? (
-                  <div className="p-4 rounded-2xl border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-50 font-mono">
+                  <div
+                    className={`p-4 rounded-2xl border space-y-3 ${
+                      domainCopy.tone === "emerald"
+                        ? "border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/30 dark:bg-emerald-950/20"
+                        : domainCopy.tone === "red"
+                          ? "border-red-200/80 dark:border-red-900/60 bg-red-50/30 dark:bg-red-950/20"
+                          : "border-amber-200/80 dark:border-amber-900/60 bg-amber-50/30 dark:bg-amber-950/20"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            domainCopy.tone === "emerald"
+                              ? "bg-emerald-500"
+                              : domainCopy.tone === "red"
+                                ? "bg-red-500"
+                                : "bg-amber-500 animate-pulse"
+                          }`}
+                        />
+                        <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-50 font-mono truncate">
                           {connectedDomain}
                         </span>
                       </div>
 
-                      <a
-                        href={`https://${connectedDomain}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                      >
-                        <span>Visit</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                      {domainCopy.tone === "emerald" && (
+                        <a
+                          href={`https://${connectedDomain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 shrink-0"
+                        >
+                          <span>Visit</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </div>
 
-                    <div className="pt-2 flex items-center justify-between border-t border-emerald-200/50 dark:border-emerald-900/40 text-xs">
-                      <span className="text-zinc-500">Status: Active & TLS Verified</span>
-                      <button
-                        type="button"
-                        onClick={handleDisconnectDomain}
-                        disabled={connectingDomain}
-                        className="text-red-600 dark:text-red-400 hover:underline text-[11px] font-medium"
-                      >
-                        {connectingDomain ? "Disconnecting..." : "Disconnect Domain"}
-                      </button>
+                    <div className="pt-2 flex items-start justify-between gap-3 border-t border-zinc-200/50 dark:border-zinc-900/40 text-xs">
+                      <div className="min-w-0">
+                        <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                          {domainCopy.label}
+                        </span>
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          {domainCopy.detail}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {domainCopy.tone !== "emerald" && (
+                          <button
+                            type="button"
+                            onClick={() => void refreshDomainState()}
+                            className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1 text-[11px] font-medium"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Recheck
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleDisconnectDomain}
+                          disabled={connectingDomain}
+                          className="text-red-600 dark:text-red-400 hover:underline text-[11px] font-medium"
+                        >
+                          {connectingDomain ? "Disconnecting..." : "Disconnect"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -785,28 +929,72 @@ export function EditorPanel({
                 <div className="p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/40 space-y-3 text-xs">
                   <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                     <Globe className="w-3.5 h-3.5 text-blue-500" />
-                    <span>DNS Configuration Guide</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
-                    Log in to your DNS provider (Cloudflare, Namecheap, GoDaddy) and add the following CNAME record:
-                  </p>
-
-                  <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-hidden text-[11px] font-mono">
-                    <div className="grid grid-cols-3 bg-zinc-100 dark:bg-zinc-900 p-2 text-zinc-500 font-semibold border-b border-zinc-200 dark:border-zinc-800">
-                      <span>Type</span>
-                      <span>Name / Host</span>
-                      <span>Target Value</span>
-                    </div>
-                    <div className="grid grid-cols-3 p-2 text-zinc-800 dark:text-zinc-200">
-                      <span>CNAME</span>
-                      <span>@ or app</span>
-                      <span className="text-blue-600 dark:text-blue-400 truncate">cname.shipsprint.site</span>
-                    </div>
+                    <span>DNS Configuration</span>
                   </div>
 
-                  <p className="text-[10px] text-zinc-400">
-                    Once DNS propagates, on-demand TLS automatically issues and renews your SSL certificate on the first visitor request.
-                  </p>
+                  {domainInstructions ? (
+                    <>
+                      <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
+                        Add both records at your DNS provider (Cloudflare, Namecheap,
+                        GoDaddy). The exact values come from the API so they always
+                        match what we actually check.
+                      </p>
+
+                      <div className="space-y-2">
+                        {(
+                          [
+                            [domainInstructions.ownership, "Ownership"],
+                            [domainInstructions.routing, "Routing"],
+                          ] as const
+                        ).map(([record, label]) => (
+                          <div
+                            key={label}
+                            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-hidden text-[11px] font-mono"
+                          >
+                            <div className="bg-zinc-100 dark:bg-zinc-900 px-2 py-1.5 text-zinc-500 font-semibold border-b border-zinc-200 dark:border-zinc-800">
+                              {label}
+                            </div>
+                            <div className="p-2 space-y-1">
+                              <div className="flex gap-2">
+                                <span className="text-zinc-400 w-10 shrink-0">
+                                  Type
+                                </span>
+                                <span className="text-zinc-800 dark:text-zinc-200">
+                                  {record.type}
+                                </span>
+                              </div>
+                              <div className="flex gap-2">
+                                <span className="text-zinc-400 w-10 shrink-0">
+                                  Name
+                                </span>
+                                <span className="text-zinc-800 dark:text-zinc-200 break-all">
+                                  {record.name}
+                                </span>
+                              </div>
+                              <div className="flex gap-2">
+                                <span className="text-zinc-400 w-10 shrink-0">
+                                  Value
+                                </span>
+                                <span className="text-blue-600 dark:text-blue-400 break-all">
+                                  {record.value || "—"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <p className="text-[10px] text-zinc-400">
+                        {domainInstructions.routing.note} Once DNS resolves, a
+                        certificate is issued and renewed automatically — you do not
+                        need to do anything else.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-zinc-400">
+                      Connect a domain to see the exact DNS records required.
+                    </p>
+                  )}
                 </div>
               </div>
             )}

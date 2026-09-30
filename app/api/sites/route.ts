@@ -1,8 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { logger } from "@/lib/logger";
+import { createSiteSchema, firstIssue } from "@/lib/validation";
 import type { SiteContent } from "@/types/database";
 
 export async function POST(request: NextRequest) {
+  const admin = createAdminClient();
+
   try {
     const supabase = await createClient();
 
@@ -14,30 +19,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { name, slug } = body;
-
-    if (!name || !slug) {
+    const body = await request.json().catch(() => null);
+    if (!body) {
       return NextResponse.json(
-        { error: "App Name and Slug are required." },
+        { error: "Request body must be valid JSON." },
         { status: 400 }
       );
     }
 
-    // Clean and validate slug format
-    const cleanSlug = slug
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9-]/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
-
-    if (cleanSlug.length < 2) {
-      return NextResponse.json(
-        { error: "Slug must be at least 2 characters long." },
-        { status: 400 }
-      );
+    // Single source of truth for slug validation. A second, divergent copy
+    // lived in create-site-dialog.tsx and the two drifted.
+    const parsed = createSiteSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: firstIssue(parsed.error) }, { status: 400 });
     }
+
+    const { name, slug: cleanSlug } = parsed.data;
 
     // Fetch user profile and plan
     const { data: profile } = await supabase
@@ -120,21 +117,21 @@ export async function POST(request: NextRequest) {
         },
       ],
       store_links: {
-        app_store_url: "https://apps.apple.com",
-        play_store_url: "https://play.google.com",
+        // Intentionally empty. These previously defaulted to
+        // https://apps.apple.com and https://play.google.com, so a site
+        // published without editing rendered a working "Download on the App
+        // Store" button pointing at Apple's homepage.
+        app_store_url: "",
+        play_store_url: "",
       },
       screenshots: [],
       footer: {
         brand_name: name,
-        legal_links: [
-          { label: "Privacy Policy", url: "#" },
-          { label: "Terms of Service", url: "#" },
-        ],
-        contact_email: user.email || "support@example.com",
+        legal_links: [],
+        contact_email: user.email || "",
       },
     };
 
-    // Insert site
     const { data: newSite, error: insertError } = await supabase
       .from("sites")
       .insert({
@@ -148,16 +145,43 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
+      // 23505 = unique violation. The pre-insert availability check is a
+      // TOCTOU race, so a concurrent request can win; the client should get a
+      // 409 with a usable message rather than a 500.
+      if (insertError.code === "23505") {
+        return NextResponse.json(
+          { error: "That URL is already taken. Try a different one." },
+          { status: 409 }
+        );
+      }
+      // check_violation comes from the reserved-slug and site-limit triggers.
+      if (insertError.code === "23514") {
+        return NextResponse.json(
+          { error: insertError.message },
+          { status: 400 }
+        );
+      }
+
+      logger.exception("site creation failed", insertError, { user_id: user.id });
       return NextResponse.json(
-        { error: insertError.message || "Failed to create site." },
+        { error: "Failed to create site." },
         { status: 500 }
       );
     }
 
+    await admin.from("audit_log").insert({
+      actor_id: user.id,
+      action: "site.create",
+      entity_type: "site",
+      entity_id: newSite?.id ?? null,
+      details: { slug: cleanSlug },
+    });
+
     return NextResponse.json({ site: newSite });
-  } catch (error: any) {
+  } catch (error) {
+    logger.exception("site creation failed", error);
     return NextResponse.json(
-      { error: error?.message || "Internal server error" },
+      { error: "Failed to create site." },
       { status: 500 }
     );
   }

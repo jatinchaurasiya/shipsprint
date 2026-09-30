@@ -1,13 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowRight, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
 
-export default function SignupPage() {
+const PRODUCT_IDS = [
+  "basic_monthly",
+  "basic_yearly",
+  "pro_monthly",
+  "pro_yearly",
+] as const;
+
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // A visitor who clicks "Get Started with Pro" on the pricing table arrives
+  // with ?plan=pro_yearly. Previously every pricing call-to-action pointed at a
+  // bare /signup, so the chosen plan was discarded and the user had to pick
+  // again.
+  const requestedPlan = searchParams.get("plan");
+  const isKnownPlan = PRODUCT_IDS.includes(
+    requestedPlan as (typeof PRODUCT_IDS)[number]
+  );
+  const planId = isKnownPlan ? requestedPlan! : null;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,7 +34,14 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const supabase = createClient();
+  /** Dashboard on a free account, billing when a plan was chosen. */
+  const destination = planId
+    ? `/dashboard/billing?upgrade=${encodeURIComponent(planId)}`
+    : "/dashboard";
+
+  // Created on demand rather than during render: this component is evaluated
+  // during static prerendering, where the browser client cannot be constructed.
+  const supabase = () => createClient();
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +56,9 @@ export default function SignupPage() {
     }
 
     try {
-      const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
+      const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`;
 
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase().auth.signUp({
         email,
         password,
         options: {
@@ -48,7 +74,7 @@ export default function SignupPage() {
 
       // If session is already created (email confirmation off)
       if (data?.session) {
-        router.push("/dashboard");
+        router.push(destination);
         router.refresh();
       } else {
         setSuccessMessage(
@@ -56,8 +82,8 @@ export default function SignupPage() {
         );
         setLoading(false);
       }
-    } catch (err: any) {
-      setError(err?.message || "An unexpected error occurred.");
+    } catch (err) {
+      setError((err instanceof Error ? err.message : undefined) || "An unexpected error occurred.");
       setLoading(false);
     }
   };
@@ -66,9 +92,9 @@ export default function SignupPage() {
     setError(null);
     setOauthLoading(true);
 
-    const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
+    const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`;
 
-    const { error: oAuthError } = await supabase.auth.signInWithOAuth({
+    const { error: oAuthError } = await supabase().auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: redirectUrl,
@@ -225,5 +251,21 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  // useSearchParams requires a Suspense boundary or the route cannot be
+  // prerendered.
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#fafafa] dark:bg-[#09090b]">
+          <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+        </div>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   );
 }

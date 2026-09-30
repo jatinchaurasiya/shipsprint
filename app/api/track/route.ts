@@ -1,85 +1,140 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { clientKey, looksLikeBot } from "@/lib/request";
+import { rateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+import type { EventType } from "@/types/database";
+
+/**
+ * Public analytics beacon.
+ *
+ * Unauthenticated by design — it is called by third-party visitors' browsers —
+ * which makes it the app's most abusable surface. It previously had no rate
+ * limit, no cap on body size, and verified only that the site existed, so
+ * anyone could inflate any site's numbers with a loop of `curl` calls.
+ *
+ * Responses are 204 for every accepted or rejected request. Returning 404 for
+ * a missing site turned this endpoint into a site-id oracle.
+ */
+
+const VALID_EVENT_TYPES: EventType[] = ["page_view", "button_click"];
+
+/** `meta` is attacker-controlled and later rendered in the dashboard. */
+const META_KEY_ALLOWLIST = new Set([
+  "referrer",
+  "path",
+  "screen",
+  "button_type",
+  "target_host",
+]);
+
+const MAX_META_BYTES = 1024;
+
+interface TrackBody {
+  site_id?: unknown;
+  event_type?: unknown;
+  meta?: unknown;
+}
+
+function sanitizeMeta(input: unknown): Record<string, string> {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) return {};
+
+  const out: Record<string, string> = {};
+  let bytes = 0;
+
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (!META_KEY_ALLOWLIST.has(key)) continue;
+    if (typeof value !== "string") continue;
+    if (value.length > 512) continue;
+    bytes += key.length + value.length;
+    if (bytes > MAX_META_BYTES) break;
+    out[key] = value;
+  }
+
+  return out;
+}
+
+function inferDevice(userAgent: string): "mobile" | "tablet" | "desktop" {
+  if (/ipad|tablet|playbook|silk|(?!.*mobile)android/i.test(userAgent)) {
+    return "tablet";
+  }
+  if (/mobile|iphone|ipod|windows.*phone|blackberry|opera mini/i.test(userAgent)) {
+    return "mobile";
+  }
+  return "desktop";
+}
 
 export async function POST(request: NextRequest) {
+  const key = clientKey(request);
+
+  const limit = await rateLimit({
+    identifier: key,
+    bucket: "track",
+    limit: 60,
+    windowSeconds: 60,
+  });
+
+  if (!limit.success) {
+    logger.warn("analytics rate limit exceeded", { bucket: "track" });
+    return new NextResponse(null, { status: 204 });
+  }
+
+  let body: TrackBody;
   try {
-    const body = await request.json().catch(() => null);
+    body = (await request.json()) as TrackBody;
+  } catch {
+    return new NextResponse(null, { status: 204 });
+  }
 
-    if (!body || !body.site_id || !body.event_type) {
-      return NextResponse.json(
-        { error: "Invalid payload. 'site_id' and 'event_type' are required." },
-        { status: 400 }
-      );
-    }
+  const { site_id, event_type, meta } = body;
 
-    const { site_id, event_type, meta } = body;
+  if (typeof site_id !== "string" || typeof event_type !== "string") {
+    return new NextResponse(null, { status: 204 });
+  }
 
-    // Validate event type
-    const validEventTypes = ["page_view", "button_click"];
-    if (!validEventTypes.includes(event_type)) {
-      return NextResponse.json(
-        { error: `Invalid event_type "${event_type}". Must be one of: ${validEventTypes.join(", ")}` },
-        { status: 400 }
-      );
-    }
+  if (!VALID_EVENT_TYPES.includes(event_type as EventType)) {
+    return new NextResponse(null, { status: 204 });
+  }
 
-    // Ingest telemetry into analytics_events via Admin client
+  if (looksLikeBot(request)) {
+    return new NextResponse(null, { status: 204 });
+  }
+
+  try {
     const supabase = createAdminClient();
 
-    // Verify site exists and is active
-    const { data: site, error: siteError } = await supabase
+    // Only published sites accept traffic. Without this, a draft site's metrics
+    // could be inflated and any competitor's numbers could be poisoned.
+    const { data: site } = await supabase
       .from("sites")
       .select("id")
       .eq("id", site_id)
+      .eq("status", "published")
       .maybeSingle();
 
-    if (siteError || !site) {
-      return NextResponse.json(
-        { error: "Site not found." },
-        { status: 404 }
-      );
+    if (!site) {
+      return new NextResponse(null, { status: 204 });
     }
 
-    // Extract headers for metadata
-    const userAgent = request.headers.get("user-agent") || "unknown";
-    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const userAgent = request.headers.get("user-agent") ?? "unknown";
 
-    // Clean device inference
-    let device = "desktop";
-    if (/mobile|iphone|ipod|android.*mobile|windows.*phone/i.test(userAgent)) {
-      device = "mobile";
-    } else if (/ipad|tablet|android(?!.*mobile)/i.test(userAgent)) {
-      device = "tablet";
+    const { error } = await supabase.from("analytics_events").insert({
+      site_id,
+      event_type: event_type as EventType,
+      meta: {
+        ...sanitizeMeta(meta),
+        device: inferDevice(userAgent),
+        recorded_at: new Date().toISOString(),
+      },
+    });
+
+    if (error) {
+      logger.error("failed to record analytics event", { detail: error.message });
     }
-
-    const eventMeta = {
-      ...(typeof meta === "object" && meta !== null ? meta : {}),
-      device,
-      recorded_at: new Date().toISOString(),
-    };
-
-    const { error: insertError } = await supabase
-      .from("analytics_events")
-      .insert({
-        site_id,
-        event_type,
-        meta: eventMeta,
-      });
-
-    if (insertError) {
-      console.error("Failed to insert analytics event:", insertError);
-      return NextResponse.json(
-        { error: "Failed to persist analytics event." },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Telemetry ingestion exception:", error);
-    return NextResponse.json(
-      { error: error?.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    // Analytics must never break a customer's page.
+    logger.exception("analytics beacon failed", error, { site_id });
   }
+
+  return new NextResponse(null, { status: 204 });
 }

@@ -1,12 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { CreateSiteDialog } from "@/components/dashboard/create-site-dialog";
 import { SiteCard } from "@/components/dashboard/site-card";
-import type { Site, Plan, Profile } from "@/types/database";
+import type { Site, Plan } from "@/types/database";
 import Link from "next/link";
 import {
-  ExternalLink,
-  Edit3,
-  Globe,
   Smartphone,
   Sparkles,
   ArrowUpRight,

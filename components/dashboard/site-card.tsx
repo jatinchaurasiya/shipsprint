@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Site } from "@/types/database";
@@ -61,8 +61,8 @@ export function SiteCard({ site, rootDomain }: SiteCardProps) {
       }
 
       router.refresh();
-    } catch (err: any) {
-      alert(err?.message || "Failed to delete site.");
+    } catch (err) {
+      alert((err instanceof Error ? err.message : undefined) || "Failed to delete site.");
       setIsDeleting(false);
       setShowConfirmDelete(false);
     }

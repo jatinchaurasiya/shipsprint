@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AnalyticsView } from "@/components/analytics/analytics-view";
-import type { Site, Plan, Profile, AnalyticsEvent } from "@/types/database";
+import type { Site, Plan, AnalyticsEvent } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 

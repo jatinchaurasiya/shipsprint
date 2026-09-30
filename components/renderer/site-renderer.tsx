@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import type { SiteContent, Plan } from "@/types/database";
+import { safeHref } from "@/lib/validation";
 import {
   Zap,
   Shield,
@@ -14,7 +15,6 @@ import {
   Layers,
   Smile,
   Mail,
-  ExternalLink,
 } from "lucide-react";
 
 interface SiteRendererProps {
@@ -54,9 +54,13 @@ export function SiteRenderer({
         "Engineered with craft and attention to detail. Designed to elevate your daily routine.",
     },
     features = [],
+    // Previously defaulted to https://apps.apple.com and
+    // https://play.google.com, so a newly created and immediately published
+    // site rendered a working "Download on the App Store" button pointing at
+    // Apple's homepage.
     store_links = {
-      app_store_url: "https://apps.apple.com",
-      play_store_url: "https://play.google.com",
+      app_store_url: "",
+      play_store_url: "",
     },
     screenshots = [],
     footer = {
@@ -65,6 +69,14 @@ export function SiteRenderer({
       contact_email: "",
     },
   } = content || {};
+
+  // The primary hero CTA falls back to whichever store link is set.
+  const primaryCtaHref = safeHref(
+    store_links.app_store_url || store_links.play_store_url
+  );
+  const hasStoreLinks = Boolean(
+    store_links.app_store_url || store_links.play_store_url
+  );
 
   // Tracking beacon (active only on published public sites, never in preview)
   useEffect(() => {
@@ -157,7 +169,7 @@ export function SiteRenderer({
             {/* Quick Download Button */}
             {(store_links.app_store_url || store_links.play_store_url) && (
               <a
-                href={store_links.app_store_url || store_links.play_store_url}
+                href={primaryCtaHref}
                 target={isPreview ? "_self" : "_blank"}
                 rel="noopener noreferrer"
                 onClick={() =>
@@ -204,7 +216,7 @@ export function SiteRenderer({
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
           {store_links.app_store_url && (
             <a
-              href={store_links.app_store_url}
+              href={safeHref(store_links.app_store_url)}
               target={isPreview ? "_self" : "_blank"}
               rel="noopener noreferrer"
               onClick={() =>
@@ -226,7 +238,7 @@ export function SiteRenderer({
 
           {store_links.play_store_url && (
             <a
-              href={store_links.play_store_url}
+              href={safeHref(store_links.play_store_url)}
               target={isPreview ? "_self" : "_blank"}
               rel="noopener noreferrer"
               onClick={() =>
@@ -375,7 +387,7 @@ export function SiteRenderer({
             <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
               {store_links.app_store_url && (
                 <a
-                  href={store_links.app_store_url}
+                  href={safeHref(store_links.app_store_url)}
                   target={isPreview ? "_self" : "_blank"}
                   rel="noopener noreferrer"
                   onClick={() =>
@@ -388,7 +400,7 @@ export function SiteRenderer({
               )}
               {store_links.play_store_url && (
                 <a
-                  href={store_links.play_store_url}
+                  href={safeHref(store_links.play_store_url)}
                   target={isPreview ? "_self" : "_blank"}
                   rel="noopener noreferrer"
                   onClick={() =>
@@ -400,6 +412,14 @@ export function SiteRenderer({
                 </a>
               )}
             </div>
+
+            {/* A site with no store links yet used to render an empty dark
+                panel with a heading and no call to action. */}
+            {!hasStoreLinks && (
+              <p className="mt-6 text-xs text-zinc-500">
+                Store links have not been added yet.
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -420,7 +440,7 @@ export function SiteRenderer({
               footer.legal_links.map((link, i) => (
                 <a
                   key={i}
-                  href={link.url || "#"}
+                  href={safeHref(link.url)}
                   className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
                 >
                   {link.label}

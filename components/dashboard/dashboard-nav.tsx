@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Plan, Profile } from "@/types/database";
+import type { Plan } from "@/types/database";
 import {
   Sparkles,
   LayoutGrid,
@@ -11,22 +11,25 @@ import {
   CreditCard,
   LogOut,
   ChevronRight,
-  ExternalLink,
 } from "lucide-react";
 
 interface DashboardNavProps {
   userEmail: string;
-  profile: Profile | null;
   plan: Plan | null;
 }
 
-export function DashboardNav({ userEmail, profile, plan }: DashboardNavProps) {
+const NAV_ITEMS = [
+  { label: "My Apps", href: "/dashboard", icon: LayoutGrid },
+  { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  { label: "Plans & Billing", href: "/dashboard/billing", icon: CreditCard },
+];
+
+export function DashboardNav({ userEmail, plan }: DashboardNavProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await createClient().auth.signOut();
     router.push("/login");
     router.refresh();
   };
@@ -34,11 +37,7 @@ export function DashboardNav({ userEmail, profile, plan }: DashboardNavProps) {
   const currentPlanName = plan?.name || "Free";
   const isPro = plan?.id === "pro";
 
-  const navItems = [
-    { label: "My Apps", href: "/dashboard", icon: LayoutGrid },
-    { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-    { label: "Plans & Billing", href: "/dashboard/billing", icon: CreditCard },
-  ];
+  const navItems = NAV_ITEMS;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl">

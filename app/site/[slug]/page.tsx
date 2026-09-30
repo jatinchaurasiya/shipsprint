@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { SiteRenderer } from "@/components/renderer/site-renderer";
 import type { Site, Plan } from "@/types/database";
 import Link from "next/link";
-import { Eye, ArrowLeft, Globe, AlertCircle } from "lucide-react";
+import { Eye, ArrowLeft, Globe } from "lucide-react";
 
 interface SitePageProps {
   params: Promise<{ slug: string }>;
@@ -143,26 +143,10 @@ export default async function PublicSitePage({ params }: SitePageProps) {
     isOwner = user?.id === site.user_id;
 
     if (!isOwner) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400 mb-6 shadow-sm">
-            <AlertCircle className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight mb-2">
-            Page Not Published Yet
-          </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mb-8">
-            This landing page is currently in draft mode and has not been launched by its creator.
-          </p>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-semibold shadow-sm transition-all"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Go to ShipSprint</span>
-          </Link>
-        </div>
-      );
+      // A 200 response here is a soft 404: crawlers index the page and treat
+      // "Page Not Published Yet" as real content. Only the owner may preview a
+      // draft, and everyone else should get a real 404.
+      notFound();
     }
   }
 
@@ -202,8 +186,10 @@ export default async function PublicSitePage({ params }: SitePageProps) {
       <SiteRenderer
         content={site.content}
         plan={ownerPlan}
-        isPreview={false}
-        siteId={site.id}
+        // The owner's own draft preview must not record a real page_view, or
+        // self-traffic inflates the numbers shown on the billing page.
+        isPreview={!isPublished}
+        siteId={isPublished ? site.id : undefined}
       />
     </div>
   );

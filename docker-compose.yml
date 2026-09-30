@@ -1,0 +1,110 @@
+# ShipSprint production stack.
+#
+#   caddy  TLS termination, wildcard cert for *.ROOT_DOMAIN, on-demand TLS for
+#          customer custom domains
+#   app    Next.js standalone server
+#   redis  rate-limit backend, shared across app replicas
+#
+# The database is Supabase (managed) and object storage is Cloudflare R2, so
+# neither appears here. That is deliberate: neither is state this stack owns.
+#
+# Usage:
+#   docker compose up -d --build
+#   docker compose logs -f app
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      # ACME account and certificates. Back this up: losing it forces
+      # re-issuance for every domain and burns Let's Encrypt rate limits.
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      ACME_CONTACT_EMAIL: ${ACME_CONTACT_EMAIL:?set ACME_CONTACT_EMAIL}
+      # Provider token for DNS-01, which is the only challenge that can
+      # validate a wildcard name.
+      CF_API_TOKEN: ${CF_API_TOKEN:?set CF_API_TOKEN}
+    depends_on:
+      app:
+        condition: service_healthy
+    networks: [edge]
+
+  app:
+    build:
+      context: .
+      args:
+        # Inlined into the client bundle at build time.
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?}
+        NEXT_PUBLIC_ROOT_DOMAIN: ${ROOT_DOMAIN:?}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?}
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      ROOT_DOMAIN: ${ROOT_DOMAIN:?}
+      # Extra hosts that serve the app rather than a customer site, e.g. a
+      # staging deployment. Without this, a staging host is classified as a
+      # customer custom domain and the app renders "Page Not Found".
+      APP_HOSTS: ${APP_HOSTS:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?}
+      REDIS_URL: redis://redis:6379
+      DODO_PAYMENTS_API_KEY: ${DODO_PAYMENTS_API_KEY:?}
+      DODO_PAYMENTS_WEBHOOK_KEY: ${DODO_PAYMENTS_WEBHOOK_KEY:?}
+      DODO_PAYMENTS_ENVIRONMENT: ${DODO_PAYMENTS_ENVIRONMENT:-test_mode}
+      DODO_PRODUCT_ID_BASIC: ${DODO_PRODUCT_ID_BASIC:?}
+      DODO_PRODUCT_ID_PRO: ${DODO_PRODUCT_ID_PRO:?}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:?}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:?}
+      R2_PUBLIC_DOMAIN: ${R2_PUBLIC_DOMAIN:-}
+      CNAME_TARGET_HOST: ${CNAME_TARGET_HOST:-cname.shipsprint.site}
+      DOMAIN_VERIFY_PREFIX: _shipverify
+      ACME_CONTACT_EMAIL: ${ACME_CONTACT_EMAIL:?}
+      CRON_SECRET: ${CRON_SECRET:?}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [edge, data]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Rate-limit state is ephemeral: keys have TTLs measured in seconds to
+    # hours, so persistence buys nothing and a stale AOF only slows writes.
+    command: >
+      redis-server
+      --save ""
+      --appendonly no
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [data]
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  # The Caddy <-> app link. `internal` would break ACME callbacks, so this
+  # network is external-facing and the app's port is not published to the host.
+  edge:
+  # Kept separate so Redis is not reachable from the edge.
+  data:
+    internal: true

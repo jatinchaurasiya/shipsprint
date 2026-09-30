@@ -70,8 +70,8 @@ export function CreateSiteDialog({
       setIsOpen(false);
       router.push(`/dashboard/editor/${data.site.id}`);
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "An unexpected error occurred");
+    } catch (err) {
+      setError((err instanceof Error ? err.message : undefined) || "An unexpected error occurred");
       setLoading(false);
     }
   };

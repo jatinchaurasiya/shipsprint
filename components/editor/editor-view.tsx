@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EditorPanel } from "./editor-panel";
 import { LivePreview } from "./live-preview";
-import type { Site, SiteContent, Plan } from "@/types/database";
+import type { Site, SiteContent, SiteStatus, Plan } from "@/types/database";
 import {
   ArrowLeft,
   Save,
@@ -35,7 +35,7 @@ export function EditorView({ site, plan }: EditorViewProps) {
     ? `https://${site.custom_domain}`
     : `https://${site.slug}.${rootDomain}`;
 
-  const handleSave = async (statusOverride?: string) => {
+  const handleSave = async (statusOverride?: SiteStatus) => {
     setError(null);
     setSaveSuccess(false);
 
@@ -46,7 +46,7 @@ export function EditorView({ site, plan }: EditorViewProps) {
     }
 
     try {
-      const payload: Record<string, any> = { content };
+      const payload: { content: SiteContent; status?: SiteStatus } = { content };
       if (statusOverride) {
         payload.status = statusOverride;
       }
@@ -70,8 +70,8 @@ export function EditorView({ site, plan }: EditorViewProps) {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "An unexpected error occurred.");
+    } catch (err) {
+      setError((err instanceof Error ? err.message : undefined) || "An unexpected error occurred.");
     } finally {
       setSaving(false);
       setPublishing(false);

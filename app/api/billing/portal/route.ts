@@ -1,50 +1,69 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createCustomerPortal, getDodoClient } from "@/lib/billing/dodo";
+import { createCustomerPortal } from "@/lib/billing/dodo";
+import { publicEnv } from "@/lib/env";
+import { logger } from "@/lib/logger";
+import { rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+/**
+ * Creates a Dodo customer-portal session, where the customer can update their
+ * payment method, download invoices, or cancel.
+ *
+ * The previous implementation returned `error.message` verbatim, which could
+ * echo upstream provider detail to the browser.
+ */
+export async function POST(_request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("dodo_customer_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.dodo_customer_id) {
-      return NextResponse.json(
-        { error: "No active billing customer found. You are currently on the Free tier." },
-        { status: 404 }
-      );
-    }
-
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const returnUrl = `${appUrl}/dashboard/billing`;
-
-    const dodo = getDodoClient();
-    if (!dodo) {
-      return NextResponse.json(
-        { error: "Dodo Payments client is not configured." },
-        { status: 503 }
-      );
-    }
-
-    const portalUrl = await createCustomerPortal(profile.dodo_customer_id, returnUrl);
-
-    return NextResponse.json({ url: portalUrl });
-  } catch (error: any) {
-    console.error("Customer portal error:", error);
+  const limit = await rateLimit({
+    identifier: user.id,
+    bucket: "portal",
+    limit: 20,
+    windowSeconds: 300,
+  });
+  if (!limit.success) {
     return NextResponse.json(
-      { error: error?.message || "Failed to generate billing portal session." },
-      { status: 500 }
+      { error: "Too many requests. Please wait a few minutes." },
+      { status: 429, headers: rateLimitHeaders(limit) }
+    );
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("dodo_customer_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.dodo_customer_id) {
+    return NextResponse.json(
+      {
+        error:
+          "No billing account found. Upgrade to a paid plan to manage your subscription.",
+      },
+      { status: 404 }
+    );
+  }
+
+  try {
+    const url = await createCustomerPortal(
+      profile.dodo_customer_id,
+      publicEnv().NEXT_PUBLIC_APP_URL
+    );
+    return NextResponse.json({ url });
+  } catch (error) {
+    logger.exception("customer portal session failed", error, {
+      user_id: user.id,
+    });
+    return NextResponse.json(
+      { error: "Could not open the billing portal. Please try again shortly." },
+      { status: 503 }
     );
   }
 }
