@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { ShipSprintLogo } from "@/components/brand/logo";
 import { useRouter } from "next/navigation";
 import { EditorPanel } from "./editor-panel";
 import { LivePreview } from "./live-preview";
@@ -140,6 +141,8 @@ export function EditorView({ site, plan }: EditorViewProps) {
             <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Dashboard</span>
           </Link>
+
+          <ShipSprintLogo href="/dashboard" variant="icon" size="sm" />
 
           <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
 

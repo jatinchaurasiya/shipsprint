@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Building2 } from "lucide-react";
+import { ShipSprintLogo } from "@/components/brand/logo";
+import { ArrowLeft, Building2 } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -13,15 +14,7 @@ export default function ImprintPage() {
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-semibold text-sm tracking-tight text-zinc-900 dark:text-zinc-50"
-          >
-            <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-sm text-white">
-              <Sparkles className="w-3.5 h-3.5" />
-            </div>
-            <span>ShipSprint</span>
-          </Link>
+          <ShipSprintLogo href="/" size="sm" priority />
 
           <Link
             href="/"

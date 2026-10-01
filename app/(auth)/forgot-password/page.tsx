@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ShipSprintLogo } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Mail, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Mail } from "lucide-react";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -52,15 +53,9 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm relative z-10">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2.5 font-bold text-lg tracking-tight text-zinc-900 dark:text-zinc-50 group mb-6"
-          >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <span>ShipSprint</span>
-          </Link>
+          <div className="flex justify-center mb-6">
+            <ShipSprintLogo href="/" size="lg" priority />
+          </div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             Reset your password
           </h1>

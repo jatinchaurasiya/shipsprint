@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ShipSprintLogo } from "@/components/brand/logo";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Plan } from "@/types/database";
 import {
-  Sparkles,
   LayoutGrid,
   BarChart3,
   CreditCard,
@@ -48,15 +48,7 @@ export function DashboardNav({ userEmail, plan }: DashboardNavProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Left: Brand & Nav */}
         <div className="flex items-center gap-8">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2.5 font-semibold text-base tracking-tight text-zinc-900 dark:text-zinc-50"
-          >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-sm text-white">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <span>ShipSprint</span>
-          </Link>
+          <ShipSprintLogo href="/dashboard" size="md" priority />
 
           <nav className="hidden md:flex items-center gap-1">
             {NAV_ITEMS.map((item) => {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShipSprintLogo } from "@/components/brand/logo";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { TemplateGallery } from "@/components/templates/template-gallery";
 import type { Metadata } from "next";
@@ -20,15 +21,7 @@ export default function TemplatesPage() {
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 w-full border-b border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 font-semibold text-base tracking-tight text-zinc-900 dark:text-zinc-50"
-          >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-sm text-white">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <span className="font-semibold text-base">ShipSprint</span>
-          </Link>
+          <ShipSprintLogo href="/" size="md" priority />
 
           <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-zinc-600 dark:text-zinc-400">
             <Link href="/" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
@@ -106,10 +99,9 @@ export default function TemplatesPage() {
       {/* Footer */}
       <footer className="border-t border-zinc-200/80 dark:border-zinc-800/80 py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-zinc-500 dark:text-zinc-400">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-            <span className="font-medium text-zinc-800 dark:text-zinc-200">ShipSprint</span>
-            <span>— The Landing Page Platform for Indie Makers</span>
+          <div className="flex items-center gap-3">
+            <ShipSprintLogo href="/" size="sm" />
+            <span className="hidden sm:inline text-zinc-400">— The Landing Page Platform for Indie Makers</span>
           </div>
           <div className="flex flex-wrap items-center gap-6">
             <Link href="/templates" className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">

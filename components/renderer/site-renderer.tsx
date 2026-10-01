@@ -3,8 +3,9 @@
 import { useEffect } from "react";
 import type { SiteContent, Plan } from "@/types/database";
 import { safeHref } from "@/lib/validation";
-import { Sparkles, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { getFeatureIcon } from "@/lib/icons";
+import { ShipSprintLogo } from "@/components/brand/logo";
 
 interface SiteRendererProps {
   content: SiteContent;
@@ -442,7 +443,7 @@ export function SiteRenderer({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm text-[11px] font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 shadow-xs transition-colors"
             >
-              <Sparkles className="w-3 h-3 text-blue-500" />
+              <ShipSprintLogo variant="icon" size="sm" />
               <span>
                 Powered by <span className="font-semibold text-zinc-800 dark:text-zinc-200">ShipSprint</span>
               </span>

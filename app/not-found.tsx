@@ -1,9 +1,13 @@
 import Link from "next/link";
+import { ShipSprintLogo } from "@/components/brand/logo";
 
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 px-4 text-center">
       <div className="max-w-md">
+        <div className="flex justify-center mb-6">
+          <ShipSprintLogo href="/" size="md" />
+        </div>
         <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400 mb-3">
           404
         </p>

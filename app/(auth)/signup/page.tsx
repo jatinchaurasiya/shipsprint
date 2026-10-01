@@ -3,8 +3,9 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ShipSprintLogo } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowRight, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 
 const PRODUCT_IDS = [
   "basic_monthly",
@@ -131,13 +132,9 @@ function SignupForm() {
       <div className="w-full max-w-[420px]">
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 tracking-tight transition-all hover:bg-zinc-200/60 dark:hover:bg-zinc-800/80 mb-5"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-            <span>ShipSprint v1</span>
-          </Link>
+          <div className="flex justify-center mb-6">
+            <ShipSprintLogo href="/" size="lg" priority />
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             Create your account
           </h1>

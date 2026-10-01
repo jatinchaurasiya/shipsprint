@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ShipSprintLogo } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, ArrowRight, CheckCircle2, Lock, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Lock, Loader2, AlertCircle } from "lucide-react";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -86,15 +87,9 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-sm relative z-10">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2.5 font-bold text-lg tracking-tight text-zinc-900 dark:text-zinc-50 group mb-6"
-          >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <span>ShipSprint</span>
-          </Link>
+          <div className="flex justify-center mb-6">
+            <ShipSprintLogo href="/" size="lg" priority />
+          </div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             Set new password
           </h1>
