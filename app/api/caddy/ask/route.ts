@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { clientKey } from "@/lib/request";
 import { normalizeHostname } from "@/lib/redirect";
+import { publicEnv } from "@/lib/env";
 
 /**
  * Caddy on-demand TLS authorization endpoint.
@@ -50,33 +51,50 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const { NEXT_PUBLIC_ROOT_DOMAIN: rootDomain } = publicEnv();
+
+    // The root domain and www are always authorized.
+    if (domain === rootDomain || domain === `www.${rootDomain}`) {
+      return new NextResponse(null, { status: 200 });
+    }
+
     const admin = createAdminClient();
 
-    // Only a domain that a customer has actually connected, on a published
-    // site, is eligible. A draft's domain is not served publicly, so issuing a
-    // certificate for it would be a free issuance primitive.
-    const { data: site } = await admin
-      .from("sites")
-      .select("id, custom_domain, status")
-      .eq("custom_domain", domain)
-      .eq("status", "published")
-      .maybeSingle();
+    let site: { id: string; custom_domain: string | null; status: string } | null = null;
+
+    if (domain.endsWith(`.${rootDomain}`)) {
+      const slug = domain.slice(0, -(rootDomain.length + 1));
+      const { data } = await admin
+        .from("sites")
+        .select("id, custom_domain, status")
+        .eq("slug", slug)
+        .eq("status", "published")
+        .maybeSingle();
+      site = data;
+    } else {
+      const { data } = await admin
+        .from("sites")
+        .select("id, custom_domain, status")
+        .eq("custom_domain", domain)
+        .eq("status", "published")
+        .maybeSingle();
+      site = data;
+    }
 
     if (!site) {
       logger.warn("denied on-demand TLS for unknown domain", { domain });
       return new NextResponse(null, { status: 403 });
     }
 
-    // Record that a certificate was requested. `ssl_status` transitions to
-    // 'issuing' here, which is what the editor displays instead of claiming
-    // verification that has not happened.
-    await admin
-      .from("domain_verifications")
-      .update({
-        ssl_status: site.custom_domain ? "issuing" : "pending",
-        checked_at: new Date().toISOString(),
-      })
-      .eq("site_id", site.id);
+    if (site.custom_domain && site.custom_domain === domain) {
+      await admin
+        .from("domain_verifications")
+        .update({
+          ssl_status: "issuing",
+          checked_at: new Date().toISOString(),
+        })
+        .eq("site_id", site.id);
+    }
 
     logger.info("authorized on-demand TLS", { domain, site_id: site.id });
 
