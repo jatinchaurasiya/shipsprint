@@ -1,0 +1,142 @@
+name: Production CI/CD (EC2)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_clean:
+        description: "Force clean Docker build without cache (--no-cache)"
+        required: false
+        type: boolean
+        default: false
+      skip_tests:
+        description: "Skip test gate (emergency hotfix only)"
+        required: false
+        type: boolean
+        default: false
+
+# Deployments to EC2 must never run concurrently or be interrupted mid-flight.
+concurrency:
+  group: production-ec2-deployment
+  cancel-in-progress: false
+
+jobs:
+  # ============================================================================
+  # Quality, Build, and Security Gate (Pre-deployment Verification)
+  # ============================================================================
+  verify:
+    name: Test, Lint, Build & Security Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ !inputs.skip_tests }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies (clean reproducible install)
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: ESLint verification
+        run: npm run lint -- --max-warnings=0
+
+      - name: Vitest test suite
+        run: npm run test
+
+      - name: Next.js standalone production build
+        run: npm run build
+
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+
+      - name: Database schema convergence check
+        run: |
+          pip install pglast
+          python scripts/validate_schema.py
+
+  # ============================================================================
+  # Continuous Deployment to AWS EC2
+  # ============================================================================
+  deploy:
+    name: Deploy to EC2 Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [verify]
+    if: always() && (needs.verify.result == 'success' || inputs.skip_tests == true) && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Validate GitHub Secrets Configuration
+        run: |
+          MISSING=0
+          if [ -z "${{ secrets.EC2_HOST }}" ]; then
+            echo "::error title=Missing Secret::EC2_HOST is not configured in repository secrets."
+            MISSING=1
+          fi
+          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "::error title=Missing Secret::EC2_SSH_KEY is not configured in repository secrets."
+            MISSING=1
+          fi
+
+          if [ "$MISSING" -eq 1 ]; then
+            echo ""
+            echo "========================================================================"
+            echo "MISSING REQUIRED GITHUB REPOSITORY SECRETS"
+            echo "========================================================================"
+            echo "To enable automated CI/CD deployments to your EC2 instance, navigate to:"
+            echo "GitHub -> Settings -> Secrets and variables -> Actions"
+            echo ""
+            echo "Add the following secrets:"
+            echo "  - EC2_HOST     : Public IP or hostname of EC2 instance (e.g. 54.x.x.x)"
+            echo "  - EC2_USER     : SSH username (e.g. ubuntu)"
+            echo "  - EC2_SSH_KEY  : Private SSH Key (.pem file content)"
+            echo "  - EC2_PORT     : SSH port (optional, default: 22)"
+            echo "  - DEPLOY_DIR   : Target directory on EC2 (optional, default: ~/shipsprint)"
+            echo "========================================================================"
+            exit 1
+          fi
+          echo "All required deployment secrets are verified."
+
+      - name: Execute Deployment on EC2 via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER || 'ubuntu' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || 22 }}
+          script_stop: true
+          command_timeout: 30m
+          envs: FORCE_CLEAN,DEPLOY_DIR
+          script: |
+            set -euo pipefail
+            TARGET_DIR="${{ secrets.DEPLOY_DIR || '~/shipsprint' }}"
+            eval TARGET_DIR="$TARGET_DIR"
+
+            if [ ! -d "$TARGET_DIR" ]; then
+              echo "[ERROR] Deployment target directory does not exist: $TARGET_DIR"
+              exit 1
+            fi
+
+            cd "$TARGET_DIR"
+            echo "=== [CI/CD] Fetching latest commit from origin/main ==="
+            git fetch origin main --quiet
+            git reset --hard origin/main --quiet
+            chmod +x scripts/deploy.sh
+
+            export FORCE_CLEAN="${{ inputs.force_clean || 'false' }}"
+            export DEPLOY_DIR="$TARGET_DIR"
+            ./scripts/deploy.sh

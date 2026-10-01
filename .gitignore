@@ -46,5 +46,6 @@ next-env.d.ts
 # supabase cli cache
 supabase/.temp/
 
-# github workflows (requires workflow OAuth scope)
-.github/
+# ide local agent customizations
+.agents/
+skills-lock.json
