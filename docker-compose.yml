@@ -52,6 +52,10 @@ services:
       NODE_ENV: production
       PORT: 3000
       ROOT_DOMAIN: ${ROOT_DOMAIN:?}
+      NEXT_PUBLIC_ROOT_DOMAIN: ${ROOT_DOMAIN:?}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?}
       # Extra hosts that serve the app rather than a customer site, e.g. a
       # staging deployment. Without this, a staging host is classified as a
       # customer custom domain and the app renders "Page Not Found".
