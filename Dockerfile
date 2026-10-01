@@ -19,6 +19,7 @@ WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p public
 
 # `output: "standalone"` in next.config.ts produces a self-contained server
 # bundle. NEXT_PUBLIC_* values are inlined at this point, so they must be
