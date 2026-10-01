@@ -3,19 +3,8 @@
 import { useEffect } from "react";
 import type { SiteContent, Plan } from "@/types/database";
 import { safeHref } from "@/lib/validation";
-import {
-  Zap,
-  Shield,
-  Sparkles,
-  Heart,
-  Star,
-  Flame,
-  CheckCircle2,
-  Lock,
-  Layers,
-  Smile,
-  Mail,
-} from "lucide-react";
+import { Sparkles, Mail } from "lucide-react";
+import { getFeatureIcon } from "@/lib/icons";
 
 interface SiteRendererProps {
   content: SiteContent;
@@ -23,20 +12,6 @@ interface SiteRendererProps {
   isPreview?: boolean;
   siteId?: string;
 }
-
-// Icon mapper for user-selected feature icons
-const iconMap: Record<string, React.ElementType> = {
-  Zap,
-  Shield,
-  Sparkles,
-  Heart,
-  Star,
-  Flame,
-  CheckCircle2,
-  Lock,
-  Layers,
-  Smile,
-};
 
 export function SiteRenderer({
   content,
@@ -318,7 +293,7 @@ export function SiteRenderer({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {features.map((feature, idx) => {
-              const IconComponent = iconMap[feature.icon] || Sparkles;
+              const IconComponent = getFeatureIcon(feature.icon);
               return (
                 <div
                   key={feature.id || idx}

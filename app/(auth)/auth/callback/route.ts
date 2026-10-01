@@ -15,7 +15,12 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const errorParam =
+    requestUrl.searchParams.get("error_description") ||
+    requestUrl.searchParams.get("error") ||
+    "auth_callback_failed";
+
   return NextResponse.redirect(
-    new URL("/login?error=auth_callback_failed", requestUrl.origin)
+    new URL(`/login?error=${encodeURIComponent(errorParam)}`, requestUrl.origin)
   );
 }

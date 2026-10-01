@@ -21,6 +21,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
+import { AVAILABLE_ICONS } from "@/lib/icons";
 
 interface EditorPanelProps {
   content: SiteContent;
@@ -78,19 +79,6 @@ function domainStatusCopy(state: DomainState | null): {
       };
   }
 }
-
-const AVAILABLE_ICONS = [
-  "Zap",
-  "Shield",
-  "Sparkles",
-  "Heart",
-  "Star",
-  "Flame",
-  "CheckCircle2",
-  "Lock",
-  "Layers",
-  "Smile",
-];
 
 export function EditorPanel({
   content,

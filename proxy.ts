@@ -18,7 +18,11 @@ import { safeRedirectPath } from "@/lib/redirect";
 
 type HostKind = "app" | "subdomain" | "custom";
 
-const rootDomain = (process.env.ROOT_DOMAIN || "localhost:3000")
+const rootDomain = (
+  process.env.ROOT_DOMAIN ||
+  process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
+  "localhost:3000"
+)
   .toLowerCase()
   .split(":")[0]!;
 
@@ -76,8 +80,10 @@ export async function proxy(request: NextRequest) {
   if (host.kind !== "app" && host.value) {
     if (
       pathname.startsWith("/_next") ||
-      pathname.startsWith("/api/analytics/beacon") ||
-      pathname.startsWith("/favicon.ico")
+      pathname.startsWith("/api/track") ||
+      pathname === "/robots.txt" ||
+      pathname === "/sitemap.xml" ||
+      pathname === "/favicon.ico"
     ) {
       return NextResponse.next();
     }

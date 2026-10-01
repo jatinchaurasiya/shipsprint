@@ -34,20 +34,50 @@ export const httpUrl = z
     { message: "Must be a valid http or https URL" }
   );
 
+/**
+ * An http(s) URL, a safe root-relative path (e.g. /terms, /privacy), or an empty string.
+ */
+export const httpOrRelativeUrl = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine(
+    (value) => {
+      if (value === "") return true;
+      if (value.startsWith("/")) {
+        return !value.startsWith("//") && !value.startsWith("/\\") && !value.includes("\\");
+      }
+      try {
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
+      } catch {
+        return false;
+      }
+    },
+    { message: "Must be a valid http, https, or relative URL (e.g. /terms)" }
+  );
+
 /** A URL that must be present and well-formed. */
 export const requiredHttpUrl = httpUrl.refine((v) => v !== "", {
   message: "URL is required",
 });
 
 /**
- * Renders only http(s) hrefs. Defence in depth for rows written before these
- * schemas existed, and for any content that arrives from a template.
+ * Renders only safe http(s) hrefs or safe root-relative paths. Defence in depth for
+ * rows written before these schemas existed, and for content that arrives from templates.
  */
 export function safeHref(value: unknown): string {
   if (typeof value !== "string" || value === "") return "#";
+  const trimmed = value.trim();
+  if (trimmed.startsWith("/")) {
+    if (!trimmed.startsWith("//") && !trimmed.startsWith("/\\") && !trimmed.includes("\\")) {
+      return trimmed;
+    }
+    return "#";
+  }
   try {
-    const url = new URL(value);
-    if (url.protocol === "http:" || url.protocol === "https:") return value;
+    const url = new URL(trimmed);
+    if (url.protocol === "http:" || url.protocol === "https:") return trimmed;
   } catch {
     // fall through
   }
@@ -102,7 +132,7 @@ export const siteContentSchema = z
             z
               .object({
                 label: shortText(60),
-                url: httpUrl,
+                url: httpOrRelativeUrl,
               })
               .strict()
           )

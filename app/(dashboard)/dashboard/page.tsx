@@ -11,7 +11,12 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  searchParams: Promise<{ template?: string }>;
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const { template: initialTemplateId } = (await searchParams) || {};
   const supabase = await createClient();
 
   const {
@@ -68,6 +73,7 @@ export default async function DashboardPage() {
             canCreate={canCreate}
             currentCount={currentCount}
             maxLimit={maxLimit}
+            initialTemplateId={initialTemplateId}
           />
         </div>
       </div>

@@ -267,7 +267,13 @@ export async function POST(request: NextRequest) {
   }
 
   // Reject the apex and www forms of our own domain, which would hijack the app.
-  const rootDomain = (optionalEnv().ROOT_DOMAIN ?? "").split(":")[0];
+  const rootDomain = (
+    optionalEnv().ROOT_DOMAIN ||
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
+    ""
+  )
+    .toLowerCase()
+    .split(":")[0];
   if (rootDomain && (cleanDomain === rootDomain || cleanDomain.endsWith(`.${rootDomain}`))) {
     return NextResponse.json(
       { error: "You cannot use a ShipSprint domain as a custom domain." },

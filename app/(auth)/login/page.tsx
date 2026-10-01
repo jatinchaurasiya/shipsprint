@@ -20,6 +20,8 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(
     errorParam === "auth_callback_failed"
       ? "Authentication callback failed. Please try again."
+      : errorParam
+      ? decodeURIComponent(errorParam)
       : null
   );
 

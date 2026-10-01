@@ -7,6 +7,7 @@ import {
   updateSiteSchema,
   type ValidatedSiteContent,
 } from "@/lib/validation";
+import { deleteFromR2 } from "@/lib/storage/r2";
 import type { SiteStatus } from "@/types/database";
 
 export async function GET(
@@ -165,7 +166,7 @@ export async function DELETE(
     // Verify site belongs to user
     const { data: existingSite, error: fetchError } = await supabase
       .from("sites")
-      .select("id, user_id")
+      .select("id, user_id, content")
       .eq("id", id)
       .eq("user_id", user.id)
       .single();
@@ -175,6 +176,13 @@ export async function DELETE(
         { error: "Landing page not found or access denied." },
         { status: 404 }
       );
+    }
+
+    const content = existingSite.content as ValidatedSiteContent | null;
+    const urlsToDelete: string[] = [];
+    if (content?.brand?.logo_url) urlsToDelete.push(content.brand.logo_url);
+    if (Array.isArray(content?.screenshots)) {
+      urlsToDelete.push(...content.screenshots);
     }
 
     const { error: deleteError } = await supabase
@@ -187,6 +195,15 @@ export async function DELETE(
       return NextResponse.json(
         { error: deleteError.message || "Failed to delete landing page." },
         { status: 500 }
+      );
+    }
+
+    if (urlsToDelete.length > 0) {
+      deleteFromR2(urlsToDelete).catch((err) =>
+        logger.warn("failed to clean up deleted site assets from R2", {
+          error: err instanceof Error ? err.message : String(err),
+          site_id: id,
+        })
       );
     }
 

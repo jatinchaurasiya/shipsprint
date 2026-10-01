@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   httpUrl,
+  httpOrRelativeUrl,
   safeHref,
   siteContentSchema,
   createSiteSchema,
@@ -52,14 +53,38 @@ describe("httpUrl", () => {
   });
 });
 
+describe("httpOrRelativeUrl", () => {
+  it("accepts safe relative paths and absolute http(s) URLs", () => {
+    expect(httpOrRelativeUrl.safeParse("/terms").success).toBe(true);
+    expect(httpOrRelativeUrl.safeParse("/privacy").success).toBe(true);
+    expect(httpOrRelativeUrl.safeParse("https://example.com/terms").success).toBe(true);
+    expect(httpOrRelativeUrl.safeParse("").success).toBe(true);
+  });
+
+  it("rejects protocol-relative and backslash-smuggled paths", () => {
+    expect(httpOrRelativeUrl.safeParse("//evil.com").success).toBe(false);
+    expect(httpOrRelativeUrl.safeParse("/\\evil.com").success).toBe(false);
+    expect(httpOrRelativeUrl.safeParse("/path\\evil").success).toBe(false);
+    expect(httpOrRelativeUrl.safeParse("javascript:alert(1)").success).toBe(false);
+  });
+});
+
 describe("safeHref", () => {
   it("passes through valid absolute URLs", () => {
     expect(safeHref("https://example.com/a")).toBe("https://example.com/a");
   });
 
-  it("neutralises anything that is not http(s)", () => {
+  it("passes through valid root-relative paths", () => {
+    expect(safeHref("/terms")).toBe("/terms");
+    expect(safeHref("/privacy")).toBe("/privacy");
+    expect(safeHref("/legal/privacy-policy")).toBe("/legal/privacy-policy");
+  });
+
+  it("neutralises anything that is not http(s) or safe relative", () => {
     expect(safeHref("javascript:alert(1)")).toBe("#");
     expect(safeHref("//evil.com")).toBe("#");
+    expect(safeHref("/\\evil.com")).toBe("#");
+    expect(safeHref("/path\\evil")).toBe("#");
     expect(safeHref("")).toBe("#");
     expect(safeHref(null)).toBe("#");
     expect(safeHref(undefined)).toBe("#");
@@ -104,6 +129,15 @@ describe("siteContentSchema", () => {
     const withBadLegal = structuredClone(validContent);
     withBadLegal.footer.legal_links[0]!.url = "javascript:alert(1)";
     expect(siteContentSchema.safeParse(withBadLegal).success).toBe(false);
+  });
+
+  it("accepts template-style relative legal links", () => {
+    const withRelativeLegal = structuredClone(validContent);
+    withRelativeLegal.footer.legal_links = [
+      { label: "Terms of Service", url: "/terms" },
+      { label: "Privacy Policy", url: "/privacy" },
+    ];
+    expect(siteContentSchema.safeParse(withRelativeLegal).success).toBe(true);
   });
 
   it("rejects unknown keys instead of persisting them", () => {

@@ -51,7 +51,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { NEXT_PUBLIC_ROOT_DOMAIN: rootDomain } = publicEnv();
+    const rootDomain = (
+      publicEnv().NEXT_PUBLIC_ROOT_DOMAIN ||
+      process.env.ROOT_DOMAIN ||
+      "localhost"
+    )
+      .toLowerCase()
+      .split(":")[0]!;
 
     // The root domain and www are always authorized.
     if (domain === rootDomain || domain === `www.${rootDomain}`) {

@@ -26,6 +26,7 @@ function SignupForm() {
     requestedPlan as (typeof PRODUCT_IDS)[number]
   );
   const planId = isKnownPlan ? requestedPlan! : null;
+  const requestedTemplate = searchParams.get("template");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,9 +36,14 @@ function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  /** Dashboard on a free account, billing when a plan was chosen. */
+  /** Dashboard on a free account, billing when a plan was chosen, preserving chosen template. */
+  const templateParam = requestedTemplate
+    ? `&template=${encodeURIComponent(requestedTemplate)}`
+    : "";
   const destination = planId
-    ? `/dashboard/billing?upgrade=${encodeURIComponent(planId)}`
+    ? `/dashboard/billing?upgrade=${encodeURIComponent(planId)}${templateParam}`
+    : requestedTemplate
+    ? `/dashboard?template=${encodeURIComponent(requestedTemplate)}`
     : "/dashboard";
 
   // Created on demand rather than during render: this component is evaluated
@@ -97,6 +103,12 @@ function SignupForm() {
 
   const handleGoogleSignup = async () => {
     setError(null);
+
+    if (!acceptTerms) {
+      setError("Please agree to the Terms of Service and Privacy Policy before continuing with Google.");
+      return;
+    }
+
     setOauthLoading(true);
 
     const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`;

@@ -35,8 +35,11 @@ export function EditorView({ site, plan }: EditorViewProps) {
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
 
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "shipsprint.site";
+  const isLocal = rootDomain.includes("localhost");
   const liveUrl = site.custom_domain
     ? `https://${site.custom_domain}`
+    : isLocal
+    ? `/site/${site.slug}`
     : `https://${site.slug}.${rootDomain}`;
 
   // Sync server props if site changes without triggering cascading effect renders

@@ -109,7 +109,8 @@ export function AnalyticsView({
 
     const timeline = Object.entries(dailyMap).map(([date, data]) => ({
       date,
-      label: new Date(date).toLocaleDateString(undefined, {
+      label: new Date(`${date}T00:00:00Z`).toLocaleDateString(undefined, {
+        timeZone: "UTC",
         weekday: "short",
         month: "numeric",
         day: "numeric",
