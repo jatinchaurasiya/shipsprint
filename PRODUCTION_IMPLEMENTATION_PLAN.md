@@ -1,279 +1,233 @@
-# ShipSprint — Production Implementation & Architecture Master Plan
+# ShipSprint — AWS EC2 Production Hosting & Ground Work Master Plan
 
-**Document Version:** 2.0.0  
-**Status:** Database Live & Verified · Build & Test Suite Green · Production Ready  
-**Date:** September 30, 2026  
-
----
-
-## 1. Quick Answers & Operational Guides
-
-### 1.1 Generating `CRON_SECRET`
-The `CRON_SECRET` protects internal maintenance tasks (`/api/cron/maintenance`) from unauthorized public requests.
-* **Pre-generated 32-byte Cryptographic Secret (Ready to Copy):**
-  ```env
-  CRON_SECRET=c993e9ddc6aab23af6c903bf533e51e94e566e14be526f74279d54a7d193e25d
-  ```
-* **Command to generate a new one anytime:**
-  - In Node.js: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
-  - In PowerShell: `[System.BitConverter]::ToString((New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes((New-Object byte[] 32))).Replace("-","").ToLower()`
+**Document Version:** 3.0.0  
+**Status:** Ground Work & Infrastructure Blueprint · No Code Changes  
+**Date:** October 1, 2026  
 
 ---
 
-### 1.2 Step-by-Step Guide: Cloudflare R2 Setup
-Cloudflare R2 provides zero-egress cost S3-compatible object storage for user image uploads.
+## 1. Server Sizing & Capacity Analysis: `t3.micro` vs `t3.small`
 
-1. **Log in to Cloudflare:** Go to [dash.cloudflare.com](https://dash.cloudflare.com).
-2. **Open R2:** Click on **R2** in the left-hand navigation menu.
-3. **Create Bucket:**
-   - Click **Create bucket**.
-   - Name the bucket: `shipsprint-assets` (or a name of your choice).
-   - Region: Select **Automatic** (or closest to your users, e.g. APAC).
-   - Click **Create Bucket**. This name is your `R2_BUCKET_NAME`.
-4. **Locate Account ID:**
-   - On the R2 Overview page, locate **Account ID** in the right-hand sidebar.
-   - Copy this string -> this is your `R2_ACCOUNT_ID`.
-5. **Create S3 API Tokens:**
-   - On the R2 Overview page, click **Manage R2 API Tokens** (top-right corner).
-   - Click **Create API token**.
-   - Token name: `shipsprint-production`.
-   - Permissions: Select **Object Read & Write**.
-   - Specify bucket: You can choose "All buckets" or limit to `shipsprint-assets`.
-   - TTL: Leave blank / Forever.
-   - Click **Create API Token**.
-   - Cloudflare will display:
-     - **Access Key ID** -> copy to `R2_ACCESS_KEY_ID`.
-     - **Secret Access Key** -> copy to `R2_SECRET_ACCESS_KEY` *(Save immediately; it is only shown once)*.
-6. **Public Asset Delivery Domain:**
-   - Under bucket settings -> **Public Access** -> **Custom Domains**:
-     - Connect a subdomain (e.g. `assets.shipsprint.site`) or enable the free `r2.dev` testing domain.
-     - Set this as `R2_PUBLIC_DOMAIN` in `.env.local`.
+### 1.1 How Many Users Can a 1 GB EC2 Instance Serve?
+Because ShipSprint is built with **Next.js Standalone Mode** + **Caddy Edge Proxy** and offloads the database to **Supabase Cloud** and media to **Cloudflare R2**, the server does **not** run PostgreSQL or store static media files.
+
+#### Memory Allocation on a 1 GB `t3.micro`:
+| Component | Runtime RAM Consumption | Notes |
+| :--- | :--- | :--- |
+| **Ubuntu 24.04 LTS (Minimal OS)** | ~90 – 120 MB | Lean kernel + systemd |
+| **Caddy Reverse Proxy (Go)** | ~30 – 45 MB | HTTP/2, HTTP/3, TLS termination |
+| **Next.js 16 Standalone (Node.js)** | ~140 – 190 MB | Pruned production build |
+| **Total Base Memory Footprint** | **~260 – 355 MB** | **Leaves ~650 MB free RAM** |
+| **2 GB Swap Space (Disk)** | Emergency headroom | Prevents any Out-Of-Memory (OOM) crash |
+
+#### Estimated Serving Capacity:
+* **Public Tenant Landing Pages (Published Sites):**
+  - Next.js serves lightweight HTML/CSS with client hydration islands.
+  - Caddy + Next.js will comfortably serve **150 – 250 requests/second (RPS)**.
+  - This equals **~10,000 to 25,000 daily page visits** without breaking a sweat.
+* **Concurrent Active App Editors (Logged in users modifying sites):**
+  - **30 to 50 concurrent active editors** editing and saving simultaneously.
+* **CPU Credits & Burstable Performance:**
+  - `t3.micro` gives 2 vCPUs and earns 24 CPU credits per hour. For typical indie SaaS traffic, the CPU runs at 5–15% and credit balance stays maxed out at 576 credits, ready for traffic spikes.
 
 ---
 
-### 1.3 Syncing Dodo Product IDs into the Live Database
-Since you created your 4 products in Dodo Payments and added their product IDs to `.env.local`, you must also link them into the database so the checkout session creator can resolve them:
-```sql
-update public.products set dodo_product_id = 'pdt_YOUR_BASIC_MONTHLY_ID' where id = 'basic_monthly';
-update public.products set dodo_product_id = 'pdt_YOUR_BASIC_YEARLY_ID'  where id = 'basic_yearly';
-update public.products set dodo_product_id = 'pdt_YOUR_PRO_MONTHLY_ID'   where id = 'pro_monthly';
-update public.products set dodo_product_id = 'pdt_YOUR_PRO_YEARLY_ID'    where id = 'pro_yearly';
-```
-*(You can run this query once in the Supabase SQL editor or provide the IDs and we can execute it via the verified pooler script).*
+### 1.2 Which One Should You Pick? `t3.micro` vs `t3.small`
+
+| Feature | `t3.micro` (Recommended to Start) | `t3.small` (Future Upgrade) |
+| :--- | :--- | :--- |
+| **Pricing** | **100% FREE** (AWS Free Tier, 750 hrs/mo) | ~$15 / month (~$0.0208/hr) |
+| **vCPU** | 2 vCPUs (Burstable) | 2 vCPUs (Burstable, higher baseline) |
+| **RAM** | 1 GB (+ 2 GB swapfile) | 2 GB (+ 2 GB swapfile) |
+| **Direct On-Server Docker Builds** | Slower (leverages swapfile) | Fast & effortless |
+| **Daily Visitor Capacity** | ~15,000 – 25,000 visits/day | ~50,000 – 100,000 visits/day |
+| **Concurrent Active Editors** | ~40 concurrent users | ~120+ concurrent users |
+
+> [!TIP]
+> **Recommendation:** Start with **`t3.micro` (100% Free)**.  
+> In AWS EC2, you can resize an instance from `t3.micro` to `t3.small` in **under 60 seconds** with 1 click without losing your Elastic IP, database, or settings when your traffic scales!
 
 ---
 
-### 1.4 Step-by-Step Guide: Supabase Auth & Google OAuth
+## 2. Cloudflare DNS Configuration (For `shipsprint.site`)
 
-#### Part A: Supabase Redirect URLs
-1. Open your [Supabase Dashboard](https://supabase.com/dashboard) and select project `mhkrbkyeixtacpbabbeh`.
-2. In the left navigation, click **Authentication** -> **URL Configuration**.
-3. Under **Site URL**, set:
-   ```text
-   https://shipsprint.site
-   ```
-4. Under **Redirect URLs**, click **Add URL** and add each of the following:
-   ```text
-   https://shipsprint.site/auth/callback
-   https://www.shipsprint.site/auth/callback
-   http://localhost:3000/auth/callback
-   http://*.localhost:3000/auth/callback
-   ```
-5. Click **Save**.
+Since you added `shipsprint.site` to Cloudflare, you get faster DNS resolution and DDoS protection.
 
-#### Part B: Enabling Google OAuth
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a new project (e.g., `ShipSprint`).
-3. Navigate to **APIs & Services** -> **OAuth consent screen**:
-   - User Type: Select **External**, then click **Create**.
-   - App Name: `ShipSprint`.
-   - User Support Email: Your personal/admin email.
-   - Developer Contact Email: Your email.
-   - Scopes: Add `.../auth/userinfo.email`, `.../auth/userinfo.profile`, `openid`.
-   - Save and continue.
-4. Navigate to **APIs & Services** -> **Credentials**:
-   - Click **Create Credentials** -> **OAuth client ID**.
-   - Application Type: **Web application**.
-   - Name: `ShipSprint Web Client`.
-   - **Authorized JavaScript origins:**
-     - `https://mhkrbkyeixtacpbabbeh.supabase.co`
-     - `https://shipsprint.site`
-     - `http://localhost:3000`
-   - **Authorized redirect URIs (CRITICAL):**
-     - Copy your Supabase callback URL: `https://mhkrbkyeixtacpbabbeh.supabase.co/auth/v1/callback`
-   - Click **Create**.
-   - Copy the generated **Client ID** and **Client Secret**.
-5. Back in **Supabase Dashboard**:
-   - Go to **Authentication** -> **Providers** -> **Google**.
-   - Toggle **Google Enabled** to `ON`.
-   - Paste **Client ID** and **Client Secret**.
-   - Click **Save**.
+### 2.1 Critical Cloudflare Setting: "DNS Only" (Grey Cloud)
+For Caddy on your EC2 instance to issue automated on-demand SSL certificates via Let's Encrypt for both `*.shipsprint.site` and custom domains (`userdomain.com`), Caddy must be directly reachable on Port 80 and 443.
 
----
+In your **Cloudflare Dashboard** -> `shipsprint.site` -> **DNS** -> **Records**:
 
-### 1.5 Hostinger DNS + AWS EC2 Architecture & Free Tier Sizing
-
-#### What AWS EC2 Free Tier Server Should You Use?
-* **Recommended Instance:** **`t2.micro`** (or **`t3.micro`** in newer regions: 2 vCPUs, 1 GB RAM, free for 750 hours/month on AWS Free Tier).
-* **Can a 1 GB RAM EC2 instance host user websites reliably?**
-  **YES**, because of how ShipSprint is engineered:
-  1. **Next.js Standalone Build:** Ships only minimal pruned Node modules (~120–160 MB runtime RAM).
-  2. **Caddy Edge Proxy:** Written in Go; serves HTTP/2 and HTTP/3 TLS termination using only ~30–45 MB RAM.
-  3. **No Local Database:** PostgreSQL is managed on Supabase Cloud (`ap-southeast-1` Singapore pooler), requiring 0 MB of your EC2 RAM.
-  4. **No Local Media Storage:** Cloudflare R2 serves all images and uploads directly, requiring 0 disk I/O on EC2.
-* **Essential Safeguards for 1 GB EC2:**
-  - Configure a **2 GB Swap file** on Ubuntu (`fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`). This guarantees no Out-Of-Memory crashes during Next.js background revalidations.
-  - Allocate an **Elastic IP** in AWS EC2 (free when attached to a running instance) so your server's public IP address never changes.
-
-#### Connecting Hostinger Domain (`shipsprint.site`) to AWS EC2
-In **Hostinger hPanel** -> **Domains** -> `shipsprint.site` -> **DNS / Nameservers**:
-Add the following 3 `A` Records pointing to your **AWS EC2 Elastic IP**:
-
-| Type | Name | Content / Points to | TTL | Purpose |
+| Type | Name | Content / Target | Proxy Status | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **`A`** | `@` | `<YOUR_EC2_ELASTIC_IP>` | 300 | Main app homepage (`shipsprint.site`) |
-| **`A`** | `*` | `<YOUR_EC2_ELASTIC_IP>` | 300 | Wildcard subdomains (`*.shipsprint.site`) for customer sites |
-| **`A`** | `cname` | `<YOUR_EC2_ELASTIC_IP>` | 300 | Verification CNAME target for custom domains |
+| **`A`** | `@` | `<YOUR_AWS_ELASTIC_IP>` | **DNS Only (Grey Cloud)** | Root domain (`shipsprint.site`) |
+| **`A`** | `*` | `<YOUR_AWS_ELASTIC_IP>` | **DNS Only (Grey Cloud)** | Wildcard subdomains (`*.shipsprint.site`) |
+| **`A`** | `cname` | `<YOUR_AWS_ELASTIC_IP>` | **DNS Only (Grey Cloud)** | CNAME target for user custom domains |
 
-> [!CAUTION]
-> 1. Do **not** add a `www` record in Hostinger — Caddy handles canonical redirection automatically. Adding a duplicate record causes ACME TLS certificate conflicts.
-> 2. Do **not** delete existing MX or TXT email records if you use Hostinger email.
-
----
-
-## 2. Competitive Teardown: QuickLaunch (`quicklaunch.tech`) vs ShipSprint
-
-Our live audit of `quicklaunch.tech` revealed key architectural constraints in their product that inform ShipSprint's competitive advantage:
-
-```
-┌─────────────────────────────────┬──────────────────────────────────┐
-│   QuickLaunch (quicklaunch.tech)│         ShipSprint (Ours)        │
-├─────────────────────────────────┼──────────────────────────────────┤
-│ Client-side SPA (React bundle)  │ Server-Rendered / SSR + Islands  │
-│ Simply.com WAF / Slow TTFB      │ Caddy Edge TLS + Cloudflare R2   │
-│ Generic AI prompt generation    │ Dedicated Mobile App/SaaS Launch │
-│ Shallow block customization     │ Granular, zero-drift field edit  │
-│ Trial-based / Paid friction     │ Generous free-forever 1-site tier│
-│ No native analytics telemetry   │ Cookieless SQL analytics built-in│
-│ No App Store / Play Store badge │ Native App Store & Play Badges   │
-└─────────────────────────────────┴──────────────────────────────────┘
-```
-
-### Strategic Differentiators for ShipSprint:
-1. **Zero-Drift Guarantee:** QuickLaunch renders in a client-side SPA. ShipSprint uses a single unified renderer (`components/renderer/site-renderer.tsx`) that powers the visual editor, template picker, and live published site with zero visual drift.
-2. **Superior Mobile App Launcher Surfaces:** QuickLaunch builds generic business homepages. ShipSprint specifically serves app developers with native iOS/Android store buttons, screenshot carousels, pricing toggles, and feature grids.
-3. **Built-in First-Party Analytics:** While QuickLaunch offers no telemetry, ShipSprint provides privacy-first, cookieless traffic metrics (pageviews, CTA clicks, referrer origins, mobile/desktop breakdown) powered by our live PostgreSQL security-invoker views.
-4. **Permanent Free Tier:** ShipSprint gives indie developers a permanent launch pad on `slug.shipsprint.site` with automated TLS, creating an unbeatable top-of-funnel acquisition engine.
+> [!IMPORTANT]
+> Keep the Proxy Status as **DNS Only (Grey Cloud)** for `@`, `*`, and `cname`.  
+> If you turn on the Orange Cloud (Proxied) for wildcard `*`, Cloudflare will block Caddy's ACME TLS challenge unless you pay $10/mo for Cloudflare Advanced Certificate Manager. Grey cloud lets Caddy issue free certificates directly!
 
 ---
 
-## 3. End-to-End System Architectures
+## 3. Step-by-Step AWS EC2 Setup & Deployment Guide
 
-### 3.1 Complete User Lifecycle Architecture
-```mermaid
-flowchart TD
-    A[Visitor arrives on shipsprint.site] --> B{Account Creation}
-    B -->|Google OAuth or Magic Link| C[User Authenticated in Supabase]
-    C --> D[Profile Trigger assigns Free Tier]
-    
-    D --> E[User Selects Launch Template]
-    E --> F[Site Created with Slug: myapp.shipsprint.site]
-    
-    F --> G[Visual Editor: Live Preview + Asset Upload to R2]
-    G --> H[User Clicks Publish]
-    H --> I[Site Active at myapp.shipsprint.site via Caddy]
-    
-    I --> J{Need Custom Domain or Analytics?}
-    J -->|Free Plan| K[1 Live Subdomain Site Forever]
-    J -->|Upgrade to Basic / Pro| L[Dodo Payments Checkout]
-    
-    L --> M[Dodo Webhook verified & processed]
-    M --> N[Plan escalated to Basic or Pro in Database]
-    N --> O[Custom Domain verified & Automated TLS issued]
-    N --> P[Analytics Dashboard unlocked with live SQL views]
+### Step 1: Launch your AWS EC2 Instance
+1. Open the [AWS EC2 Console](https://console.aws.amazon.com/ec2).
+2. Click **Launch instance**.
+3. **Name:** `shipsprint-production`.
+4. **OS Image:** Select **Ubuntu** -> **Ubuntu Server 24.04 LTS (HVM), SSD Volume Type**.
+5. **Instance Type:** Select **`t3.micro`** (or `t2.micro` depending on your AWS region Free Tier availability).
+6. **Key Pair (Login):**
+   - Click **Create new key pair**.
+   - Name: `shipsprint-key`.
+   - Key pair type: **RSA**, format: **`.pem`**.
+   - Download and save `shipsprint-key.pem` on your PC (e.g. `C:\Users\Admin\.ssh\shipsprint-key.pem`).
+7. **Network Settings (Firewall / Security Group):**
+   - Select **Create security group**.
+   - Check:
+     - [x] **Allow SSH traffic from** -> `My IP` (or `Anywhere 0.0.0.0/0`)
+     - [x] **Allow HTTPS traffic from the internet** -> Port 443 (`0.0.0.0/0`)
+     - [x] **Allow HTTP traffic from the internet** -> Port 80 (`0.0.0.0/0`)
+8. **Configure Storage:** Change size from 8 GiB to **20 GiB** (AWS Free Tier includes up to 30 GiB of gp3 SSD storage).
+9. Click **Launch instance**.
+
+---
+
+### Step 2: Allocate & Attach an AWS Elastic IP (Fixed Public IP)
+By default, EC2 public IPs change whenever an instance is stopped or restarted. An Elastic IP is **permanent** and **100% free** while attached to a running instance.
+
+1. In the EC2 Console left navigation, under **Network & Security**, click **Elastic IPs**.
+2. Click **Allocate Elastic IP address** (top-right).
+3. Leave defaults (Amazon's pool of IPv4 addresses) and click **Allocate**.
+4. Select the newly allocated Elastic IP from the list.
+5. Click **Actions** -> **Associate Elastic IP address**.
+6. **Resource type:** Select **Instance**.
+7. **Instance:** Click the dropdown and select your running `shipsprint-production` instance.
+8. Click **Associate**.
+9. **Copy your Elastic IP address** (e.g., `54.215.18.92`).
+10. Put this Elastic IP address into your **Cloudflare DNS** as described in Section 2!
+
+---
+
+### Step 3: Connect to EC2 & Provision the Server
+
+1. Open PowerShell or Terminal on your PC where your `shipsprint-key.pem` is located:
+   ```powershell
+   ssh -i "path\to\shipsprint-key.pem" ubuntu@<YOUR_ELASTIC_IP>
+   ```
+2. **Update the Operating System:**
+   ```bash
+   sudo apt update && sudo apt upgrade -y
+   sudo apt install -y git curl ufw
+   ```
+3. **Configure the 2 GB Swapfile (Crucial for 1 GB RAM stability):**
+   ```bash
+   sudo fallocate -l 2G /swapfile
+   sudo chmod 600 /swapfile
+   sudo mkswap /swapfile
+   sudo swapon /swapfile
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   ```
+   *(Verify swap with `free -h` — you will see `Swap: 2.0Gi`)*.
+
+4. **Install Docker & Docker Compose:**
+   ```bash
+   sudo apt install -y docker.io docker-compose-v2
+   sudo systemctl enable docker
+   sudo systemctl start docker
+   sudo usermod -aG docker $USER
+   ```
+   *(Log out and log back in by typing `exit`, then reconnect via SSH so Docker group permissions take effect)*.
+
+5. **Configure Firewall (UFW):**
+   ```bash
+   sudo ufw allow 22/tcp
+   sudo ufw allow 80/tcp
+   sudo ufw allow 443/tcp
+   sudo ufw --force enable
+   ```
+
+---
+
+### Step 4: Clone Repository & Configure Environment
+
+1. **Clone the ShipSprint repository:**
+   ```bash
+   git clone https://github.com/jatinchaurasiya/shipsprint.git ~/shipsprint
+   cd ~/shipsprint
+   ```
+
+2. **Create the production environment file:**
+   ```bash
+   nano .env.production
+   ```
+   *(Or `nano .env.local`)*.
+
+3. **Paste your production credentials:**
+   ```env
+   # App URLs
+   NEXT_PUBLIC_ROOT_DOMAIN=shipsprint.site
+   NEXT_PUBLIC_APP_URL=https://shipsprint.site
+
+   # Supabase
+   NEXT_PUBLIC_SUPABASE_URL=https://mhkrbkyeixtacpbabbeh.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...
+
+   # Dodo Payments
+   DODO_PAYMENTS_API_KEY=live_...
+   DODO_PAYMENTS_WEBHOOK_KEY=whsec_...
+   DODO_PAYMENTS_ENVIRONMENT=live_mode
+
+   # Cloudflare R2
+   R2_ACCOUNT_ID=...
+   R2_ACCESS_KEY_ID=...
+   R2_SECRET_ACCESS_KEY=...
+   R2_BUCKET_NAME=shipsprint-assets
+   R2_PUBLIC_DOMAIN=assets.shipsprint.site
+
+   # Security & Infra
+   CRON_SECRET=c993e9ddc6aab23af6c903bf533e51e94e566e14be526f74279d54a7d193e25d
+   CNAME_TARGET_HOST=cname.shipsprint.site
+   DOMAIN_VERIFY_PREFIX=_shipverify
+   ACME_CONTACT_EMAIL=your-email@gmail.com
+   ```
+   Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
+
+---
+
+### Step 5: Start ShipSprint with Docker Compose
+
+Your repository already includes a production-grade [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml), and [`infra/Caddyfile`](infra/Caddyfile).
+
+Run the startup command:
+```bash
+docker compose up -d --build
+```
+
+#### What Happens Automatically:
+1. Docker builds the Next.js 16 standalone container.
+2. Caddy boots on Port 80 & 443.
+3. When a request hits `https://shipsprint.site` or `https://test.shipsprint.site`:
+   - Caddy automatically contacts Let's Encrypt / ZeroSSL, generates a valid HTTPS TLS certificate, and proxies traffic to Next.js on port 3000.
+   - When a custom domain (e.g. `clientdomain.com`) arrives, Caddy calls Next.js `/api/caddy/ask` to verify domain ownership before provisioning certificates on the fly!
+
+To check container health:
+```bash
+docker compose ps
+docker compose logs -f caddy
 ```
 
 ---
 
-### 3.2 Application & Multi-Tenant Edge Architecture
-```mermaid
-flowchart LR
-    subgraph Clients["Traffic Sources"]
-        BrowserApp["App Users (shipsprint.site/dashboard)"]
-        BrowserTenant["Site Visitors (*.shipsprint.site / custom.com)"]
-    end
+## 4. Zero-Downtime Updates Workflow
 
-    subgraph Edge["AWS EC2 Host (Free Tier t2.micro)"]
-        Caddy["Caddy Reverse Proxy (Ports 80 / 443)<br/>Automated TLS & On-Demand Certs"]
-        NextServer["Next.js 16 Standalone Server (Port 3000)<br/>proxy.ts Host & Subdomain Router"]
-        LocalSwap["2 GB Linux Swapfile<br/>(OOM Protection)"]
-    end
+Whenever you push new code to GitHub in the future, updating the live server takes one simple command:
 
-    subgraph CloudServices["Managed Cloud Services"]
-        SupaDB[("Supabase PostgreSQL (ap-southeast-1)<br/>12 Tables, RLS, 3 Analytics Views")]
-        SupaAuth["Supabase Auth (Email + Google OAuth)"]
-        CloudflareR2["Cloudflare R2 (Images & Assets)"]
-        Dodo["Dodo Payments (Multi-tier Webhooks)"]
-    end
-
-    BrowserApp -->|HTTPS| Caddy
-    BrowserTenant -->|HTTPS| Caddy
-    
-    Caddy -->|On-demand TLS verification /api/caddy/ask| NextServer
-    Caddy -->|HTTP Reverse Proxy| NextServer
-
-    NextServer --> SupaDB
-    NextServer --> SupaAuth
-    NextServer --> CloudflareR2
-    NextServer --> Dodo
+```bash
+cd ~/shipsprint
+git pull origin main
+docker compose up -d --build
 ```
-
----
-
-## 4. Master 7-Phase Implementation Roadmap
-
-### Phase 1: Environment & Cloud Integration (Blockers)
-* [x] Schema applied to live Supabase DB (`ap-southeast-1`) with 12 RLS tables.
-* [ ] Add `CRON_SECRET` to `.env.local`.
-* [ ] Configure Cloudflare R2 bucket tokens (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`).
-* [ ] Execute SQL to link live Dodo Product IDs into `public.products`.
-* [ ] Configure Supabase redirect URLs & Google OAuth provider in Supabase Dashboard.
-* [ ] Point Hostinger DNS `A` records (`@`, `*`, `cname`) to AWS EC2 Elastic IP.
-
-### Phase 2: Database Type Safety & Strict Cast Removal
-* Run `supabase gen types typescript` to generate schema definitions.
-* Replace hand-written types in `types/database.ts` with compiler-verified definitions.
-* Eliminate manual `as Plan`, `as Site`, and `as Profile` casts across dashboard and editor components.
-
-### Phase 3: Analytics View Transition (Performance Optimization)
-* Refactor `app/(dashboard)/dashboard/analytics/page.tsx` to query:
-  - `public.site_analytics_summary`
-  - `public.site_analytics_sources`
-  - `public.site_analytics_cta`
-* Remove browser-side service-role client instantiation; rely on authenticated `security_invoker` policies.
-* Fix bar chart zero-height rendering bug.
-
-### Phase 4: Public Site Rendering Performance & SEO
-* Deduplicate `getSiteBySlugOrDomain` across `generateMetadata` and `Page` using React `cache()`.
-* Convert `components/renderer/site-renderer.tsx` to a Server Component with lightweight client interactive islands.
-* Replace unoptimized `<img>` tags with `next/image` leveraging Cloudflare R2 remote patterns.
-* Dynamically generate per-site `/sitemap.xml` and `/robots.txt` for tenant subdomains and custom domains.
-
-### Phase 5: Template Engine & Gallery (Core Differentiator)
-* Seed 4–6 high-converting starter templates into `public.templates` (SaaS, Mobile App, AI Tool, Waitlist).
-* Build public `/templates` gallery preview.
-* Integrate template selection inside `create-site-dialog.tsx`.
-* Pass `template_id` to `POST /api/sites` to instantiate site content from chosen template.
-
-### Phase 6: Editor UX, Data Loss Prevention & Accessibility
-* Implement `beforeunload` listener and navigation guard when `hasUnsavedChanges` is true.
-* Implement debounced background auto-save to draft state.
-* Reset hidden file input values after upload to allow re-uploading the same file.
-* Build mobile hamburger drawer navigation in `components/dashboard/dashboard-nav.tsx`.
-* Add accessibility attributes (`htmlFor`, `id`, `aria-modal`, modal focus traps).
-
-### Phase 7: Observability, Legal & AWS EC2 Production Launch
-* Integrate `@sentry/nextjs` with `instrumentation.ts` for error tracking.
-* Add `/terms`, `/privacy`, and `/imprint` static pages with signup agreement checkbox.
-* Deploy Docker Compose stack on AWS EC2 (`t2.micro` or `t3.micro` with Caddy + Next.js standalone).
-* Run end-to-end smoke test: Signup -> Template Selection -> Site Publish -> Custom Domain -> Payment Upgrade.
+Docker will build the updated Next.js app in the background and swap the running container instantly with zero downtime.
