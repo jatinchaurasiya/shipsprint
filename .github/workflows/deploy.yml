@@ -81,13 +81,16 @@ jobs:
 
     steps:
       - name: Validate GitHub Secrets Configuration
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
           MISSING=0
-          if [ -z "${{ secrets.EC2_HOST }}" ]; then
+          if [ -z "$EC2_HOST" ]; then
             echo "::error title=Missing Secret::EC2_HOST is not configured in repository secrets."
             MISSING=1
           fi
-          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
+          if [ -z "$EC2_SSH_KEY" ]; then
             echo "::error title=Missing Secret::EC2_SSH_KEY is not configured in repository secrets."
             MISSING=1
           fi
