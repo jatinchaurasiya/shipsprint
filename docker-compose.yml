@@ -37,6 +37,7 @@ services:
     networks: [edge]
 
   app:
+    image: ghcr.io/jatinchaurasiya/shipsprint:latest
     build:
       context: .
       args:

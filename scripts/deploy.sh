@@ -134,27 +134,46 @@ if [ -d .git ]; then
 fi
 
 # ------------------------------------------------------------------------------
-# 5. Base Image Refresh & Container Build
+# 5. Production Image Pull & Instant Container Launch
 # ------------------------------------------------------------------------------
-log_info "Pulling external base images (redis, caddy)..."
-$COMPOSE_CMD pull redis caddy || log_warn "Base image pull warning; using cached images."
-
-BUILD_ARGS=()
-if [ "${FORCE_CLEAN:-false}" = "true" ]; then
-  log_warn "FORCE_CLEAN=true detected. Building with --no-cache..."
-  BUILD_ARGS+=("--no-cache")
-fi
-
-log_info "Building and launching containers..."
+log_info "Pulling production images from GitHub Container Registry (ghcr.io)..."
 START_TIME=$(date +%s)
 
-if ! $COMPOSE_CMD up -d --build "${BUILD_ARGS[@]}" --remove-orphans; then
-  log_error "docker compose up failed!"
-  log_error "=== Container Status ==="
-  $COMPOSE_CMD ps || true
-  log_error "=== App Logs ==="
-  $COMPOSE_CMD logs --tail=100 app || true
-  exit 1
+PULL_SUCCESS=false
+if [ "${FORCE_CLEAN:-false}" != "true" ]; then
+  if $COMPOSE_CMD pull app redis caddy; then
+    log_success "Successfully pulled pre-built production container images."
+    PULL_SUCCESS=true
+  else
+    log_warn "Failed to pull pre-built app image from registry. Falling back to local build."
+  fi
+fi
+
+if [ "$PULL_SUCCESS" = "true" ]; then
+  log_info "Launching production containers..."
+  if ! $COMPOSE_CMD up -d --remove-orphans; then
+    log_error "docker compose up failed!"
+    log_error "=== Container Status ==="
+    $COMPOSE_CMD ps || true
+    log_error "=== App Logs ==="
+    $COMPOSE_CMD logs --tail=100 app || true
+    exit 1
+  fi
+else
+  BUILD_ARGS=()
+  if [ "${FORCE_CLEAN:-false}" = "true" ]; then
+    log_warn "FORCE_CLEAN=true detected. Building with --no-cache..."
+    BUILD_ARGS+=("--no-cache")
+  fi
+  log_info "Building and launching containers locally..."
+  if ! $COMPOSE_CMD up -d --build "${BUILD_ARGS[@]}" --remove-orphans; then
+    log_error "docker compose up failed!"
+    log_error "=== Container Status ==="
+    $COMPOSE_CMD ps || true
+    log_error "=== App Logs ==="
+    $COMPOSE_CMD logs --tail=100 app || true
+    exit 1
+  fi
 fi
 
 # ------------------------------------------------------------------------------

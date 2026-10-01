@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   # ============================================================================
-  # Quality, Build, and Security Gate (Pre-deployment Verification)
+  # 1. Quality, Build, and Security Gate (Pre-deployment Verification)
   # ============================================================================
   verify:
     name: Test, Lint, Build & Security Gate
@@ -70,14 +70,66 @@ jobs:
           python scripts/validate_schema.py
 
   # ============================================================================
-  # Continuous Deployment to AWS EC2
+  # 2. Build & Push Docker Image (Executed on 16GB GitHub Runner, NOT on EC2)
+  # ============================================================================
+  build-and-push:
+    name: Build & Push Docker Image (GHCR)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [verify]
+    if: always() && (needs.verify.result == 'success' || inputs.skip_tests == true)
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_ROOT_DOMAIN=${{ secrets.ROOT_DOMAIN || 'shipsprint.site' }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL || 'https://shipsprint.site' }}
+
+  # ============================================================================
+  # 3. Continuous Deployment to AWS EC2 (Pulls Pre-built Image in 5 Seconds)
   # ============================================================================
   deploy:
     name: Deploy to EC2 Production
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: [verify]
-    if: always() && (needs.verify.result == 'success' || inputs.skip_tests == true) && github.ref == 'refs/heads/main'
+    timeout-minutes: 15
+    needs: [build-and-push]
+    if: always() && needs.build-and-push.result == 'success' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Validate GitHub Secrets Configuration
@@ -122,7 +174,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT || 22 }}
           script_stop: true
-          command_timeout: 30m
+          command_timeout: 15m
           envs: FORCE_CLEAN,DEPLOY_DIR
           script: |
             set -euo pipefail
