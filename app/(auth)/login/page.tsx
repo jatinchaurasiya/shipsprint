@@ -148,6 +148,12 @@ function LoginForm() {
             >
               Password
             </label>
+            <Link
+              href="/forgot-password"
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline transition-colors"
+            >
+              Forgot password?
+            </Link>
           </div>
           <input
             id="password"

@@ -37,7 +37,7 @@ const appHosts = new Set<string>([
     .filter(Boolean),
 ]);
 
-function classifyHost(rawHost: string): { kind: HostKind; value: string | null } {
+export function classifyHost(rawHost: string): { kind: HostKind; value: string | null } {
   const hostname = rawHost.toLowerCase().split(":")[0]!;
   if (!hostname) return { kind: "app", value: null };
 
@@ -68,34 +68,28 @@ function needsAuth(pathname: string) {
   );
 }
 
-/** Paths served by the app rather than rewritten to a customer site. */
-function isAppPath(pathname: string) {
-  return (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/site") ||
-    pathname === "/" ||
-    needsAuth(pathname)
-  );
-}
-
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = classifyHost(request.headers.get("host") ?? "");
 
-  // Customer pages, static assets, and API routes are the high-volume paths and
-  // must not pay for a Supabase Auth network round-trip. Each API route
-  // authenticates its own request, and the (dashboard) layout is the
-  // authoritative guard, so skipping the refresh here is safe.
-  if (!needsAuth(pathname)) {
-    if (isAppPath(pathname)) return NextResponse.next();
-
-    const host = classifyHost(request.headers.get("host") ?? "");
-    if (host.kind === "app" || !host.value) return NextResponse.next();
+  // If customer subdomain or custom domain, rewrite to /site/[lookup]
+  if (host.kind !== "app" && host.value) {
+    if (
+      pathname.startsWith("/_next") ||
+      pathname.startsWith("/api/analytics/beacon") ||
+      pathname.startsWith("/favicon.ico")
+    ) {
+      return NextResponse.next();
+    }
 
     const url = request.nextUrl.clone();
     url.pathname = `/site/${host.kind === "custom" ? `custom:${host.value}` : host.value}`;
     return NextResponse.rewrite(url);
+  }
+
+  // App host logic (shipsprint.site, localhost, etc.)
+  if (!needsAuth(pathname)) {
+    return NextResponse.next();
   }
 
   const { supabaseResponse, user } = await updateSession(request);

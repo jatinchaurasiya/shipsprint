@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -13,8 +14,9 @@ interface SitePageProps {
 
 /**
  * Resolve site record by either custom domain or subdomain slug.
+ * Wrapped in React cache() so generateMetadata and PublicSitePage share a single fetch.
  */
-async function getSiteBySlugOrDomain(slugParam: string) {
+const getSiteBySlugOrDomain = cache(async (slugParam: string) => {
   const supabase = createAdminClient();
 
   const isCustom = slugParam.startsWith("custom:");
@@ -56,7 +58,7 @@ async function getSiteBySlugOrDomain(slugParam: string) {
       plans: Plan;
     };
   };
-}
+});
 
 /**
  * Dynamic SEO & OpenGraph tags generated from the site's live content
@@ -71,7 +73,23 @@ export async function generateMetadata({
     return {
       title: "Landing Page Not Found | ShipSprint",
       description: "The requested landing page does not exist or has been removed.",
+      robots: { index: false, follow: false },
     };
+  }
+
+  // Prevent draft headlines and info leaking into search index for non-owners
+  if (site.status !== "published") {
+    const authSupabase = await createClient();
+    const {
+      data: { user },
+    } = await authSupabase.auth.getUser();
+
+    if (user?.id !== site.user_id) {
+      return {
+        title: "Page Not Found | ShipSprint",
+        robots: { index: false, follow: false },
+      };
+    }
   }
 
   const appName = site.content?.hero?.app_name || site.content?.brand?.name || site.slug;
@@ -100,6 +118,10 @@ export async function generateMetadata({
       images: ogImage ? [ogImage] : [],
     },
     icons: logoUrl ? [{ rel: "icon", url: logoUrl }] : undefined,
+    robots: {
+      index: site.status === "published",
+      follow: site.status === "published",
+    },
   };
 }
 
@@ -109,7 +131,7 @@ export default async function PublicSitePage({ params }: SitePageProps) {
 
   if (!site) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 text-center font-sans">
         <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-400 mb-6 shadow-sm">
           <Globe className="w-8 h-8" />
         </div>
@@ -160,8 +182,40 @@ export default async function PublicSitePage({ params }: SitePageProps) {
     has_analytics_dashboard: false,
   };
 
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "shipsprint.site";
+  const liveUrl = site.custom_domain
+    ? `https://${site.custom_domain}`
+    : `https://${site.slug}.${rootDomain}`;
+
+  // JSON-LD structured data for rich search engine results
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type":
+      site.content.store_links?.app_store_url || site.content.store_links?.play_store_url
+        ? "SoftwareApplication"
+        : "WebSite",
+    name: site.content?.hero?.app_name || site.slug,
+    description: site.content?.hero?.short_description || site.content?.hero?.header,
+    applicationCategory: "MobileApplication",
+    operatingSystem: "iOS, Android",
+    url: liveUrl,
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+  };
+
   return (
     <div className="relative min-h-screen">
+      {/* JSON-LD Script for SEO */}
+      {isPublished && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+
       {/* Draft Mode Banner for Site Owner */}
       {!isPublished && isOwner && (
         <div className="sticky top-0 z-50 bg-amber-500 text-zinc-950 px-4 py-2.5 shadow-md flex items-center justify-between text-xs font-medium">

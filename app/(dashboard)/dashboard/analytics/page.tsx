@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { AnalyticsView } from "@/components/analytics/analytics-view";
-import type { Site, Plan, AnalyticsEvent } from "@/types/database";
+import type { Site, Plan, AnalyticsDailyRow, AnalyticsSourceRow, AnalyticsCtaRow } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -39,29 +38,47 @@ export default async function AnalyticsPage() {
   const siteList: Site[] = (sites as Site[]) || [];
   const siteIds = siteList.map((s) => s.id);
 
-  // Fetch events for these sites if pro, or limited sample if not
-  let events: AnalyticsEvent[] = [];
+  let dailySummary: AnalyticsDailyRow[] = [];
+  let sources: AnalyticsSourceRow[] = [];
+  let ctaBreakdown: AnalyticsCtaRow[] = [];
 
+  // Query SQL views using the user's authenticated client (security_invoker)
   if (siteIds.length > 0 && plan.has_analytics_dashboard) {
-    const adminSupabase = createAdminClient();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysStr = thirtyDaysAgo.toISOString().slice(0, 10);
 
-    const { data: eventRecords } = await adminSupabase
-      .from("analytics_events")
-      .select("*")
-      .in("site_id", siteIds)
-      .gte("created_at", thirtyDaysAgo.toISOString())
-      .order("created_at", { ascending: false })
-      .limit(1000);
+    const [summaryRes, sourcesRes, ctaRes] = await Promise.all([
+      supabase
+        .from("site_analytics_summary")
+        .select("*")
+        .in("site_id", siteIds)
+        .gte("day", thirtyDaysStr)
+        .order("day", { ascending: true }),
+      supabase
+        .from("site_analytics_sources")
+        .select("*")
+        .in("site_id", siteIds)
+        .gte("day", thirtyDaysStr)
+        .order("views", { ascending: false })
+        .limit(50),
+      supabase
+        .from("site_analytics_cta")
+        .select("*")
+        .in("site_id", siteIds),
+    ]);
 
-    events = (eventRecords as AnalyticsEvent[]) || [];
+    dailySummary = (summaryRes.data as AnalyticsDailyRow[]) || [];
+    sources = (sourcesRes.data as AnalyticsSourceRow[]) || [];
+    ctaBreakdown = (ctaRes.data as AnalyticsCtaRow[]) || [];
   }
 
   return (
     <AnalyticsView
       sites={siteList}
-      events={events}
+      dailySummary={dailySummary}
+      sources={sources}
+      ctaBreakdown={ctaBreakdown}
       plan={plan}
     />
   );

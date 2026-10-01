@@ -48,8 +48,11 @@ export default defineConfig([
   },
   {
     // CLI tooling writes its report to stdout by design.
-    files: ["scripts/**/*.mjs", "scripts/**/*.js"],
-    rules: { "no-console": "off" },
+    files: ["scripts/**/*.mjs", "scripts/**/*.js", "scripts/**/*.cjs"],
+    rules: {
+      "no-console": "off",
+      "@typescript-eslint/no-require-imports": "off",
+    },
   },
   {
     files: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"],

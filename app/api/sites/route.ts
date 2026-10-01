@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/logger";
 import { createSiteSchema, firstIssue } from "@/lib/validation";
+import { getTemplateById, customizeTemplateContent } from "@/lib/templates";
 import type { SiteContent } from "@/types/database";
 
 export async function POST(request: NextRequest) {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: firstIssue(parsed.error) }, { status: 400 });
     }
 
-    const { name, slug: cleanSlug } = parsed.data;
+    const { name, slug: cleanSlug, template_id } = parsed.data;
 
     // Fetch user profile and plan
     const { data: profile } = await supabase
@@ -132,14 +133,21 @@ export async function POST(request: NextRequest) {
       },
     };
 
+    // If template_id was provided, clone and customize the template content
+    const selectedTemplate = getTemplateById(template_id);
+    const initialContent: SiteContent = selectedTemplate
+      ? customizeTemplateContent(selectedTemplate, name, user.email)
+      : defaultContent;
+
     const { data: newSite, error: insertError } = await supabase
       .from("sites")
       .insert({
         user_id: user.id,
         slug: cleanSlug,
-        content: defaultContent,
+        content: initialContent,
         status: "draft",
         theme: "v1",
+        template_id: selectedTemplate ? selectedTemplate.id : null,
       })
       .select()
       .single();

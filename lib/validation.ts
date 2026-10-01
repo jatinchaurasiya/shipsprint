@@ -130,6 +130,7 @@ export const createSiteSchema = z.object({
       /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/,
       "Slug may only contain lowercase letters, numbers and hyphens"
     ),
+  template_id: z.string().trim().max(64).optional().nullable(),
 });
 
 export const updateSiteSchema = z

@@ -59,6 +59,9 @@ export default async function HomePage() {
             <a href="#features" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
               Features
             </a>
+            <Link href="/templates" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+              Templates
+            </Link>
             <a href="#preview" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
               Live Preview
             </a>
@@ -403,18 +406,27 @@ export default async function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-200/80 dark:border-zinc-800/80 py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-zinc-500 dark:text-zinc-400">
           <div className="flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5 text-blue-500" />
             <span className="font-medium text-zinc-800 dark:text-zinc-200">ShipSprint</span>
-            <span>— The Landing Page Builder for Indie Mobile Apps</span>
+            <span>— The Landing Page Platform for Indie Makers & Apps</span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6">
+            <Link href="/templates" className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
+              Templates
+            </Link>
+            <Link href="/terms" className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
+              Privacy
+            </Link>
+            <Link href="/imprint" className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
+              Imprint
+            </Link>
             <Link href="/login" className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
               Sign In
-            </Link>
-            <Link href="/signup" className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
-              Sign Up
             </Link>
             <span>&copy; {new Date().getFullYear()} ShipSprint</span>
           </div>

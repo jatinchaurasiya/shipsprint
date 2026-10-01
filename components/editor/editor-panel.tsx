@@ -261,6 +261,7 @@ export function EditorPanel({
 
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
 
     handleFileUpload(
@@ -277,6 +278,7 @@ export function EditorPanel({
 
   const handleScreenshotSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
 
     handleFileUpload(

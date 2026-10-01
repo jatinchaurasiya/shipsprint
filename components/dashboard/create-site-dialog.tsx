@@ -2,21 +2,25 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, Loader2, ArrowRight, Sparkles, Lock } from "lucide-react";
+import { Plus, X, Loader2, ArrowRight, Sparkles, Lock, Smartphone, Terminal, Cpu, Users, Briefcase } from "lucide-react";
 import Link from "next/link";
+import { BUILTIN_TEMPLATES } from "@/lib/templates";
 
 interface CreateSiteDialogProps {
   canCreate: boolean;
   currentCount: number;
   maxLimit: number;
+  initialTemplateId?: string;
 }
 
 export function CreateSiteDialog({
   canCreate,
   currentCount,
   maxLimit,
+  initialTemplateId,
 }: CreateSiteDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(Boolean(initialTemplateId));
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(initialTemplateId || "ios-swift");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [isSlugCustomized, setIsSlugCustomized] = useState(false);
@@ -56,7 +60,11 @@ export function CreateSiteDialog({
       const res = await fetch("/api/sites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), slug: slug.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          slug: slug.trim(),
+          template_id: selectedTemplateId || undefined,
+        }),
       });
 
       const data = await res.json();
@@ -76,6 +84,21 @@ export function CreateSiteDialog({
     }
   };
 
+  const getTemplateIcon = (category: string) => {
+    switch (category) {
+      case "productivity":
+        return <Smartphone className="w-3.5 h-3.5 text-blue-500" />;
+      case "developer":
+        return <Terminal className="w-3.5 h-3.5 text-emerald-500" />;
+      case "saas":
+        return <Cpu className="w-3.5 h-3.5 text-purple-500" />;
+      case "social":
+        return <Users className="w-3.5 h-3.5 text-amber-500" />;
+      default:
+        return <Briefcase className="w-3.5 h-3.5 text-indigo-500" />;
+    }
+  };
+
   return (
     <>
       <button
@@ -87,8 +110,8 @@ export function CreateSiteDialog({
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-6 sm:p-7 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-6 sm:p-7 shadow-2xl">
             {/* Close button */}
             <button
               onClick={() => setIsOpen(false)}
@@ -133,8 +156,8 @@ export function CreateSiteDialog({
                     New Landing Page
                   </h2>
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6">
-                  Set up your mobile app landing page. You can customize every section next.
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-5">
+                  Pick a starting template and customize your subdomain.
                 </p>
 
                 {error && (
@@ -144,9 +167,46 @@ export function CreateSiteDialog({
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Template Picker */}
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                      Choose Starting Template
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto pr-1">
+                      {BUILTIN_TEMPLATES.map((tmpl) => {
+                        const isSelected = selectedTemplateId === tmpl.id;
+                        return (
+                          <button
+                            key={tmpl.id}
+                            type="button"
+                            onClick={() => setSelectedTemplateId(tmpl.id)}
+                            className={`flex flex-col text-left p-3 rounded-xl border text-xs transition-all ${
+                              isSelected
+                                ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-zinc-900 dark:text-zinc-100 ring-2 ring-blue-500/20"
+                                : "border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between w-full mb-1">
+                              <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                                {getTemplateIcon(tmpl.category)}
+                                {tmpl.name}
+                              </span>
+                              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+                                {tmpl.category}
+                              </span>
+                            </div>
+                            <span className="text-[11px] line-clamp-1 text-zinc-500 dark:text-zinc-400">
+                              {tmpl.tagline}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                      App Name
+                      App / Product Name
                     </label>
                     <input
                       type="text"
@@ -197,7 +257,7 @@ export function CreateSiteDialog({
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <>
-                          <span>Continue to Editor</span>
+                          <span>Create Page & Open Editor</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </>
                       )}
