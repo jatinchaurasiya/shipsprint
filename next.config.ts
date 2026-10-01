@@ -36,6 +36,12 @@ const nextConfig: NextConfig = {
   // Emits a self-contained server bundle for the Docker image in Phase 9.
   output: "standalone",
 
+  // Typechecking is already enforced in CI/pre-commit (0 errors).
+  // Skipping in Docker prevents Node out-of-memory errors on small servers.
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
   // The AWS SDK is large and should never be traced into a route bundle.
   serverExternalPackages: ["@aws-sdk/client-s3"],
 
