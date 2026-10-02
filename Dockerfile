@@ -78,19 +78,30 @@ if (missing.length) {
   console.error("looks healthy and signup is permanently disabled.\n");
   process.exit(1);
 }
-// Record what the client bundle actually received so /api/health can detect a
-// bad image at runtime. Only presence flags and the URL are recorded; the anon
-// key is intentionally not copied into a file in the image.
-require("fs").writeFileSync("/app/public-config.json", JSON.stringify({
+console.log("public build config OK");
+'
+
+RUN npm run build
+
+# Record what the compiler actually received, so /api/health can tell a
+# mis-built image (or one predating this guard) apart from a working one.
+#
+# Written into the standalone output rather than /app so the existing COPY below
+# carries it into the runtime image with no extra copy step. It must be written
+# after `npm run build` because that regenerates .next/standalone.
+#
+# Only the URL and a presence flag are recorded. The anon key is deliberately
+# not copied into a file that ships in the image.
+RUN node -e '
+const fs = require("fs");
+fs.writeFileSync(".next/standalone/public-config.json", JSON.stringify({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY_SET: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.trim()),
   NEXT_PUBLIC_ROOT_DOMAIN: process.env.NEXT_PUBLIC_ROOT_DOMAIN,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
 }) + "\n");
-console.log("public build config OK");
+console.log("wrote public-config.json into the standalone output");
 '
-
-RUN npm run build
 
 # --- Stage 3: runtime ------------------------------------------------------
 FROM node:24-alpine AS runner
@@ -108,11 +119,6 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Provenance of the inlined client config, written during the guarded build
-# above. /api/health reads it so a mis-built image is reported as degraded
-# instead of looking healthy while signup is broken.
-COPY --from=builder --chown=nextjs:nodejs /app/public-config.json ./public-config.json
 
 USER nextjs
 EXPOSE 3000
