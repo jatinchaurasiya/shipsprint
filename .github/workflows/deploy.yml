@@ -82,9 +82,58 @@ jobs:
       contents: read
       packages: write
 
+    # Declared once at job level so the validation step and the build step read
+    # the same values, and so nothing is interpolated from `${{ }}` inside a
+    # shell script (which is how a secret containing shell metacharacters turns
+    # into command injection).
+    #
+    # These are inlined into the client bundle at BUILD time and cannot be
+    # supplied at runtime. GitHub expands an unset secret to an empty string
+    # rather than failing, so without the guard below the pipeline published an
+    # image whose browser bundle had no Supabase config: the server looked
+    # healthy and signup was permanently disabled. Note that NEXT_PUBLIC_ROOT_DOMAIN
+    # and NEXT_PUBLIC_APP_URL carry `||` defaults but these two deliberately do
+    # not — a guessed Supabase URL or key is worse than no deploy.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_ROOT_DOMAIN: ${{ secrets.ROOT_DOMAIN || 'shipsprint.site' }}
+      NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://shipsprint.site' }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Validate public build arguments
+        run: |
+          set -uo pipefail
+          MISSING=0
+          for VAR in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY; do
+            VALUE="${!VAR:-}"
+            if [ -z "${VALUE//[[:space:]]/}" ]; then
+              echo "::error title=Missing secret::$VAR is not configured in repository secrets."
+              MISSING=1
+            fi
+          done
+
+          if [ "$MISSING" -ne 0 ]; then
+            echo ""
+            echo "========================================================================"
+            echo "MISSING REQUIRED BUILD ARGUMENTS"
+            echo "========================================================================"
+            echo "GitHub -> Settings -> Secrets and variables -> Actions"
+            echo ""
+            echo "  NEXT_PUBLIC_SUPABASE_URL       e.g. https://abcdefgh.supabase.co"
+            echo "                                 (Supabase -> Project Settings -> Data API)"
+            echo "  NEXT_PUBLIC_SUPABASE_ANON_KEY  the anon / publishable key from the same page"
+            echo ""
+            echo "NEXT_PUBLIC_* values are compiled into the browser bundle at build"
+            echo "time and cannot be supplied by docker-compose at runtime. Deploying"
+            echo "without them produces a site where the server reports healthy and"
+            echo "signup is disabled with every button stuck."
+            exit 1
+          fi
+          echo "Public build arguments verified."
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -116,10 +165,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-            NEXT_PUBLIC_ROOT_DOMAIN=${{ secrets.ROOT_DOMAIN || 'shipsprint.site' }}
-            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL || 'https://shipsprint.site' }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_ROOT_DOMAIN=${{ env.NEXT_PUBLIC_ROOT_DOMAIN }}
+            NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}
 
   # ============================================================================
   # 3. Continuous Deployment to AWS EC2 (Pulls Pre-built Image in 5 Seconds)

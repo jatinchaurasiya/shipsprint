@@ -61,15 +61,27 @@ function LoginForm() {
 
     const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
 
-    const { error: oAuthError } = await supabase().auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: redirectUrl,
-      },
-    });
+    // See the matching handler in signup/page.tsx. `supabase()` throws when the
+    // build-time NEXT_PUBLIC_* config is missing; unhandled, that latched
+    // `oauthLoading` true and disabled the password form too, because the email
+    // button is gated on `loading || oauthLoading`.
+    try {
+      const { error: oAuthError } = await supabase().auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+        },
+      });
 
-    if (oAuthError) {
-      setError(oAuthError.message);
+      if (oAuthError) {
+        setError(oAuthError.message);
+      }
+    } catch (err) {
+      setError(
+        (err instanceof Error ? err.message : undefined) ||
+          "Could not start Google sign-in. Please try again."
+      );
+    } finally {
       setOauthLoading(false);
     }
   };

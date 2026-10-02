@@ -82,7 +82,6 @@ function SignupForm() {
 
       if (signUpError) {
         setError(signUpError.message);
-        setLoading(false);
         return;
       }
 
@@ -94,10 +93,13 @@ function SignupForm() {
         setSuccessMessage(
           "Account created! Please check your email inbox to confirm your account."
         );
-        setLoading(false);
       }
     } catch (err) {
       setError((err instanceof Error ? err.message : undefined) || "An unexpected error occurred.");
+    } finally {
+      // Every exit unlocks the form. Previously each branch had to remember to
+      // clear this, and any future branch that forgot would re-create the
+      // permanent-disable bug.
       setLoading(false);
     }
   };
@@ -114,15 +116,31 @@ function SignupForm() {
 
     const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`;
 
-    const { error: oAuthError } = await supabase().auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: redirectUrl,
-      },
-    });
+    // `supabase()` can throw before it ever returns a client, because createClient()
+    // validates the build-time NEXT_PUBLIC_* config on first call. Without this
+    // guard the rejection escaped as "Uncaught (in promise)" and `oauthLoading`
+    // stayed true forever. Because the email button is disabled by
+    // `loading || oauthLoading`, that one unhandled rejection locked the entire
+    // form: neither signup path remained usable, with no error shown to the user.
+    // `finally` rather than resetting in the success path, so every exit
+    // unlocks the form.
+    try {
+      const { error: oAuthError } = await supabase().auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+        },
+      });
 
-    if (oAuthError) {
-      setError(oAuthError.message);
+      if (oAuthError) {
+        setError(oAuthError.message);
+      }
+    } catch (err) {
+      setError(
+        (err instanceof Error ? err.message : undefined) ||
+          "Could not start Google sign-up. Please try again."
+      );
+    } finally {
       setOauthLoading(false);
     }
   };

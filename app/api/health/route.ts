@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { optionalEnv } from "@/lib/env";
+import { optionalEnv, isProduction } from "@/lib/env";
+import { readPublicConfigStamp } from "@/lib/build-config";
+
+export const runtime = "nodejs";
 
 /**
  * Liveness and readiness probe.
@@ -33,6 +36,20 @@ export async function GET() {
     checks[name] = process.env[name] ? "ok" : "missing";
   }
   checks.REDIS_URL = optional.REDIS_URL ? "ok" : "missing";
+
+  // The runtime env check above is NOT sufficient evidence that the client
+  // bundle can authenticate anyone. NEXT_PUBLIC_* values are compiled into
+  // JavaScript at build time, so a container can hold correct runtime env while
+  // shipping a bundle built without them — which is exactly the state that
+  // reached production: /api/health answered "healthy", every page rendered, and
+  // signup was deadlocked because the browser's publicEnv() threw.
+  //
+  // The build stamp is the only ground truth available at runtime, so it is what
+  // this check trusts. Absent a stamp is tolerated outside production so local
+  // `next dev` does not report a false alarm.
+  const clientBundle = await readPublicConfigStamp();
+  checks.CLIENT_BUNDLE_CONFIG =
+    clientBundle === "missing" && !isProduction() ? "ok" : clientBundle;
 
   // Real database round-trip, not just a config check.
   let database: "ok" | "error" = "error";
