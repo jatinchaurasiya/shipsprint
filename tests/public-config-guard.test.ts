@@ -1,5 +1,8 @@
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 /**
  * Covers the build guard that aborted (or failed to abort) the production image.
@@ -16,7 +19,7 @@ import { describe, expect, it } from "vitest";
 
 const require_ = createRequire(import.meta.url);
 
-const { REQUIRED, inspectPublicEnv, buildStamp } = require_(
+const { REQUIRED, inspectPublicEnv, buildStamp, verify } = require_(
   "../scripts/public-config.cjs"
 ) as {
   REQUIRED: string[];
@@ -30,6 +33,7 @@ const { REQUIRED, inspectPublicEnv, buildStamp } = require_(
     NEXT_PUBLIC_ROOT_DOMAIN: string;
     NEXT_PUBLIC_APP_URL: string;
   };
+  verify: (env: Record<string, string | undefined>, bundleDir?: string) => number;
 };
 
 const { evaluatePublicConfigStamp } = require_("../lib/build-config.ts") as {
@@ -126,5 +130,74 @@ describe("public build config guard", () => {
       const stamp = buildStamp({ ...valid, NEXT_PUBLIC_SUPABASE_URL: "", NEXT_PUBLIC_SUPABASE_ANON_KEY: "" });
       expect(evaluatePublicConfigStamp(JSON.stringify(stamp))).toBe("error");
     });
+  });
+});
+describe("inlining verification", () => {
+  const HOST = "abcdefgh.supabase.co";
+  const configured = {
+    NEXT_PUBLIC_SUPABASE_URL: `https://${HOST}`,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
+  };
+
+  const created: string[] = [];
+
+  /** Builds a throwaway bundle directory and returns its path. */
+  function bundle(files: Record<string, string>): string {
+    const dir = mkdtempSync(join(tmpdir(), "shipsprint-bundle-"));
+    created.push(dir);
+    for (const [name, contents] of Object.entries(files)) {
+      const target = join(dir, name);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, contents);
+    }
+    return dir;
+  }
+
+  // Removes only the directories created above. `tmpdir()` is the shared /tmp,
+  // so deleting it wholesale would be catastrophic.
+  afterEach(() => {
+    while (created.length > 0) {
+      rmSync(created.pop()!, { recursive: true, force: true });
+    }
+  });
+
+  it("passes when the url is present in a client chunk", () => {
+    const dir = bundle({ "chunks/a.js": `var e={NEXT_PUBLIC_SUPABASE_URL:"https://${HOST}"}` });
+    expect(verify(configured, dir)).toBe(0);
+  });
+
+  it("fails when no chunk contains the url", () => {
+    // This is the production failure: arguments present, nothing inlined,
+    // because lib/env.ts read them via the whole `process.env` object.
+    const dir = bundle({ "chunks/a.js": 'var sI=z.object({NEXT_PUBLIC_SUPABASE_URL:sP("X")})' });
+    expect(verify(configured, dir)).toBe(1);
+  });
+
+  it("fails on an empty bundle directory", () => {
+    expect(verify(configured, bundle({}))).toBe(1);
+  });
+
+  it("fails when the bundle directory does not exist", () => {
+    expect(verify(configured, join(tmpdir(), "definitely-not-here-9f2a"))).toBe(1);
+  });
+
+  it("fails before looking at the bundle when an argument is unset", () => {
+    const dir = bundle({ "chunks/a.js": `https://${HOST}` });
+    expect(verify({ NEXT_PUBLIC_SUPABASE_ANON_KEY: "k" }, dir)).toBe(1);
+  });
+
+  it("fails when the url is not a valid url", () => {
+    const dir = bundle({ "chunks/a.js": HOST });
+    expect(verify({ ...configured, NEXT_PUBLIC_SUPABASE_URL: "not-a-url" }, dir)).toBe(1);
+  });
+
+  it("searches nested directories", () => {
+    const dir = bundle({ "chunks/nested/deep/b.js": `https://${HOST}` });
+    expect(verify(configured, dir)).toBe(0);
+  });
+
+  it("ignores non-javascript files", () => {
+    const dir = bundle({ "chunks/a.js.map": `https://${HOST}`, "chunks/a.js": "nothing" });
+    expect(verify(configured, dir)).toBe(1);
   });
 });

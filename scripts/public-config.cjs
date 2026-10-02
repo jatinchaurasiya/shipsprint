@@ -32,6 +32,9 @@
 
 const REQUIRED = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"];
 
+/** Where Next.js writes the browser bundle. */
+const CLIENT_BUNDLE_DIR = ".next/static";
+
 /**
  * Reports which required build arguments are unusable.
  * Whitespace-only counts as unset: it survives a `!value` check but produces a
@@ -118,14 +121,86 @@ function stamp(env = process.env, targetDir = ".next/standalone") {
   return 0;
 }
 
-module.exports = { REQUIRED, inspectPublicEnv, buildStamp, check, stamp };
+/**
+ * Confirms the compiler actually inlined the URL into the browser bundle.
+ *
+ * This exists because the build arguments alone prove nothing. An image was
+ * built with both arguments present, passed the argument guard, recorded a
+ * healthy-looking stamp, and still shipped a bundle with no Supabase config,
+ * because lib/env.ts read the values by handing the whole `process.env` object
+ * to the schema. Next.js substitutes NEXT_PUBLIC_* only for direct member
+ * access, so nothing was inlined and the browser saw `undefined`.
+ *
+ * Checking the emitted artefact is the only assertion that can catch that class
+ * of failure, so it happens after the build and fails it.
+ */
+function verify(env = process.env, bundleDir = CLIENT_BUNDLE_DIR) {
+  const fs = require("node:fs");
+  const path = require("node:path");
+
+  const { ok, missing } = inspectPublicEnv(env);
+  if (!ok) {
+    console.error(`cannot verify inlining: ${missing.join(", ")} unset`);
+    return 1;
+  }
+
+  let host;
+  try {
+    host = new URL(env.NEXT_PUBLIC_SUPABASE_URL.trim()).hostname;
+  } catch {
+    console.error("NEXT_PUBLIC_SUPABASE_URL is not a valid URL; cannot verify inlining");
+    return 1;
+  }
+  if (!host) return 1;
+
+  let entries;
+  try {
+    entries = fs.readdirSync(bundleDir, { recursive: true });
+  } catch {
+    console.error(`cannot read ${bundleDir}; did npm run build run before verify?`);
+    return 1;
+  }
+
+  for (const entry of entries) {
+    if (!String(entry).endsWith(".js")) continue;
+    try {
+      const source = fs.readFileSync(path.join(bundleDir, String(entry)), "utf8");
+      if (source.includes(host)) {
+        console.log(`verified: ${host} is inlined in the client bundle`);
+        return 0;
+      }
+    } catch {
+      // Unreadable chunk: keep scanning rather than fail on an unrelated error.
+    }
+  }
+
+  console.error("");
+  console.error(RULE);
+  console.error("BUILD ABORTED: NEXT_PUBLIC_SUPABASE_URL was not inlined");
+  console.error(RULE);
+  console.error(`  expected host : ${host}`);
+  console.error(`  searched      : ${bundleDir}`);
+  console.error("");
+  console.error("The build arguments were present, but the value never reached the");
+  console.error("browser bundle. Next.js inlines NEXT_PUBLIC_* only for direct");
+  console.error("`process.env.NEXT_PUBLIC_*` member access; reading them any other");
+  console.error("way (for example by passing the whole `process.env` object to a");
+  console.error("validator) leaves the browser with undefined while the server works.");
+  console.error("");
+  console.error("Check how lib/env.ts reads these values.");
+  console.error("");
+  return 1;
+}
+
+module.exports = { REQUIRED, CLIENT_BUNDLE_DIR, inspectPublicEnv, buildStamp, check, stamp, verify };
 
 if (require.main === module) {
   const mode = process.argv[2];
   if (mode === "check") process.exit(check());
   else if (mode === "stamp") process.exit(stamp());
+  else if (mode === "verify") process.exit(verify());
   else {
-    console.error(`usage: node scripts/public-config.cjs <check|stamp>`);
+    console.error(`usage: node scripts/public-config.cjs <check|verify|stamp>`);
     process.exit(2);
   }
 }

@@ -37,16 +37,18 @@ export async function GET() {
   }
   checks.REDIS_URL = optional.REDIS_URL ? "ok" : "missing";
 
-  // The runtime env check above is NOT sufficient evidence that the client
-  // bundle can authenticate anyone. NEXT_PUBLIC_* values are compiled into
-  // JavaScript at build time, so a container can hold correct runtime env while
-  // shipping a bundle built without them — which is exactly the state that
-  // reached production: /api/health answered "healthy", every page rendered, and
-  // signup was deadlocked because the browser's publicEnv() threw.
+  // The runtime env check above is NOT evidence that the client bundle can
+  // authenticate anyone. NEXT_PUBLIC_* values are compiled into JavaScript at
+  // build time, so a container can hold correct runtime env while shipping a
+  // bundle with no Supabase config — which is exactly what reached production
+  // twice: /api/health answered "healthy", every page rendered, and signup was
+  // deadlocked because the browser's publicEnv() threw.
   //
-  // The build stamp is the only ground truth available at runtime, so it is what
-  // this check trusts. Absent a stamp is tolerated outside production so local
-  // `next dev` does not report a false alarm.
+  // public-config.json is written by the Dockerfile during the guarded build and
+  // records what the compiler was given. The build additionally greps the
+  // emitted chunks to prove the values were actually inlined, so an image that
+  // reaches this point has already had that verified. This check therefore
+  // reports provenance, and detects images built before the guard existed.
   const clientBundle = await readPublicConfigStamp();
   checks.CLIENT_BUNDLE_CONFIG =
     clientBundle === "missing" && !isProduction() ? "ok" : clientBundle;

@@ -47,6 +47,14 @@ RUN node scripts/public-config.cjs check
 
 RUN npm run build
 
+# Confirm the compiler really inlined the URL into the browser bundle. Having
+# the build arguments is not sufficient: an image was shipped with both present
+# and a healthy stamp while the bundle contained no Supabase config at all,
+# because lib/env.ts read them by passing the whole `process.env` object to a
+# schema instead of using direct member access. Only the emitted artefact can
+# prove the browser will work.
+RUN node scripts/public-config.cjs verify
+
 # Record what the compiler actually received so /api/health can tell a
 # mis-built image (or one predating this guard) apart from a working one.
 # Runs after the build because that regenerates .next/standalone, which is the

@@ -100,10 +100,36 @@ function parseOrThrow<T>(
   return result.data;
 }
 
-/** NEXT_PUBLIC_* vars. Inlined into the client bundle at build time. */
+/**
+ * NEXT_PUBLIC_* vars. Inlined into the client bundle at build time.
+ *
+ * Each value is read through an explicit `process.env.NEXT_PUBLIC_*` member
+ * access rather than by handing the whole `process.env` object to the schema.
+ * That distinction is the entire reason this function looks like this.
+ *
+ * Next.js substitutes NEXT_PUBLIC_* values into the bundle only for direct
+ * member access. Passing `process.env` itself leaves it unresolved in client
+ * code, where `process.env` is an empty object, so every value arrives as
+ * `undefined` and publicEnv() throws "Invalid public configuration" in the
+ * browser — while the server, which reads real process.env, works perfectly and
+ * /api/health reports healthy.
+ *
+ * Because `publicEnv()` is also called from server components, the same explicit
+ * access is used everywhere: the build then substitutes the literal for client
+ * code and leaves a runtime lookup for server code.
+ */
 export function publicEnv(): PublicEnv {
   if (!cachedPublic) {
-    cachedPublic = parseOrThrow(publicSchema, process.env, "public");
+    cachedPublic = parseOrThrow(
+      publicSchema,
+      {
+        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        NEXT_PUBLIC_ROOT_DOMAIN: process.env.NEXT_PUBLIC_ROOT_DOMAIN,
+        NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      },
+      "public"
+    );
   }
   return cachedPublic;
 }
