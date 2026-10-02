@@ -82,29 +82,23 @@ jobs:
       contents: read
       packages: write
 
-    # Declared once at job level so the validation step and the build step read
-    # the same values, and so nothing is interpolated from `${{ }}` inside a
-    # shell script (which is how a secret containing shell metacharacters turns
-    # into command injection).
-    #
-    # These are inlined into the client bundle at BUILD time and cannot be
-    # supplied at runtime. GitHub expands an unset secret to an empty string
-    # rather than failing, so without the guard below the pipeline published an
-    # image whose browser bundle had no Supabase config: the server looked
-    # healthy and signup was permanently disabled. Note that NEXT_PUBLIC_ROOT_DOMAIN
-    # and NEXT_PUBLIC_APP_URL carry `||` defaults but these two deliberately do
-    # not — a guessed Supabase URL or key is worse than no deploy.
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      NEXT_PUBLIC_ROOT_DOMAIN: ${{ secrets.ROOT_DOMAIN || 'shipsprint.site' }}
-      NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://shipsprint.site' }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Guards the silent-empty-build-arg failure. GitHub expands an unset
+      # secret to an empty string rather than failing, and NEXT_PUBLIC_* values
+      # are inlined into the browser bundle at build time, so a missing secret
+      # previously produced an image whose server reported healthy while signup
+      # was disabled with every button stuck.
+      #
+      # Values are read from `env:` rather than interpolated with `${{ }}` inside
+      # the script, which is how a secret containing shell metacharacters would
+      # become command injection.
       - name: Validate public build arguments
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
           set -uo pipefail
           MISSING=0
@@ -164,11 +158,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Read directly from secrets rather than through a job-level `env:`.
+          # This exact form is what produced a successful image build previously;
+          # an intermediate revision routed these through `env` and the build
+          # step received empty values even though the validation step above saw
+          # them. No `${{ }}` inside a `run:` script here, so there is no shell
+          # injection surface.
           build-args: |
-            NEXT_PUBLIC_SUPABASE_URL=${{ env.NEXT_PUBLIC_SUPABASE_URL }}
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-            NEXT_PUBLIC_ROOT_DOMAIN=${{ env.NEXT_PUBLIC_ROOT_DOMAIN }}
-            NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_ROOT_DOMAIN=${{ secrets.ROOT_DOMAIN || 'shipsprint.site' }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL || 'https://shipsprint.site' }}
 
   # ============================================================================
   # 3. Continuous Deployment to AWS EC2 (Pulls Pre-built Image in 5 Seconds)
