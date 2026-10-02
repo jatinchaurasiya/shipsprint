@@ -1,4 +1,73 @@
+#!/usr/bin/env node
+/**
+ * Seed the public.templates table from the built-in template definitions.
+ *
+ * Usage:
+ *   DATABASE_URL='postgresql://...' node scripts/seed-templates.cjs
+ *
+ * Or put DATABASE_URL in .env.local, which is gitignored.
+ *
+ * The connection string is read from the environment and is never logged. An
+ * earlier revision hardcoded the production Supabase connection string here,
+ * which published the database password to git history, to every clone of the
+ * repository, and into the Docker builder stage (neither .gitignore nor
+ * .dockerignore covered scripts/). Treat that password as compromised and
+ * rotate it: removing it from the file does not remove it from history.
+ */
+
+const { readFileSync, existsSync } = require('node:fs');
+const { join } = require('node:path');
 const { Client } = require('pg');
+
+const ROOT = join(__dirname, '..');
+
+/**
+ * Minimal .env.local reader. Hand-rolled rather than dotenv because the project
+ * takes no dependency on it; this mirrors scripts/db-sync.mjs. Matching quotes
+ * are stripped.
+ */
+function parseEnvFile() {
+  const path = join(ROOT, '.env.local');
+  if (!existsSync(path)) return {};
+
+  const out = {};
+  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    out[key] = value;
+  }
+  return out;
+}
+
+/**
+ * Resolve DATABASE_URL, preferring a real environment variable over the file.
+ * Throws rather than falling back to a default: a missing connection string
+ * must stop the run, never silently seed a different database.
+ */
+function requireDatabaseUrl() {
+  const url = process.env.DATABASE_URL || parseEnvFile().DATABASE_URL;
+  if (!url) {
+    console.error('DATABASE_URL is not set. Refusing to guess a database.\n');
+    console.error('Supabase: Project Settings -> Database -> Connection string');
+    console.error('  -> Connection URI -> URI (not the session pooler, so that');
+    console.error('     the upsert sees the same schema the app reads).\n');
+    console.error('Then either:');
+    console.error('  DATABASE_URL=\'postgresql://...\' node scripts/seed-templates.cjs');
+    console.error('  or add DATABASE_URL to .env.local (gitignored).');
+    process.exit(1);
+  }
+  return url;
+}
 
 const BUILTIN_TEMPLATES = [
   {
@@ -182,9 +251,8 @@ const BUILTIN_TEMPLATES = [
 ];
 
 async function seed() {
-  const connectionString = 'postgresql://postgres.mhkrbkyeixtacpbabbeh:Jatin9594%40%26@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres';
   const client = new Client({
-    connectionString,
+    connectionString: requireDatabaseUrl(),
     ssl: { rejectUnauthorized: false }
   });
 

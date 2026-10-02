@@ -188,7 +188,7 @@ By default, EC2 public IPs change whenever an instance is stopped or restarted. 
    R2_PUBLIC_DOMAIN=assets.shipsprint.site
 
    # Security & Infra
-   CRON_SECRET=c993e9ddc6aab23af6c903bf533e51e94e566e14be526f74279d54a7d193e25d
+   CRON_SECRET=                      # openssl rand -hex 32
    CNAME_TARGET_HOST=cname.shipsprint.site
    DOMAIN_VERIFY_PREFIX=_shipverify
    ACME_CONTACT_EMAIL=your-email@gmail.com
