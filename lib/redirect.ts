@@ -14,6 +14,49 @@
 
 const DEFAULT_REDIRECT = "/dashboard";
 
+/**
+ * The absolute origin a server-side redirect should target.
+ *
+ * `request.url` cannot be trusted for this behind the container. The Next.js
+ * standalone server reconstructs the request origin from its own HOSTNAME and
+ * PORT rather than from the public host that Caddy terminated TLS for, and the
+ * Dockerfile sets `HOSTNAME=0.0.0.0`. A Google sign-up therefore completed
+ * successfully and then redirected to `https://0.0.0.0:3000/dashboard`, an
+ * address no browser can reach. The protocol was correct (`https`, taken from
+ * X-Forwarded-Proto) while the host was the container's, which is why the
+ * failure looked arbitrary.
+ *
+ * NEXT_PUBLIC_APP_URL is the configured public origin and exists for exactly
+ * this purpose, so it wins whenever it is a usable absolute http(s) URL. The
+ * request origin stays as the fallback, which is what local development wants:
+ * there APP_URL is http://localhost:3000 and matches the request anyway.
+ *
+ * Returns only an origin, so a misconfigured value cannot smuggle a path or
+ * authority into a redirect. Never throws — an unusable configuration degrades
+ * to the request origin instead of turning a redirect into a 500.
+ */
+export function canonicalOrigin(requestOrigin: string): string {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+
+  if (configured) {
+    const origin = toOrigin(configured);
+    if (origin) return origin;
+  }
+
+  return toOrigin(requestOrigin) ?? requestOrigin;
+}
+
+/** Reduces a value to a bare http(s) origin, or null when it is not one. */
+function toOrigin(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
 export function safeRedirectPath(
   candidate: string | null | undefined,
   fallback: string = DEFAULT_REDIRECT
