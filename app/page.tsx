@@ -7,7 +7,7 @@ import { unstable_cache } from "next/cache";
 import { fetchCatalogue, groupTiers } from "@/lib/catalogue";
 import { FREE_PLAN, formatPrice, PLAN_FEATURES, planForDisplay } from "@/lib/plans";
 import { yearlySavingPercent } from "@/types/billing";
-import { ArrowRight, Check, Signal, Star, Wifi, BatteryFull } from "lucide-react";
+import { ArrowRight, Check, Star } from "lucide-react";
 
 /**
  * Prices come from the `products` table, not from literals in this file.
