@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
-import { Inter, Inter_Tight, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { SmoothScrollProvider } from "@/components/providers/smooth-scroll";
-
+// Self-hosted via Fontsource (npm-bundled, zero build-time network).
+// next/font/google was removed: it fetches from fonts.googleapis.com during
+// `next build` and breaks CI/Docker builds (Turbopack:
+// "Can't resolve '@vercel/turbopack-next/internal/font/google/font'").
 // Nexbet studied-DNA: Inter body + Inter Tight display (explicit user override
 // of Hallmark gate 1, which bans Inter as a display face).
-const interBody = Inter({
-  variable: "--font-inter-body",
-  subsets: ["latin"],
-});
-
-const interDisplay = Inter_Tight({
-  variable: "--font-inter-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "@fontsource/inter-tight/500.css";
+import "@fontsource/inter-tight/600.css";
+import "@fontsource/inter-tight/700.css";
+import "@fontsource/geist-mono/400.css";
+import "@fontsource/geist-mono/500.css";
+import "./globals.css";
+import { SmoothScrollProvider } from "@/components/providers/smooth-scroll";
 
 export const metadata: Metadata = {
   title: "ShipSprint — No-Code Landing Page Builder for Indie Mobile Apps",
@@ -44,7 +40,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${interBody.variable} ${interDisplay.variable} ${geistMono.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col bg-white text-zinc-900 dark:bg-black dark:text-zinc-50">
         <SmoothScrollProvider>{children}</SmoothScrollProvider>
