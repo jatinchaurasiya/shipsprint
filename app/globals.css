@@ -1,20 +1,23 @@
 /* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V5 */
-/* Hallmark · macrostructure: Split Studio · theme: studied-DNA (source: nexbit-temlis.webflow.io) · genre: modern-minimal · nav: N5 · footer: Ft2 · contrast: pass (40-41) · mobile: pass (34, 49, 50-57) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49) · icons: pass (30) · slop: pass (42-45) */
+/* Hallmark · macrostructure: Bento Grid · theme: studied-DNA (source: nexbit-temlis.webflow.io) · genre: modern-minimal · nav: N5 · footer: Ft2 · F1 knobs: tiles=5, spans=mosaic, border=hairline · H2 knobs: ratio 7/5, divider hairline · contrast: pass (40-41) · mobile: pass (34, 49, 50-57) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49) · icons: pass (30) · slop: pass (42-45) · gate 1: Inter display by explicit user override (accepted) */
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter-body);
+  --font-display: var(--font-inter-display);
   --font-mono: var(--font-geist-mono);
 }
 
 :root {
-  --color-paper: #fafafa;
-  --color-paper-dark: #09090b;
-  --color-ink: var(--color-zinc-950);
+  --color-paper: #f7f7f7;
+  --color-paper-dark: #131313;
+  --color-ink: #131313;
+  --color-ink-2: #505050;
+  --color-ink-3: #262424;
   --color-accent: var(--color-blue-600);
   --color-accent-ink: #ffffff;
-  --color-focus: var(--color-zinc-900);
+  --color-focus: #131313;
   --banner-height: 40px;
   --z-sticky-nav: 300;
   --z-sticky: 200;

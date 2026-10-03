@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-03",
+  "fontStack": "Geist + Geist Mono via next/font (app/layout.tsx L2)",
+  "palette": "Tailwind zinc + arbitrary #fafafa/#09090b, no @theme colors (app/globals.css)",
+  "motion": "lenis global (app/layout.tsx), no framer-motion — motion-cut",
+  "spacing": "Tailwind v4 dynamic + arbitrary px widths",
+  "framework": "Next.js 16 App Router",
+  "genre": "modern-minimal",
+  "themeRoute": "studied-DNA (source: https://nexbit-temlis.webflow.io/)",
+  "preserve": ["font stack (Geist)", "zinc neutrals (gate 22 loosened)", "spacing scale"],
+  "introduce": ["token block", "macrostructures (Split Studio + Narrative Workflow)", "N5/Ft2 + N9/Ft1", "slop-test gates", "contrast/responsive root fixes"]
+}

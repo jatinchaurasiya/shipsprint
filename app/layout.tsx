@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Inter_Tight, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScrollProvider } from "@/components/providers/smooth-scroll";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Nexbet studied-DNA: Inter body + Inter Tight display (explicit user override
+// of Hallmark gate 1, which bans Inter as a display face).
+const interBody = Inter({
+  variable: "--font-inter-body",
   subsets: ["latin"],
+});
+
+const interDisplay = Inter_Tight({
+  variable: "--font-inter-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -36,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${interBody.variable} ${interDisplay.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-zinc-900 dark:bg-black dark:text-zinc-50">
         <SmoothScrollProvider>{children}</SmoothScrollProvider>

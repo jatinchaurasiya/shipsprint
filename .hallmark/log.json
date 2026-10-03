@@ -1,0 +1,29 @@
+[
+  {
+    "date": "2026-10-03",
+    "macrostructure": "Bento Grid",
+    "theme": "studied-DNA (source: nexbit-temlis.webflow.io, full-shape rebuild, ShipSprint copy)",
+    "enrichment": "none",
+    "nav": "N5",
+    "footer": "Ft2",
+    "brief": "ShipSprint landing \u2014 Temlis-shape Bento rebuild"
+  },
+  {
+    "date": "2026-10-03",
+    "macrostructure": "Split Studio",
+    "theme": "studied-DNA (source: nexbit-temlis.webflow.io)",
+    "enrichment": "none",
+    "nav": "N5",
+    "footer": "Ft2",
+    "brief": "ShipSprint marketing \u2014 playful-utilitarian SaaS"
+  },
+  {
+    "date": "2026-10-03",
+    "macrostructure": "Narrative Workflow",
+    "theme": "studied-DNA (source: nexbit-temlis.webflow.io)",
+    "enrichment": "none",
+    "nav": "N9",
+    "footer": "Ft1",
+    "brief": "ShipSprint customer renderer \u2014 stage timeline"
+  }
+]

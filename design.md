@@ -2,22 +2,22 @@
 
 Source: `https://nexbit-temlis.webflow.io/` — DNA only, no pixel clone (template-marketplace refusal).
 Genre: **modern-minimal** (SaaS dev-tool; Stripe/Linear school).
-Theme route: **studied-DNA** (gate 57 — never fall back to catalog without explicit pivot).
+Theme route: **studied-DNA full-shape** (gate 57 — user demanded exact Temlis shape; DNA rebuilt with ShipSprint copy, never Temlis text/pixels — never fall back to catalog without explicit pivot).
 
 ## Tokens
-- `--color-paper: #fafafa` (light) / `#09090b` (dark). Pure `#fff` allowed per modern-minimal (gate 7 loosened).
+- `--color-paper: #f7f7f7` (light) / `#131313` (ink). `--color-ink-2: #505050`, `--color-ink-3: #262424`. Pure `#fff` allowed per modern-minimal (gate 7 loosened).
 - `--color-ink: var(--color-zinc-950)` / dark `--color-zinc-50`. Neutrals: zinc scale (tinted, gate 22 loosened for modern-minimal).
 - `--color-accent: var(--color-blue-600)` (#2563eb, 4.5:1+ on white). `--color-accent-ink: #ffffff`.
   Badge `bg-blue-500` banned — use `bg-blue-600` (gate 40/41).
 - Muted text floor: `zinc-600` on light (`#52525b` ~5.7:1), `zinc-400` dark-only. `zinc-400/500 on white` banned (gate 40).
 - `--color-focus: var(--color-zinc-900)` / dark `var(--color-zinc-100)`. `outline: 2px solid + offset 2px`, instant (gates 15, 26, 39).
-- Fonts: `--font-sans: Geist` (body+display, single-family discipline), `--font-mono: Geist Mono` code-only (gates 1, 37, 38). No italic headers (38a).
+- Fonts: `--font-sans: Inter` body + `--font-display: Inter Tight` (gate 1 explicit user override, accepted) (body+display, single-family discipline), `--font-mono: Geist Mono` code-only (gates 1, 37, 38). No italic headers (38a).
 - Spacing: Tailwind scale only. Radii: 8px cards, 12px hero, 999px pills. Shadows: soft `0 8px 24px -12px rgb(0 0 0 / 0.12)`.
 - Measure: prose `max-width: 65ch` (gate 25). Display `overflow-wrap: anywhere; min-width: 0` (gate 51).
 - Banner: `--banner-height: 40px`. `--z-sticky-nav: 300`, `--z-sticky: 200` (gate 56).
 
 ## Macrostructures (diversified, never repeat)
-- Marketing `app/page.tsx`: **Split Studio** (H2 split diptych hero, alternating proof modules). Nav **N5 floating pill**, Footer **Ft2 inline single line**.
+- Marketing `app/page.tsx`: **Bento Grid** (rotated from Split Studio per gate 8; F1 tiles=5 mosaic hairline, F5 annotated rows, T4 stats) (H2 split diptych hero, alternating proof modules). Nav **N5 floating pill**, Footer **Ft2 inline single line**.
 - Renderer `components/renderer/site-renderer.tsx`: **Narrative Workflow** (1.0/2.0/3.0 stages). Nav **N9 edge-aligned minimal**, Footer **Ft1 mast-headed**.
 - Templates gallery: Catalogue index (no hero duplication).
 
