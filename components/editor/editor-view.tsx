@@ -176,10 +176,10 @@ export function EditorView({ site, plan }: EditorViewProps) {
           <button
             type="button"
             onClick={() => setMobileTab("edit")}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
               mobileTab === "edit"
                 ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
-                : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                : "text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300"
             }`}
           >
             <Sliders className="w-3 h-3" />
@@ -188,10 +188,10 @@ export function EditorView({ site, plan }: EditorViewProps) {
           <button
             type="button"
             onClick={() => setMobileTab("preview")}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
               mobileTab === "preview"
                 ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
-                : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                : "text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300"
             }`}
           >
             <Eye className="w-3 h-3" />
@@ -222,9 +222,9 @@ export function EditorView({ site, plan }: EditorViewProps) {
               rel="noopener noreferrer"
               className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-xs"
             >
-              <Globe className="w-3.5 h-3.5 text-zinc-400" />
+              <Globe className="w-3.5 h-3.5 text-zinc-600" />
               <span>Visit</span>
-              <ExternalLink className="w-3 h-3 text-zinc-400" />
+              <ExternalLink className="w-3 h-3 text-zinc-600" />
             </a>
           )}
 
@@ -233,7 +233,7 @@ export function EditorView({ site, plan }: EditorViewProps) {
             type="button"
             onClick={() => handleSave()}
             disabled={saving || publishing}
-            className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-xs disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-xs disabled:cursor-not-allowed disabled:opacity-55"
           >
             {saving ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -249,7 +249,7 @@ export function EditorView({ site, plan }: EditorViewProps) {
             type="button"
             onClick={() => handleSave("published")}
             disabled={saving || publishing}
-            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-medium shadow-sm transition-all active:scale-[0.98] disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-medium shadow-sm transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55"
           >
             {publishing ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -337,7 +337,7 @@ export function EditorPanel({
   return (
     <div className="w-full h-full flex flex-col bg-white dark:bg-zinc-950 border-r border-zinc-200/80 dark:border-zinc-800/80 overflow-y-auto">
       {/* Section Switcher Tabs */}
-      <div className="p-3 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/40 sticky top-0 z-10 backdrop-blur-md">
+      <div className="p-3 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/95 dark:bg-zinc-900/90 sticky top-0 z-[200] backdrop-blur-md">
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
           {sections.map((sec) => (
             <button
@@ -363,7 +363,7 @@ export function EditorPanel({
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                 Brand & App Identity
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                 Upload your app icon and set your brand name.
               </p>
             </div>
@@ -383,7 +383,7 @@ export function EditorPanel({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <ImageIcon className="w-6 h-6 text-zinc-400" />
+                    <ImageIcon className="w-6 h-6 text-zinc-600" />
                   )}
                 </div>
 
@@ -399,7 +399,7 @@ export function EditorPanel({
                     type="button"
                     onClick={() => logoInputRef.current?.click()}
                     disabled={uploadingLogo}
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-colors shadow-xs disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-colors shadow-xs disabled:cursor-not-allowed disabled:opacity-55"
                   >
                     {uploadingLogo ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -408,7 +408,7 @@ export function EditorPanel({
                     )}
                     <span>{content.brand?.logo_url ? "Change Icon" : "Upload Icon"}</span>
                   </button>
-                  <span className="text-[11px] text-zinc-400">
+                  <span className="text-[11px] text-zinc-600">
                     PNG, JPG, or SVG (max 10MB)
                   </span>
                 </div>
@@ -429,7 +429,7 @@ export function EditorPanel({
                     brand: { ...prev.brand, name: e.target.value },
                   }))
                 }
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 placeholder="ZenHabit"
               />
             </div>
@@ -447,7 +447,7 @@ export function EditorPanel({
                     hero: { ...prev.hero, badge_text: e.target.value },
                   }))
                 }
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 placeholder="Now Available on iOS & Android"
               />
             </div>
@@ -465,7 +465,7 @@ export function EditorPanel({
                     hero: { ...prev.hero, header: e.target.value },
                   }))
                 }
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 placeholder="Build habits that quietly transform your daily life."
               />
             </div>
@@ -483,7 +483,7 @@ export function EditorPanel({
                     hero: { ...prev.hero, short_description: e.target.value },
                   }))
                 }
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 placeholder="Gentle nudges, intuitive progress rings, and private cloud sync designed to make healthy routines stick."
               />
             </div>
@@ -497,7 +497,7 @@ export function EditorPanel({
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                 App Store & Google Play Links
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                 Buttons automatically appear on the landing page when URLs are provided.
               </p>
             </div>
@@ -519,7 +519,7 @@ export function EditorPanel({
                   }))
                 }
                 placeholder="https://apps.apple.com/app/id..."
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-mono"
               />
             </div>
 
@@ -540,7 +540,7 @@ export function EditorPanel({
                   }))
                 }
                 placeholder="https://play.google.com/store/apps/details?id=..."
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-mono"
               />
             </div>
           </div>
@@ -554,7 +554,7 @@ export function EditorPanel({
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                   Feature Highlights
                 </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                   Showcase the key features and benefits of your app.
                 </p>
               </div>
@@ -575,13 +575,13 @@ export function EditorPanel({
                   className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 space-y-3 relative group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                    <span className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wider">
                       Feature #{idx + 1}
                     </span>
                     <button
                       type="button"
                       onClick={() => removeFeature(idx)}
-                      className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
+                      className="p-1 text-zinc-600 hover:text-red-500 transition-colors"
                       title="Delete Feature"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -619,7 +619,7 @@ export function EditorPanel({
                       type="text"
                       value={feature.title}
                       onChange={(e) => updateFeature(idx, "title", e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                     />
                   </div>
 
@@ -633,7 +633,7 @@ export function EditorPanel({
                       onChange={(e) =>
                         updateFeature(idx, "description", e.target.value)
                       }
-                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                     />
                   </div>
                 </div>
@@ -649,7 +649,7 @@ export function EditorPanel({
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                 Screenshots Gallery
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                 Upload your mobile app screenshots to showcase the interface. The first image displays inside the hero iPhone mockup.
               </p>
             </div>
@@ -666,19 +666,19 @@ export function EditorPanel({
                 type="button"
                 onClick={() => screenshotInputRef.current?.click()}
                 disabled={uploadingScreenshot}
-                className="w-full py-6 border-2 border-dashed border-zinc-300 dark:border-zinc-800 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50 transition-all disabled:opacity-50 cursor-pointer"
+                className="w-full py-6 border-2 border-dashed border-zinc-300 dark:border-zinc-800 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-300 transition-colors disabled:cursor-not-allowed disabled:opacity-55 cursor-pointer"
               >
                 {uploadingScreenshot ? (
                   <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
                 ) : (
-                  <Upload className="w-5 h-5 text-zinc-400" />
+                  <Upload className="w-5 h-5 text-zinc-600" />
                 )}
                 <span>
                   {uploadingScreenshot
                     ? "Uploading screenshot to R2..."
                     : "Upload Screenshot"}
                 </span>
-                <span className="text-[10px] text-zinc-400">
+                <span className="text-[10px] text-zinc-600">
                   PNG, JPG, or WebP (portrait mobile aspect ratio recommended)
                 </span>
               </button>
@@ -721,7 +721,7 @@ export function EditorPanel({
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                 Footer & Legal Links
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                 Configure your copyright branding, support contact, and legal links.
               </p>
             </div>
@@ -739,7 +739,7 @@ export function EditorPanel({
                     footer: { ...prev.footer, brand_name: e.target.value },
                   }))
                 }
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 placeholder="ZenHabit Technologies Inc."
               />
             </div>
@@ -757,7 +757,7 @@ export function EditorPanel({
                     footer: { ...prev.footer, contact_email: e.target.value },
                   }))
                 }
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 placeholder="support@zenhabit.app"
               />
             </div>
@@ -768,15 +768,15 @@ export function EditorPanel({
         {activeSection === "domain" && (
           <div className="space-y-5 animate-in fade-in duration-200">
             <div>
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-                <span>Custom Domain</span>
+              <h3 className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                <span className="block">Custom Domain</span>
                 {!isCustomDomainAllowed && (
-                  <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-[10px] font-semibold uppercase tracking-wider">
+                  <span className="mt-1.5 inline-block whitespace-nowrap px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-[10px] font-semibold uppercase tracking-wider">
                     Pro Tier Only
                   </span>
                 )}
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                 Connect your own domain (e.g. `yourcustomapp.com`) with automatic Let&apos;s Encrypt TLS.
               </p>
             </div>
@@ -789,13 +789,13 @@ export function EditorPanel({
                 <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   Unlock Custom Domains with ShipSprint Pro
                 </h4>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 max-w-xs mx-auto">
                   Free and Basic tiers publish to `your-app.shipsprint.site`. Upgrade to Pro to connect unlimited custom domains with zero-touch SSL.
                 </p>
                 <div className="pt-2">
                   <Link
                     href="/dashboard/billing"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-sm transition-all"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-sm transition-colors"
                   >
                     <span>Upgrade to Pro ($9.99/mo)</span>
                     <ArrowUpRight className="w-3.5 h-3.5" />
@@ -862,7 +862,7 @@ export function EditorPanel({
                         <span className="font-medium text-zinc-700 dark:text-zinc-300">
                           {domainCopy.label}
                         </span>
-                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
                           {domainCopy.detail}
                         </p>
                       </div>
@@ -871,7 +871,7 @@ export function EditorPanel({
                           <button
                             type="button"
                             onClick={() => void refreshDomainState()}
-                            className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1 text-[11px] font-medium"
+                            className="text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1 text-[11px] font-medium"
                           >
                             <RefreshCw className="w-3 h-3" />
                             Recheck
@@ -900,13 +900,13 @@ export function EditorPanel({
                         value={domainInput}
                         onChange={(e) => setDomainInput(e.target.value)}
                         placeholder="app.myfitnessbrand.com"
-                        className="flex-1 px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-mono"
+                        className="flex-1 px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors font-mono"
                       />
                       <button
                         type="button"
                         onClick={handleConnectDomain}
                         disabled={connectingDomain || !domainInput.trim()}
-                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-semibold shadow-sm transition-all shrink-0 inline-flex items-center gap-1.5"
+                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-55 text-white text-xs font-semibold shadow-sm transition-colors shrink-0 inline-flex items-center gap-1.5"
                       >
                         {connectingDomain && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                         <span>Connect</span>
@@ -924,7 +924,7 @@ export function EditorPanel({
 
                   {domainInstructions ? (
                     <>
-                      <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
+                      <p className="text-zinc-600 dark:text-zinc-400 text-[11px] leading-relaxed">
                         Add both records at your DNS provider (Cloudflare, Namecheap,
                         GoDaddy). The exact values come from the API so they always
                         match what we actually check.
@@ -941,12 +941,12 @@ export function EditorPanel({
                             key={label}
                             className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-hidden text-[11px] font-mono"
                           >
-                            <div className="bg-zinc-100 dark:bg-zinc-900 px-2 py-1.5 text-zinc-500 font-semibold border-b border-zinc-200 dark:border-zinc-800">
+                            <div className="bg-zinc-100 dark:bg-zinc-900 px-2 py-1.5 text-zinc-600 font-semibold border-b border-zinc-200 dark:border-zinc-800">
                               {label}
                             </div>
                             <div className="p-2 space-y-1">
                               <div className="flex gap-2">
-                                <span className="text-zinc-400 w-10 shrink-0">
+                                <span className="text-zinc-600 w-10 shrink-0">
                                   Type
                                 </span>
                                 <span className="text-zinc-800 dark:text-zinc-200">
@@ -954,7 +954,7 @@ export function EditorPanel({
                                 </span>
                               </div>
                               <div className="flex gap-2">
-                                <span className="text-zinc-400 w-10 shrink-0">
+                                <span className="text-zinc-600 w-10 shrink-0">
                                   Name
                                 </span>
                                 <span className="text-zinc-800 dark:text-zinc-200 break-all">
@@ -962,7 +962,7 @@ export function EditorPanel({
                                 </span>
                               </div>
                               <div className="flex gap-2">
-                                <span className="text-zinc-400 w-10 shrink-0">
+                                <span className="text-zinc-600 w-10 shrink-0">
                                   Value
                                 </span>
                                 <span className="text-blue-600 dark:text-blue-400 break-all">
@@ -974,14 +974,14 @@ export function EditorPanel({
                         ))}
                       </div>
 
-                      <p className="text-[10px] text-zinc-400">
+                      <p className="text-[10px] text-zinc-600">
                         {domainInstructions.routing.note} Once DNS resolves, a
                         certificate is issued and renewed automatically — you do not
                         need to do anything else.
                       </p>
                     </>
                   ) : (
-                    <p className="text-[11px] text-zinc-400">
+                    <p className="text-[11px] text-zinc-600">
                       Connect a domain to see the exact DNS records required.
                     </p>
                   )}

@@ -21,12 +21,12 @@ export default function GlobalError({
           <h1 className="text-xl font-bold tracking-tight mb-2">
             Something went wrong
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
             An unexpected error occurred while loading this page. Trying again
             often resolves it.
           </p>
           {error.digest && (
-            <p className="text-xs text-zinc-400 font-mono mb-6">
+            <p className="text-xs text-zinc-600 font-mono mb-6">
               Reference: {error.digest}
             </p>
           )}

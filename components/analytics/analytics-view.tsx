@@ -142,17 +142,17 @@ export function AnalyticsView({
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="block">
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
               Analytics Overview
             </h1>
             {isPro && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800">
+              <p className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800">
                 PRO ACTIVE
-              </span>
+              </p>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">
             Track visitors, store downloads, and user engagement across your apps.
           </p>
         </div>
@@ -165,7 +165,7 @@ export function AnalyticsView({
                 value={selectedSiteId}
                 onChange={(e) => setSelectedSiteId(e.target.value)}
                 disabled={!isPro}
-                className="appearance-none pl-3.5 pr-9 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm cursor-pointer disabled:opacity-50"
+                className="appearance-none pl-3.5 pr-9 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500/20 shadow-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-55"
               >
                 <option value="all">All Landing Pages ({sites.length})</option>
                 {sites.map((site) => (
@@ -174,7 +174,7 @@ export function AnalyticsView({
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-600 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
         )}
@@ -197,7 +197,7 @@ export function AnalyticsView({
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/dashboard/billing"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md transition-all active:scale-[0.98]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md transition-colors active:scale-[0.98]"
               >
                 <span>Upgrade to Pro ($9.99/mo)</span>
                 <ArrowUpRight className="w-4 h-4" />
@@ -214,19 +214,19 @@ export function AnalyticsView({
             </div>
             <div className="opacity-40 blur-[1px] pointer-events-none grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <div className="text-xs text-zinc-500">Total Views</div>
+                <div className="text-xs text-zinc-600">Total Views</div>
                 <div className="text-2xl font-bold mt-1">4,289</div>
               </div>
               <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <div className="text-xs text-zinc-500">Store Clicks</div>
+                <div className="text-xs text-zinc-600">Store Clicks</div>
                 <div className="text-2xl font-bold mt-1">1,048</div>
               </div>
               <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <div className="text-xs text-zinc-500">Conversion Rate</div>
+                <div className="text-xs text-zinc-600">Conversion Rate</div>
                 <div className="text-2xl font-bold mt-1">24.4%</div>
               </div>
               <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <div className="text-xs text-zinc-500">Mobile Share</div>
+                <div className="text-xs text-zinc-600">Mobile Share</div>
                 <div className="text-2xl font-bold mt-1">88.2%</div>
               </div>
             </div>
@@ -238,7 +238,7 @@ export function AnalyticsView({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* 1. Page Views */}
             <div className="p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm">
-              <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-2">
+              <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 mb-2">
                 <span className="text-xs font-medium">Page Views</span>
                 <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                   <Eye className="w-4 h-4" />
@@ -247,14 +247,14 @@ export function AnalyticsView({
               <div className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
                 {metrics.pageViews.toLocaleString()}
               </div>
-              <div className="text-[11px] text-zinc-400 mt-1">
+              <div className="text-[11px] text-zinc-600 mt-1">
                 Last 30 days telemetry
               </div>
             </div>
 
             {/* 2. Button Clicks */}
             <div className="p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm">
-              <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-2">
+              <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 mb-2">
                 <span className="text-xs font-medium">Store Button Clicks</span>
                 <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                   <MousePointerClick className="w-4 h-4" />
@@ -270,7 +270,7 @@ export function AnalyticsView({
 
             {/* 3. CTR */}
             <div className="p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm">
-              <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-2">
+              <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 mb-2">
                 <span className="text-xs font-medium">Click-Through Rate (CTR)</span>
                 <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
                   <TrendingUp className="w-4 h-4" />
@@ -279,14 +279,14 @@ export function AnalyticsView({
               <div className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
                 {metrics.ctr}%
               </div>
-              <div className="text-[11px] text-zinc-400 mt-1">
+              <div className="text-[11px] text-zinc-600 mt-1">
                 Ratio of visitors clicking download
               </div>
             </div>
 
             {/* 4. Active Sites */}
             <div className="p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm">
-              <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-2">
+              <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 mb-2">
                 <span className="text-xs font-medium">Tracked Apps</span>
                 <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                   <Smartphone className="w-4 h-4" />
@@ -295,7 +295,7 @@ export function AnalyticsView({
               <div className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
                 {selectedSiteId === "all" ? sites.length : 1}
               </div>
-              <div className="text-[11px] text-zinc-400 mt-1">
+              <div className="text-[11px] text-zinc-600 mt-1">
                 {sites.filter((s) => s.status === "published").length} live in production
               </div>
             </div>
@@ -308,7 +308,7 @@ export function AnalyticsView({
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                   Daily Visitor & Click Activity (Last 7 Days)
                 </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                   Page views compared to download button taps
                 </p>
               </div>
@@ -343,7 +343,7 @@ export function AnalyticsView({
                       {/* View Bar */}
                       {viewHeight > 0 ? (
                         <div
-                          className="w-3 sm:w-5 bg-blue-500 rounded-t-md transition-all duration-300 group-hover:bg-blue-400 relative"
+                          className="w-3 sm:w-5 bg-blue-600 rounded-t-md transition-colors duration-300 group-hover:bg-blue-400 relative"
                           style={{ height: `${viewHeight}%` }}
                           title={`${day.views} views on ${day.label}`}
                         />
@@ -353,7 +353,7 @@ export function AnalyticsView({
                       {/* Click Bar */}
                       {clickHeight > 0 ? (
                         <div
-                          className="w-3 sm:w-5 bg-emerald-500 rounded-t-md transition-all duration-300 group-hover:bg-emerald-400 relative"
+                          className="w-3 sm:w-5 bg-emerald-500 rounded-t-md transition-colors duration-300 group-hover:bg-emerald-400 relative"
                           style={{ height: `${clickHeight}%` }}
                           title={`${day.clicks} clicks on ${day.label}`}
                         />
@@ -361,7 +361,7 @@ export function AnalyticsView({
                         <div className="w-3 sm:w-5 h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full opacity-40" />
                       )}
                     </div>
-                    <span className="text-[10px] text-zinc-400 font-mono text-center">
+                    <span className="text-[10px] text-zinc-600 font-mono text-center">
                       {day.label}
                     </span>
                   </div>
@@ -377,12 +377,12 @@ export function AnalyticsView({
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">
                 Top Traffic Sources
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-5">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-5">
                 Where your visitors are arriving from
               </p>
 
               {metrics.topReferrers.length === 0 ? (
-                <div className="text-center py-8 text-xs text-zinc-400">
+                <div className="text-center py-8 text-xs text-zinc-600">
                   No referral data recorded yet.
                 </div>
               ) : (
@@ -393,16 +393,16 @@ export function AnalyticsView({
                       <div key={source} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate flex items-center gap-1.5">
-                            <Globe className="w-3 h-3 text-zinc-400 shrink-0" />
+                            <Globe className="w-3 h-3 text-zinc-600 shrink-0" />
                             {source}
                           </span>
-                          <span className="font-mono text-zinc-500 text-[11px]">
+                          <span className="font-mono text-zinc-600 text-[11px]">
                             {count} ({pct}%)
                           </span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
                           <div
-                            className="h-full bg-blue-500 rounded-full"
+                            className="h-full bg-blue-600 rounded-full"
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -418,7 +418,7 @@ export function AnalyticsView({
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">
                 Visitor Devices
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-5">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-5">
                 Device hardware categories detected
               </p>
 
@@ -436,7 +436,7 @@ export function AnalyticsView({
                         <span className="font-medium text-zinc-800 dark:text-zinc-200">
                           {item.label}
                         </span>
-                        <span className="font-mono text-zinc-500 text-[11px]">
+                        <span className="font-mono text-zinc-600 text-[11px]">
                           {item.count} ({pct}%)
                         </span>
                       </div>

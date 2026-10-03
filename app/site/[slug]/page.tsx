@@ -3,6 +3,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { appOrigin } from "@/lib/redirect";
 import { SiteRenderer } from "@/components/renderer/site-renderer";
 import type { Site, Plan } from "@/types/database";
 import Link from "next/link";
@@ -132,18 +133,18 @@ export default async function PublicSitePage({ params }: SitePageProps) {
   if (!site) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 text-center font-sans">
-        <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-400 mb-6 shadow-sm">
+        <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-600 mb-6 shadow-sm">
           <Globe className="w-8 h-8" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight mb-2">
           Page Not Found
         </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mb-8">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 max-w-md mb-8">
           The landing page you are looking for does not exist, or the address was entered incorrectly.
         </p>
         <Link
-          href="/"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-semibold shadow-sm transition-all"
+          href={appOrigin()}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-semibold shadow-sm transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to ShipSprint</span>
@@ -216,9 +217,9 @@ export default async function PublicSitePage({ params }: SitePageProps) {
         />
       )}
 
-      {/* Draft Mode Banner for Site Owner */}
+      {/* Draft Mode Banner for Site Owner — static so only the N9 header sticks (gate 56). */}
       {!isPublished && isOwner && (
-        <div className="sticky top-0 z-50 bg-amber-500 text-zinc-950 px-4 py-2.5 shadow-md flex items-center justify-between text-xs font-medium">
+        <div className="bg-amber-500 text-zinc-950 px-4 py-2.5 shadow-md flex items-center justify-between text-xs font-medium">
           <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">
             <div className="flex items-center gap-2">
               <Eye className="w-4 h-4 shrink-0" />
@@ -227,7 +228,7 @@ export default async function PublicSitePage({ params }: SitePageProps) {
               </span>
             </div>
             <Link
-              href={`/dashboard/editor/${site.id}`}
+              href={`${appOrigin()}/dashboard/editor/${site.id}`}
               className="px-3 py-1 bg-zinc-950 text-white rounded-lg text-xs font-semibold hover:bg-zinc-800 transition-colors shrink-0"
             >
               Open in Editor

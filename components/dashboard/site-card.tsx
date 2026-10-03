@@ -70,7 +70,7 @@ export function SiteCard({ site, rootDomain }: SiteCardProps) {
 
   return (
     <>
-      <div className="group relative flex flex-col justify-between p-6 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-[0_4px_20px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
+      <div className="group relative flex flex-col justify-between p-6 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-[0_4px_20px_rgb(0,0,0,0.02)] transition-colors hover:border-zinc-300 dark:hover:border-zinc-700">
         {/* Header */}
         <div>
           <div className="flex items-start justify-between gap-3 mb-4">
@@ -108,7 +108,7 @@ export function SiteCard({ site, rootDomain }: SiteCardProps) {
               <button
                 type="button"
                 onClick={() => setShowConfirmDelete(true)}
-                className="p-1 text-zinc-400 hover:text-red-600 transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="p-1 text-zinc-600 hover:text-red-600 transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 title="Delete landing page"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -120,8 +120,8 @@ export function SiteCard({ site, rootDomain }: SiteCardProps) {
             {appName}
           </h3>
 
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-mono truncate">
-            <Globe className="w-3 h-3 shrink-0 text-zinc-400" />
+          <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400 mt-1 font-mono truncate">
+            <Globe className="w-3 h-3 shrink-0 text-zinc-600" />
             <span className="truncate">{displayDomain}</span>
           </div>
 
@@ -182,7 +182,7 @@ export function SiteCard({ site, rootDomain }: SiteCardProps) {
               <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
                 Delete &quot;{appName}&quot;?
               </h4>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
                 This will permanently delete this landing page and all associated analytics data. This action cannot be undone.
               </p>
             </div>
@@ -200,7 +200,7 @@ export function SiteCard({ site, rootDomain }: SiteCardProps) {
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-sm transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-sm transition-colors"
               >
                 {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 <span>Delete</span>

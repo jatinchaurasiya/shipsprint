@@ -22,7 +22,7 @@ export function LivePreview({ content, plan }: LivePreviewProps) {
           <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
             Real-Time Live Preview
           </span>
-          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono hidden sm:inline">
+          <span className="text-[10px] text-zinc-600 dark:text-zinc-500 font-mono hidden sm:inline">
             (Zero-Drift Component)
           </span>
         </div>
@@ -35,7 +35,7 @@ export function LivePreview({ content, plan }: LivePreviewProps) {
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
               deviceMode === "desktop"
                 ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-xs"
-                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                : "text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100"
             }`}
           >
             <Monitor className="w-3.5 h-3.5" />
@@ -47,7 +47,7 @@ export function LivePreview({ content, plan }: LivePreviewProps) {
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
               deviceMode === "mobile"
                 ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-xs"
-                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                : "text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100"
             }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
@@ -59,33 +59,26 @@ export function LivePreview({ content, plan }: LivePreviewProps) {
       {/* Viewport Display Area */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex justify-center items-start">
         {deviceMode === "mobile" ? (
-          /* iPhone-styled Mockup Frame */
-          <div className="w-[375px] my-4 rounded-[48px] border-[10px] border-zinc-800 dark:border-zinc-700 bg-zinc-950 p-2 shadow-2xl shrink-0 overflow-hidden relative">
-            {/* Dynamic island slot */}
-            <div className="w-28 h-4 bg-zinc-800 rounded-full mx-auto mb-2" />
-            <div className="rounded-[36px] overflow-y-auto max-h-[720px] bg-white dark:bg-black scrollbar-thin">
+          /* Mobile preview — hairline frame with label, no re-drawn phone chrome (gate 47) */
+          <figure className="my-4 w-full max-w-[375px] shrink-0 overflow-hidden rounded-2xl border border-zinc-300 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-950">
+            <figcaption className="border-b border-zinc-200 px-4 py-2 text-center text-[11px] font-medium text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+              Mobile preview — 375px
+            </figcaption>
+            <div className="max-h-[720px] overflow-y-auto bg-white scrollbar-thin dark:bg-black">
               <SiteRenderer content={content} plan={plan} isPreview={true} />
             </div>
-          </div>
+          </figure>
         ) : (
-          /* Desktop Browser Mockup Frame */
-          <div className="w-full max-w-5xl rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 shadow-xl overflow-hidden my-2">
-            {/* Browser Header Bar */}
-            <div className="h-9 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-              </div>
-              <div className="mx-auto max-w-xs w-full bg-white dark:bg-zinc-950 rounded-md px-3 py-1 text-[11px] font-mono text-zinc-400 text-center truncate border border-zinc-200 dark:border-zinc-800/60">
-                preview.shipsprint.site
-              </div>
-            </div>
+          /* Desktop preview — hairline frame with label, no traffic-light chrome (gate 47) */
+          <figure className="my-2 w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-xl dark:border-zinc-800/80 dark:bg-zinc-950">
+            <figcaption className="border-b border-zinc-200 px-4 py-2 text-center font-mono text-[11px] text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+              preview.shipsprint.site
+            </figcaption>
 
             <div className="max-h-[780px] overflow-y-auto scrollbar-thin">
               <SiteRenderer content={content} plan={plan} isPreview={true} />
             </div>
-          </div>
+          </figure>
         )}
       </div>
     </div>

@@ -92,7 +92,7 @@ export function DashboardNav({ userEmail, plan }: DashboardNavProps) {
           {!isPro && (
             <Link
               href="/dashboard/billing"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-medium shadow-sm transition-all"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-medium shadow-sm transition-colors"
             >
               <span>Upgrade</span>
               <ChevronRight className="w-3 h-3" />
@@ -101,13 +101,13 @@ export function DashboardNav({ userEmail, plan }: DashboardNavProps) {
 
           {/* User Email & Sign Out (Desktop) */}
           <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-zinc-200 dark:border-zinc-800">
-            <span className="hidden lg:inline text-xs text-zinc-500 dark:text-zinc-400 max-w-[160px] truncate">
+            <span className="hidden lg:inline text-xs text-zinc-600 dark:text-zinc-400 max-w-[160px] truncate">
               {userEmail}
             </span>
             <button
               onClick={handleSignOut}
               title="Sign Out"
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -151,7 +151,7 @@ export function DashboardNav({ userEmail, plan }: DashboardNavProps) {
           </nav>
 
           <div className="pt-3 border-t border-zinc-100 dark:border-zinc-900 flex items-center justify-between">
-            <span className="text-xs text-zinc-500 truncate max-w-[200px]">
+            <span className="text-xs text-zinc-600 truncate max-w-[200px]">
               {userEmail}
             </span>
             <button

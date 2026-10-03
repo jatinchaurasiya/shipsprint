@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv, isProduction } from "@/lib/env";
+import { sessionCookieDomain } from "@/lib/redirect";
 
 /**
  * Refreshes the Supabase session and returns the current user.
@@ -24,6 +25,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   const supabase = createServerClient(url, anonKey, {
+    // Scope the session cookie to the registered root domain so the owner's
+    // session is also sent to customer subdomains (draft previews at the live
+    // URL). Host-only in local development (undefined).
+    cookieOptions: { domain: sessionCookieDomain() },
     cookies: {
       getAll() {
         return request.cookies.getAll();

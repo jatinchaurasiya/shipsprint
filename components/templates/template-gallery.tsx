@@ -46,7 +46,7 @@ export function TemplateGallery() {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-medium transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs font-medium transition-colors ${
                 isActive
                   ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm"
                   : "bg-white/80 dark:bg-zinc-900/80 text-zinc-600 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700"
@@ -63,7 +63,7 @@ export function TemplateGallery() {
         {filteredTemplates.map((tmpl) => (
           <div
             key={tmpl.id}
-            className="group flex flex-col rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl overflow-hidden hover:shadow-xl hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
+            className="group flex flex-col rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl overflow-hidden transition-colors hover:border-zinc-300 dark:hover:border-zinc-700"
           >
             {/* Thumbnail Preview Area */}
             <div className="relative aspect-[16/10] bg-zinc-100 dark:bg-zinc-800/50 overflow-hidden border-b border-zinc-100 dark:border-zinc-800">
@@ -72,10 +72,10 @@ export function TemplateGallery() {
                 <img
                   src={tmpl.preview_image_url}
                   alt={tmpl.name}
-                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover object-top transition-transform duration-500"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-zinc-400">
+                <div className="w-full h-full flex items-center justify-center text-zinc-600">
                   <Sparkles className="w-8 h-8" />
                 </div>
               )}
@@ -92,7 +92,7 @@ export function TemplateGallery() {
                 </button>
                 <Link
                   href={`/signup?template=${tmpl.id}`}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold shadow-lg hover:bg-blue-500 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold shadow-lg hover:bg-blue-600 transition-colors"
                 >
                   <span>Use Template</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -113,7 +113,7 @@ export function TemplateGallery() {
                 <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {tmpl.name}
                 </h3>
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
                   {tmpl.tagline}
                 </p>
 
@@ -164,7 +164,7 @@ export function TemplateGallery() {
               <div>
                 <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
                   <span>{previewTemplate.name}</span>
-                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-600">
                     {previewTemplate.category}
                   </span>
                 </h3>
@@ -179,7 +179,7 @@ export function TemplateGallery() {
                 className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
                   viewport === "desktop"
                     ? "bg-zinc-700 text-zinc-100"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    : "text-zinc-600 hover:text-zinc-200"
                 }`}
                 title="Desktop View"
               >
@@ -191,7 +191,7 @@ export function TemplateGallery() {
                 className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
                   viewport === "tablet"
                     ? "bg-zinc-700 text-zinc-100"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    : "text-zinc-600 hover:text-zinc-200"
                 }`}
                 title="Tablet View"
               >
@@ -203,7 +203,7 @@ export function TemplateGallery() {
                 className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
                   viewport === "mobile"
                     ? "bg-zinc-700 text-zinc-100"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    : "text-zinc-600 hover:text-zinc-200"
                 }`}
                 title="Mobile View"
               >
@@ -215,7 +215,7 @@ export function TemplateGallery() {
             <div className="flex items-center gap-3">
               <Link
                 href={`/signup?template=${previewTemplate.id}`}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors shadow-sm"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-600 text-white text-xs font-semibold transition-colors shadow-sm"
               >
                 <span>Use Template</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -223,7 +223,7 @@ export function TemplateGallery() {
               <button
                 type="button"
                 onClick={() => setPreviewTemplate(null)}
-                className="p-2 rounded-xl text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                className="p-2 rounded-xl text-zinc-600 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
                 title="Close Preview"
               >
                 <X className="w-5 h-5" />
@@ -234,12 +234,12 @@ export function TemplateGallery() {
           {/* Modal Preview Body */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center bg-zinc-950">
             <div
-              className={`transition-all duration-300 rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-zinc-950 border border-zinc-800 ${
+                className={`transition-colors duration-300 rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-zinc-950 border border-zinc-800 ${
                 viewport === "desktop"
                   ? "w-full max-w-6xl"
                   : viewport === "tablet"
-                  ? "w-[768px]"
-                  : "w-[390px]"
+                    ? "w-full max-w-[768px]"
+                    : "w-full max-w-[390px]"
               }`}
             >
               {/* Zero-drift guarantee: uses identical site renderer */}

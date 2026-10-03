@@ -89,7 +89,7 @@ function LoginForm() {
   return (
     <div className="bg-white/80 dark:bg-zinc-950/70 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-7 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
       {error && (
-        <div className="mb-5 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200/60 dark:border-red-900/40 text-xs text-red-600 dark:text-red-400">
+        <div role="alert" aria-live="assertive" className="mb-5 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200/60 dark:border-red-900/40 text-xs text-red-600 dark:text-red-400">
           {error}
         </div>
       )}
@@ -99,12 +99,12 @@ function LoginForm() {
         type="button"
         onClick={handleGoogleLogin}
         disabled={oauthLoading || loading}
-        className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-colors disabled:opacity-50 shadow-sm"
+        className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-colors disabled:cursor-not-allowed disabled:opacity-55 shadow-sm"
       >
         {oauthLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin text-zinc-500" />
+          <Loader2 className="w-4 h-4 animate-spin text-zinc-600" />
         ) : (
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -130,7 +130,7 @@ function LoginForm() {
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-zinc-200 dark:border-zinc-800" />
         </div>
-        <span className="relative bg-white dark:bg-zinc-950 px-3 text-zinc-400 dark:text-zinc-500 uppercase tracking-widest text-[10px] font-medium">
+        <span className="relative bg-white dark:bg-zinc-950 px-3 text-zinc-600 dark:text-zinc-500 uppercase tracking-widest text-[10px] font-medium">
           or continue with email
         </span>
       </div>
@@ -151,7 +151,7 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="developer@example.com"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
           />
         </div>
 
@@ -177,14 +177,14 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading || oauthLoading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-sm font-medium text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white transition-colors disabled:opacity-50 shadow-sm mt-2"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-sm font-medium text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white transition-colors disabled:cursor-not-allowed disabled:opacity-55 shadow-sm mt-2"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -212,7 +212,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             Welcome back
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">
             Log in to manage and publish your app landing pages
           </p>
         </div>
@@ -221,7 +221,7 @@ export default function LoginPage() {
         <Suspense
           fallback={
             <div className="bg-white/80 dark:bg-zinc-950/70 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-12 text-center">
-              <Loader2 className="w-6 h-6 animate-spin text-zinc-400 mx-auto" />
+              <Loader2 className="w-6 h-6 animate-spin text-zinc-600 mx-auto" />
             </div>
           }
         >
@@ -229,7 +229,7 @@ export default function LoginPage() {
         </Suspense>
 
         {/* Footer Link */}
-        <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-6">
+        <p className="text-center text-xs text-zinc-600 dark:text-zinc-400 mt-6">
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"

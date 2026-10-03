@@ -103,7 +103,7 @@ export function CreateSiteDialog({
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs sm:text-sm font-medium shadow-sm transition-all active:scale-[0.98]"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs sm:text-sm font-medium shadow-sm transition-colors active:scale-[0.98]"
       >
         <Plus className="w-4 h-4" />
         <span>Create Landing Page</span>
@@ -115,7 +115,7 @@ export function CreateSiteDialog({
             {/* Close button */}
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute top-5 right-5 p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+              className="absolute top-5 right-5 p-1 rounded-lg text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -128,7 +128,7 @@ export function CreateSiteDialog({
                 <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
                   Plan Limit Reached
                 </h2>
-                <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-2 max-w-sm mx-auto">
+                <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-2 max-w-sm mx-auto">
                   You have created {currentCount} of {maxLimit} sites allowed on your current tier. Upgrade to Basic or Pro to publish more apps.
                 </p>
                 <div className="mt-6 flex items-center justify-center gap-3">
@@ -141,7 +141,7 @@ export function CreateSiteDialog({
                   </button>
                   <Link
                     href="/dashboard/billing"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-colors shadow-sm"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-600 text-white text-xs font-medium transition-colors shadow-sm"
                   >
                     <span>Upgrade Plan</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -156,7 +156,7 @@ export function CreateSiteDialog({
                     New Landing Page
                   </h2>
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-5">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-5">
                   Pick a starting template and customize your subdomain.
                 </p>
 
@@ -180,7 +180,7 @@ export function CreateSiteDialog({
                             key={tmpl.id}
                             type="button"
                             onClick={() => setSelectedTemplateId(tmpl.id)}
-                            className={`flex flex-col text-left p-3 rounded-xl border text-xs transition-all ${
+                            className={`flex flex-col text-left p-3 rounded-xl border text-xs transition-colors ${
                               isSelected
                                 ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-zinc-900 dark:text-zinc-100 ring-2 ring-blue-500/20"
                                 : "border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700"
@@ -191,11 +191,11 @@ export function CreateSiteDialog({
                                 {getTemplateIcon(tmpl.category)}
                                 {tmpl.name}
                               </span>
-                              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+                              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
                                 {tmpl.category}
                               </span>
                             </div>
-                            <span className="text-[11px] line-clamp-1 text-zinc-500 dark:text-zinc-400">
+                            <span className="text-[11px] line-clamp-1 text-zinc-600 dark:text-zinc-400">
                               {tmpl.tagline}
                             </span>
                           </button>
@@ -214,7 +214,7 @@ export function CreateSiteDialog({
                       value={name}
                       onChange={(e) => handleNameChange(e.target.value)}
                       placeholder="e.g. ZenHabit or FocusTimer"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                     />
                   </div>
 
@@ -222,20 +222,20 @@ export function CreateSiteDialog({
                     <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                       Subdomain URL
                     </label>
-                    <div className="flex items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                    <div className="flex items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors">
                       <input
                         type="text"
                         required
                         value={slug}
                         onChange={(e) => handleSlugChange(e.target.value)}
                         placeholder="zenhabit"
-                        className="w-full bg-transparent text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none"
+                        className="w-full bg-transparent text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 "
                       />
-                      <span className="text-xs text-zinc-400 font-mono select-none">
+                      <span className="text-xs text-zinc-600 font-mono select-none">
                         .shipsprint.site
                       </span>
                     </div>
-                    <p className="text-[11px] text-zinc-400 mt-1">
+                    <p className="text-[11px] text-zinc-600 mt-1">
                       Your app will be published live at this URL.
                     </p>
                   </div>
@@ -251,7 +251,7 @@ export function CreateSiteDialog({
                     <button
                       type="submit"
                       disabled={loading || !name.trim() || !slug.trim()}
-                      className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-medium transition-colors shadow-sm disabled:opacity-50"
+                      className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-medium transition-colors shadow-sm disabled:cursor-not-allowed disabled:opacity-55"
                     >
                       {loading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

@@ -63,7 +63,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             Landing Pages
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">
             Build and manage high-converting landing pages for your indie apps.
           </p>
         </div>
@@ -95,7 +95,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </div>
             <div className="w-48 sm:w-64 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full mt-2 overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
+                className={`h-full rounded-full transition-colors duration-500 ${
                   usagePercent >= 100
                     ? "bg-amber-500"
                     : "bg-blue-600 dark:bg-blue-500"
@@ -120,13 +120,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       {/* Sites List or Empty State */}
       {siteList.length === 0 ? (
         <div className="py-16 px-4 rounded-3xl border border-dashed border-zinc-300 dark:border-zinc-800 bg-white/40 dark:bg-zinc-950/40 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-900 text-zinc-500 flex items-center justify-center mx-auto mb-4 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-900 text-zinc-600 flex items-center justify-center mx-auto mb-4 border border-zinc-200 dark:border-zinc-800 shadow-sm">
             <Sparkles className="w-6 h-6 text-blue-500" />
           </div>
           <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
             No landing pages created yet
           </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto">
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 max-w-sm mx-auto">
             Get started by creating your first landing page. Enter your app name and launch in minutes.
           </p>
           <div className="mt-6">

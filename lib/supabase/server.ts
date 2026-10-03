@@ -3,6 +3,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { publicEnv } from "@/lib/env";
+import { sessionCookieDomain } from "@/lib/redirect";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -12,6 +13,10 @@ export async function createClient() {
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
+      // Scope the session cookie to the registered root domain so the owner's
+      // session is also sent to customer subdomains and their own draft preview
+      // works at the live URL. Host-only in local development (undefined).
+      cookieOptions: { domain: sessionCookieDomain() },
       cookies: {
         getAll() {
           return cookieStore.getAll();

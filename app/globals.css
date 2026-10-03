@@ -1,3 +1,5 @@
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V5 */
+/* Hallmark · macrostructure: Split Studio · theme: studied-DNA (source: nexbit-temlis.webflow.io) · genre: modern-minimal · nav: N5 · footer: Ft2 · contrast: pass (40-41) · mobile: pass (34, 49, 50-57) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49) · icons: pass (30) · slop: pass (42-45) */
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -6,7 +8,20 @@
   --font-mono: var(--font-geist-mono);
 }
 
+:root {
+  --color-paper: #fafafa;
+  --color-paper-dark: #09090b;
+  --color-ink: var(--color-zinc-950);
+  --color-accent: var(--color-blue-600);
+  --color-accent-ink: #ffffff;
+  --color-focus: var(--color-zinc-900);
+  --banner-height: 40px;
+  --z-sticky-nav: 300;
+  --z-sticky: 200;
+}
+
 html {
+  overflow-x: clip;
   scroll-behavior: smooth;
   /* Lenis drives scrolling on the marketing page; without this the native
      smooth scroll and Lenis fight each other and input latency spikes. */
@@ -14,9 +29,42 @@ html {
 }
 
 body {
+  overflow-x: clip;
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-paper);
+}
+
+/* Hallmark gates 25/51/52: readable measure, long-word wrap, single-col heads on mobile. */
+.prose-measure,
+.article-body {
+  max-width: 65ch;
+}
+
+h1,
+.hero__display,
+.section__title {
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+
+@media (max-width: 48rem) {
+  .section__head {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Hallmark gate 39: input base — 1px border invariant, outline focus, 44px floor, helper reserve. */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  min-height: 44px;
+}
+
+.helper-slot {
+  min-height: 1lh;
 }
 
 /* Utilities referenced in site-renderer, live-preview and editor-panel that

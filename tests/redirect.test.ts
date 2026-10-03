@@ -1,5 +1,11 @@
 import { afterEach, describe, it, expect } from "vitest";
-import { canonicalOrigin, safeRedirectPath, normalizeHostname } from "@/lib/redirect";
+import {
+  appOrigin,
+  canonicalOrigin,
+  safeRedirectPath,
+  sessionCookieDomain,
+  normalizeHostname,
+} from "@/lib/redirect";
 
 /**
  * Open-redirect regression tests.
@@ -174,5 +180,90 @@ describe("canonicalOrigin", () => {
   it("does not throw on a wholly unusable request origin", () => {
     delete process.env.NEXT_PUBLIC_APP_URL;
     expect(() => canonicalOrigin("not a url")).not.toThrow();
+  });
+});
+
+/**
+ * appOrigin / sessionCookieDomain — the helpers that keep customer-host links
+ * and the shared session working across the apex and its subdomains.
+ */
+describe("appOrigin", () => {
+  const originalApp = process.env.NEXT_PUBLIC_APP_URL;
+  const originalRoot = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+
+  afterEach(() => {
+    if (originalApp === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = originalApp;
+    if (originalRoot === undefined) delete process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+    else process.env.NEXT_PUBLIC_ROOT_DOMAIN = originalRoot;
+  });
+
+  it("returns the configured app url origin", () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://shipsprint.site";
+    expect(appOrigin()).toBe("https://shipsprint.site");
+  });
+
+  it("strips any path, port, or trailing slash from the configured value", () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://shipsprint.site/dashboard/";
+    expect(appOrigin()).toBe("https://shipsprint.site");
+  });
+
+  it("falls back to the https root domain when APP_URL is unset", () => {
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN = "shipsprint.site";
+    expect(appOrigin()).toBe("https://shipsprint.site");
+  });
+
+  it("returns a localhost origin for loopback dev", () => {
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    delete process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+    expect(appOrigin()).toBe("http://localhost:3000");
+  });
+
+  it("ignores a non-http scheme in the configured value", () => {
+    process.env.NEXT_PUBLIC_APP_URL = "javascript:alert(1)";
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN = "shipsprint.site";
+    expect(appOrigin()).toBe("https://shipsprint.site");
+  });
+});
+
+describe("sessionCookieDomain", () => {
+  const originalRoot = process.env.ROOT_DOMAIN;
+  const originalPub = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+
+  afterEach(() => {
+    if (originalRoot === undefined) delete process.env.ROOT_DOMAIN;
+    else process.env.ROOT_DOMAIN = originalRoot;
+    if (originalPub === undefined) delete process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+    else process.env.NEXT_PUBLIC_ROOT_DOMAIN = originalPub;
+  });
+
+  it("returns the registered root domain for a real host", () => {
+    process.env.ROOT_DOMAIN = "shipsprint.site";
+    expect(sessionCookieDomain()).toBe("shipsprint.site");
+  });
+
+  it("strips a port and trailing dot", () => {
+    process.env.ROOT_DOMAIN = "shipsprint.site:443";
+    expect(sessionCookieDomain()).toBe("shipsprint.site");
+    process.env.ROOT_DOMAIN = "shipsprint.site.";
+    expect(sessionCookieDomain()).toBe("shipsprint.site");
+  });
+
+  it("returns undefined for loopback localhost (no Domain attribute)", () => {
+    delete process.env.ROOT_DOMAIN;
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN = "localhost:3000";
+    expect(sessionCookieDomain()).toBeUndefined();
+  });
+
+  it("returns undefined for an IP address", () => {
+    process.env.ROOT_DOMAIN = "127.0.0.1";
+    expect(sessionCookieDomain()).toBeUndefined();
+  });
+
+  it("returns undefined when nothing is configured", () => {
+    delete process.env.ROOT_DOMAIN;
+    delete process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+    expect(sessionCookieDomain()).toBeUndefined();
   });
 });

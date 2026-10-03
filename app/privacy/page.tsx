@@ -36,12 +36,12 @@ export default function PrivacyPage() {
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
             Privacy Policy
           </h1>
-          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             Effective Date: October 1, 2026 · Last Updated: October 1, 2026
           </p>
         </div>
 
-        <div className="prose prose-zinc dark:prose-invert max-w-none space-y-8 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+        <div className="prose prose-zinc dark:prose-invert article-body space-y-8 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">1. Overview</h2>
             <p>
@@ -115,7 +115,7 @@ export default function PrivacyPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-200/80 dark:border-zinc-800/80 py-8 px-4 sm:px-6 max-w-4xl mx-auto text-xs text-zinc-500 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="border-t border-zinc-200/80 dark:border-zinc-800/80 py-8 px-4 sm:px-6 max-w-4xl mx-auto text-xs text-zinc-600 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>&copy; {new Date().getFullYear()} ShipSprint. All rights reserved.</div>
         <div className="flex gap-4">
           <Link href="/terms" className="hover:underline">Terms of Service</Link>

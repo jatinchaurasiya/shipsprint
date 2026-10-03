@@ -57,6 +57,69 @@ function toOrigin(value: string): string | null {
   }
 }
 
+/**
+ * The public origin of the application itself, for links that must reach the
+ * app even when the page is rendered on a customer subdomain or custom domain
+ * (where the proxy rewrites every app path back to the customer's own site).
+ *
+ * NEXT_PUBLIC_APP_URL is the configured public origin and is inlined into both
+ * the server and client bundles, so this works from Server Components and from
+ * client components alike. When it is unset or unusable it degrades to the
+ * registered root domain rather than emitting an empty or relative href — which
+ * on a customer host would silently loop back to the customer's own page.
+ */
+export function appOrigin(): string {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const origin = configured ? toOrigin(configured) : null;
+  if (origin) return origin;
+
+  const root = (
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
+    process.env.ROOT_DOMAIN ||
+    "localhost:3000"
+  )
+    .toLowerCase()
+    .split(":")[0]!;
+
+  if (!root || root === "localhost" || root === "127.0.0.1") {
+    return "http://localhost:3000";
+  }
+  return `https://${root}`;
+}
+
+/**
+ * The `Domain` attribute for the Supabase auth session cookie, or undefined to
+ * leave the cookie host-only.
+ *
+ * The session is established on the apex app host (shipsprint.site) but must
+ * also be visible on customer subdomains (myapp.shipsprint.site) so a site owner
+ * can preview their own draft at its live URL. A host-only cookie is scoped to
+ * the exact host that set it and is never sent to sibling subdomains, so the
+ * owner check on the subdomain silently failed and the owner's own draft
+ * rendered as a 404. Scoping the cookie to the registered root domain shares
+ * one session across the apex and all customer subdomains without leaking it to
+ * unrelated domains.
+ *
+ * A `Domain` attribute is only valid for a real DNS hostname: browsers reject it
+ * for IP addresses and it is unnecessary on single-label loopback hosts, so
+ * local development keeps the host-only default and returns undefined.
+ */
+export function sessionCookieDomain(): string | undefined {
+  const root = (
+    process.env.ROOT_DOMAIN ||
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
+    ""
+  )
+    .trim()
+    .toLowerCase()
+    .split(":")[0]!
+    .replace(/\.$/, "");
+
+  if (!root || !root.includes(".")) return undefined;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(root)) return undefined;
+  return root;
+}
+
 export function safeRedirectPath(
   candidate: string | null | undefined,
   fallback: string = DEFAULT_REDIRECT

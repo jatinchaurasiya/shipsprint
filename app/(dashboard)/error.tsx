@@ -38,7 +38,7 @@ export default function Error({
         <h1 className="text-lg font-bold tracking-tight mb-2">
           This page failed to load
         </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
           Something went wrong on our end. Your data is safe.
         </p>
         <button

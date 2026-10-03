@@ -16,7 +16,7 @@ export const BUILTIN_TEMPLATES: Template[] = [
       },
       hero: {
         app_name: "FocusFlow",
-        badge_text: "Featured on App Store · v2.0",
+        badge_text: "Sample badge — replace with your launch status",
         header: "Master your deep work, effortlessly.",
         short_description: "The distraction-free timer and task companion built exclusively for creative minds, indie founders, and remote builders.",
       },
@@ -36,8 +36,8 @@ export const BUILTIN_TEMPLATES: Template[] = [
         {
           id: "feat-3",
           icon: "Shield",
-          title: "100% Privacy by Design",
-          description: "Zero analytics tracking. All your habits and task logs stay securely encrypted on your device.",
+          title: "Privacy by Design",
+          description: "Your habits and task logs stay encrypted on your device.",
         },
         {
           id: "feat-4",
@@ -47,8 +47,8 @@ export const BUILTIN_TEMPLATES: Template[] = [
         },
       ],
       store_links: {
-        app_store_url: "https://apps.apple.com",
-        play_store_url: "https://play.google.com",
+        app_store_url: "",
+        play_store_url: "",
       },
       screenshots: [
         "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80",
@@ -79,7 +79,7 @@ export const BUILTIN_TEMPLATES: Template[] = [
       },
       hero: {
         app_name: "ShipAPI",
-        badge_text: "Now in Public Beta · 99.99% Uptime",
+        badge_text: "Sample badge — replace with your status",
         header: "The modern developer API for instant edge caching.",
         short_description: "Deploy globally distributed endpoints with single-digit latency, automated rate limiting, and zero server management.",
       },
@@ -87,8 +87,8 @@ export const BUILTIN_TEMPLATES: Template[] = [
         {
           id: "feat-1",
           icon: "Zap",
-          title: "Sub-10ms Edge Latency",
-          description: "Route requests through 300+ PoPs worldwide so your users get lightning responses.",
+          title: "Low Edge Latency",
+          description: "Route requests through a global network so your users get fast responses.",
         },
         {
           id: "feat-2",
@@ -141,7 +141,7 @@ export const BUILTIN_TEMPLATES: Template[] = [
       },
       hero: {
         app_name: "NeuroCopy AI",
-        badge_text: "Powered by Claude 3.5 & GPT-4o",
+        badge_text: "Sample badge — replace with your stack",
         header: "Turn raw ideas into viral copy in seconds.",
         short_description: "The AI writing copilot that adapts to your brand voice, eliminates writer's block, and crafts high-converting copy across all your channels.",
       },
@@ -166,7 +166,7 @@ export const BUILTIN_TEMPLATES: Template[] = [
         },
       ],
       store_links: {
-        app_store_url: "https://apps.apple.com",
+        app_store_url: "",
         play_store_url: "",
       },
       screenshots: [
@@ -197,7 +197,7 @@ export const BUILTIN_TEMPLATES: Template[] = [
       },
       hero: {
         app_name: "VibeCast",
-        badge_text: "Private Beta · 2,400+ on Waitlist",
+        badge_text: "Sample badge — replace with your waitlist count",
         header: "Something extraordinary is coming to audio.",
         short_description: "Join top creators who are revolutionizing voice storytelling. Request early access today and secure your founding member username.",
       },
@@ -250,7 +250,7 @@ export const BUILTIN_TEMPLATES: Template[] = [
       },
       hero: {
         app_name: "Alex Rivera",
-        badge_text: "Indie Maker · $12k/mo MRR Shipped",
+        badge_text: "Sample badge — replace with your milestone",
         header: "Building lightweight tools for internet creators.",
         short_description: "A collection of focused micro-products built in public. Simple software designed to solve single, painful problems without bloat.",
       },
@@ -258,7 +258,7 @@ export const BUILTIN_TEMPLATES: Template[] = [
         {
           id: "feat-1",
           icon: "Sparkles",
-          title: "3 Apps Shipped in 2026",
+          title: "Apps Shipped This Year",
           description: "From productivity tools to developer utilities, crafted with precision and obsessive care.",
         },
         {
@@ -270,13 +270,13 @@ export const BUILTIN_TEMPLATES: Template[] = [
         {
           id: "feat-3",
           icon: "Shield",
-          title: "100% Bootstrapped & Profitable",
+          title: "Bootstrapped & Profitable",
           description: "No VC pressure, no bloated roadmaps. Sustainable software built for long-term reliability.",
         },
       ],
       store_links: {
-        app_store_url: "https://apps.apple.com",
-        play_store_url: "https://play.google.com",
+        app_store_url: "",
+        play_store_url: "",
       },
       screenshots: [
         "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80",

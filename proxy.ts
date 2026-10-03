@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import { safeRedirectPath } from "@/lib/redirect";
+import { canonicalOrigin, safeRedirectPath } from "@/lib/redirect";
 
 /**
  * Network boundary for the app.
@@ -76,11 +76,22 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = classifyHost(request.headers.get("host") ?? "");
 
-  // If customer subdomain or custom domain, rewrite to /site/[lookup]
+  // If customer subdomain or custom domain, rewrite to /site/[lookup].
+  //
+  // Two kinds of paths pass through unrewritten on a customer host:
+  //   - assets the rendered site legitimately needs (_next, favicon, robots,
+  //     sitemap) and the analytics beacon (/api/track);
+  //   - infrastructure endpoints addressed by host rather than by the public
+  //     path. /api/caddy/ask is called by Caddy itself (Host: the app service
+  //     name) as the on-demand TLS allow-list; rewriting it away made Caddy see
+  //     a 200 HTML page for every hostname and defeated the certificate
+  //     rate-limit guard. /api/health is the same class of internal endpoint.
   if (host.kind !== "app" && host.value) {
     if (
       pathname.startsWith("/_next") ||
       pathname.startsWith("/api/track") ||
+      pathname === "/api/caddy/ask" ||
+      pathname === "/api/health" ||
       pathname === "/robots.txt" ||
       pathname === "/sitemap.xml" ||
       pathname === "/favicon.ico"
@@ -100,14 +111,24 @@ export async function proxy(request: NextRequest) {
 
   const { supabaseResponse, user } = await updateSession(request);
 
+  // `request.url` carries the container's own origin behind the proxy
+  // (0.0.0.0:3000), so the redirect base must come from the configured public
+  // origin — see canonicalOrigin.
+  const origin = canonicalOrigin(request.url);
+
   if (pathname.startsWith("/dashboard") && !user) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", safeRedirectPath(pathname));
+    const loginUrl = new URL("/login", origin);
+    // Preserve the query so context (e.g. ?template=, ?upgrade=) survives the
+    // login round-trip instead of silently resetting to a bare /dashboard.
+    loginUrl.searchParams.set(
+      "next",
+      safeRedirectPath(request.nextUrl.pathname + request.nextUrl.search)
+    );
     return NextResponse.redirect(loginUrl);
   }
 
   if ((pathname === "/login" || pathname === "/signup") && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/dashboard", origin));
   }
 
   return supabaseResponse;
