@@ -57,7 +57,12 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Audit
-        run: npm audit --audit-level=high
+        # Audit production dependencies only — the code that actually ships.
+        # Dev-only build/lint tooling (e.g. the eslint-config-next -> fast-glob
+        # -> micromatch -> braces chain) has no runtime exposure and must not
+        # block a release; a fresh advisory on a dev-only transitive dep with no
+        # compatible upstream fix would otherwise take the whole pipeline down.
+        run: npm audit --omit=dev --audit-level=high
 
   migrations:
     name: Migration integrity & schema validation

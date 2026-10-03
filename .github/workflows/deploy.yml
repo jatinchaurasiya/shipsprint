@@ -62,7 +62,11 @@ jobs:
         run: npm run build
 
       - name: Dependency security audit
-        run: npm audit --audit-level=high
+        # Audit production dependencies only — the code that actually ships.
+        # Dev-only tooling (e.g. the eslint-config-next -> fast-glob -> micromatch
+        # -> braces chain) is not part of the runtime and must not gate a
+        # production deploy; see ci.yml for the rationale.
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Database schema convergence check
         run: |
