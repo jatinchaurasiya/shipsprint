@@ -26,10 +26,28 @@ const CATEGORIES = [
   { id: "general", label: "Portfolios" },
 ];
 
-export function TemplateGallery() {
+export interface TemplateGalleryProps {
+  /**
+   * Signed-in viewers get a direct route into the create flow
+   * (`/dashboard?template=<id>`, which auto-opens the create dialog with the
+   * template preselected). Anonymous visitors keep the signup funnel
+   * (`/signup?template=<id>`), which carries the choice through account
+   * creation. The public /templates page omits the prop so it stays statically
+   * prerendered; a signed-in visitor who reaches it and clicks through is
+   * rescued by the proxy's authed-/signup redirect instead.
+   */
+  authenticated?: boolean;
+}
+
+export function TemplateGallery({ authenticated = false }: TemplateGalleryProps) {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
+
+  const templateHref = (id: string) => {
+    const query = `?template=${encodeURIComponent(id)}`;
+    return authenticated ? `/dashboard${query}` : `/signup${query}`;
+  };
 
   const filteredTemplates =
     selectedCategory === "all"
@@ -91,7 +109,7 @@ export function TemplateGallery() {
                   <span>Live Preview</span>
                 </button>
                 <Link
-                  href={`/signup?template=${tmpl.id}`}
+                  href={templateHref(tmpl.id)}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold shadow-lg hover:bg-blue-600 transition-colors"
                 >
                   <span>Use Template</span>
@@ -140,7 +158,7 @@ export function TemplateGallery() {
                 </button>
 
                 <Link
-                  href={`/signup?template=${tmpl.id}`}
+                  href={templateHref(tmpl.id)}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   <span>Build with this</span>
@@ -214,7 +232,7 @@ export function TemplateGallery() {
             {/* Actions */}
             <div className="flex items-center gap-3">
               <Link
-                href={`/signup?template=${previewTemplate.id}`}
+                href={templateHref(previewTemplate.id)}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-600 text-white text-xs font-semibold transition-colors shadow-sm"
               >
                 <span>Use Template</span>

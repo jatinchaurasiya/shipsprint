@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import { canonicalOrigin, safeRedirectPath } from "@/lib/redirect";
+import {
+  canonicalOrigin,
+  postSignupDestination,
+  safeRedirectPath,
+} from "@/lib/redirect";
 
 /**
  * Network boundary for the app.
@@ -127,8 +131,25 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // An already-signed-in visitor on an auth entry page is stale navigation, so
+  // send them where that page itself would have taken them — reusing the signup
+  // form's own destination rules so a chosen ?plan= / ?template= survives
+  // (the old bare-/dashboard redirect silently discarded it, and the gallery
+  // template the user had just picked never reached the create dialog).
+  // /login honors a validated ?next= for the same reason. A next pointing back
+  // at /login or /signup would bounce an already-signed-in browser between the
+  // entry pages forever, so it degrades to /dashboard.
   if ((pathname === "/login" || pathname === "/signup") && user) {
-    return NextResponse.redirect(new URL("/dashboard", origin));
+    const destination =
+      pathname === "/signup"
+        ? postSignupDestination(request.nextUrl.searchParams)
+        : safeRedirectPath(request.nextUrl.searchParams.get("next"));
+
+    const entry = destination.split(/[?#]/)[0];
+    if (entry === "/login" || entry === "/signup") {
+      return NextResponse.redirect(new URL("/dashboard", origin));
+    }
+    return NextResponse.redirect(new URL(destination, origin));
   }
 
   return supabaseResponse;

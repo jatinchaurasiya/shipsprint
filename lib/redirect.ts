@@ -145,6 +145,49 @@ export function safeRedirectPath(
   return value;
 }
 
+/**
+ * The destination after signing up, derived from the query that arrived with
+ * the visitor.
+ *
+ * A plan or template chosen on the marketing site travels as `?plan=` /
+ * `?template=` on the signup URL. Both the signup form and the proxy need the
+ * exact same answer: the proxy intercepts an already-signed-in visitor who
+ * opens /signup (a stale link, a gallery CTA) and previously redirected to a
+ * bare /dashboard, silently discarding the template they had just picked —
+ * the create dialog then opened with no template preselected. One function,
+ * shared by both call sites, means the two paths cannot drift.
+ *
+ * The plan is validated against the fixed product list and every interpolated
+ * value is percent-encoded, so a crafted query cannot smuggle a path or an
+ * authority into the resulting relative redirect.
+ */
+const PRODUCT_IDS = [
+  "basic_monthly",
+  "basic_yearly",
+  "pro_monthly",
+  "pro_yearly",
+] as const;
+
+export function postSignupDestination(
+  params: Pick<URLSearchParams, "get">
+): string {
+  const plan = params.get("plan");
+  const planId =
+    plan && (PRODUCT_IDS as readonly string[]).includes(plan) ? plan : null;
+  const template = params.get("template");
+  const templateParam = template
+    ? `&template=${encodeURIComponent(template)}`
+    : "";
+
+  if (planId) {
+    return `/dashboard/billing?upgrade=${encodeURIComponent(planId)}${templateParam}`;
+  }
+  if (template) {
+    return `/dashboard?template=${encodeURIComponent(template)}`;
+  }
+  return "/dashboard";
+}
+
 /** True when a custom domain is syntactically usable. */
 export function normalizeHostname(input: string): string | null {
   let value = input.trim().toLowerCase();

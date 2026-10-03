@@ -5,29 +5,21 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ShipSprintLogo } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
+import { postSignupDestination } from "@/lib/redirect";
 import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
-
-const PRODUCT_IDS = [
-  "basic_monthly",
-  "basic_yearly",
-  "pro_monthly",
-  "pro_yearly",
-] as const;
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // A visitor who clicks "Get Started with Pro" on the pricing table arrives
-  // with ?plan=pro_yearly. Previously every pricing call-to-action pointed at a
-  // bare /signup, so the chosen plan was discarded and the user had to pick
-  // again.
-  const requestedPlan = searchParams.get("plan");
-  const isKnownPlan = PRODUCT_IDS.includes(
-    requestedPlan as (typeof PRODUCT_IDS)[number]
-  );
-  const planId = isKnownPlan ? requestedPlan! : null;
-  const requestedTemplate = searchParams.get("template");
+  // with ?plan=pro_yearly, and one who picks a template on /templates arrives
+  // with ?template=<id>. Previously every pricing call-to-action pointed at a
+  // bare /signup, so the chosen plan was discarded. The destination rules now
+  // live in postSignupDestination(), shared with the proxy: an already-signed-
+  // in visitor who opens this URL is bounced by the proxy through the very
+  // same function, so the two paths cannot drift.
+  const destination = postSignupDestination(searchParams);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,16 +28,6 @@ function SignupForm() {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  /** Dashboard on a free account, billing when a plan was chosen, preserving chosen template. */
-  const templateParam = requestedTemplate
-    ? `&template=${encodeURIComponent(requestedTemplate)}`
-    : "";
-  const destination = planId
-    ? `/dashboard/billing?upgrade=${encodeURIComponent(planId)}${templateParam}`
-    : requestedTemplate
-    ? `/dashboard?template=${encodeURIComponent(requestedTemplate)}`
-    : "/dashboard";
 
   // Created on demand rather than during render: this component is evaluated
   // during static prerendering, where the browser client cannot be constructed.

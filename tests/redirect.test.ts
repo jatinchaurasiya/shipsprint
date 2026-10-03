@@ -2,6 +2,7 @@ import { afterEach, describe, it, expect } from "vitest";
 import {
   appOrigin,
   canonicalOrigin,
+  postSignupDestination,
   safeRedirectPath,
   sessionCookieDomain,
   normalizeHostname,
@@ -265,5 +266,56 @@ describe("sessionCookieDomain", () => {
     delete process.env.ROOT_DOMAIN;
     delete process.env.NEXT_PUBLIC_ROOT_DOMAIN;
     expect(sessionCookieDomain()).toBeUndefined();
+  });
+});
+
+/**
+ * The signup destination is shared between the signup form and the proxy's
+ * authed-/signup redirect. Both must agree, or a visitor who picks a template
+ * and is bounced off /signup loses that choice silently.
+ */
+describe("postSignupDestination", () => {
+  const params = (query: string) => new URLSearchParams(query);
+
+  it("lands on the dashboard when nothing was chosen", () => {
+    expect(postSignupDestination(params(""))).toBe("/dashboard");
+    expect(postSignupDestination(params("utm_source=tw"))).toBe("/dashboard");
+  });
+
+  it("carries a chosen template into the create flow", () => {
+    expect(postSignupDestination(params("template=ios-swift"))).toBe(
+      "/dashboard?template=ios-swift"
+    );
+  });
+
+  it("carries a chosen plan into billing", () => {
+    expect(postSignupDestination(params("plan=pro_monthly"))).toBe(
+      "/dashboard/billing?upgrade=pro_monthly"
+    );
+    expect(postSignupDestination(params("plan=basic_yearly"))).toBe(
+      "/dashboard/billing?upgrade=basic_yearly"
+    );
+  });
+
+  it("carries plan and template together", () => {
+    expect(
+      postSignupDestination(params("plan=pro_yearly&template=saas-dev"))
+    ).toBe("/dashboard/billing?upgrade=pro_yearly&template=saas-dev");
+  });
+
+  it("ignores an unknown plan instead of trusting it", () => {
+    expect(postSignupDestination(params("plan=bogus"))).toBe("/dashboard");
+    expect(postSignupDestination(params("plan=https://evil.com"))).toBe(
+      "/dashboard"
+    );
+    expect(postSignupDestination(params("plan=bogus&template=ios-swift"))).toBe(
+      "/dashboard?template=ios-swift"
+    );
+  });
+
+  it("percent-encodes the template so it cannot escape the query", () => {
+    expect(
+      postSignupDestination(params("template=" + encodeURIComponent("a&b=c")))
+    ).toBe("/dashboard?template=a%26b%3Dc");
   });
 });

@@ -183,6 +183,137 @@ describe("proxy()", () => {
       expect(res.headers.get("location")).toBe("https://shipsprint.site/dashboard");
     });
 
+    it("keeps the chosen template when a signed-in visitor lands on /signup", async () => {
+      // The gallery's "Use template" CTA points at /signup?template=<id>. A
+      // signed-in visitor is bounced off /signup by the proxy; the old bare
+      // /dashboard redirect discarded the template, so the create dialog on
+      // the dashboard opened with nothing preselected.
+      updateSessionMock.mockResolvedValue({
+        supabaseResponse: NextResponse.next(),
+        user: { id: "user-1" },
+      });
+      const { proxy } = await loadProxy(env);
+      const res = await proxy(
+        brokenRequest("/signup?template=ios-swift", "shipsprint.site")
+      );
+
+      expect(res.status).toBe(307);
+      expect(res.headers.get("location")).toBe(
+        "https://shipsprint.site/dashboard?template=ios-swift"
+      );
+    });
+
+    it("keeps a chosen plan (and template) when a signed-in visitor lands on /signup", async () => {
+      updateSessionMock.mockResolvedValue({
+        supabaseResponse: NextResponse.next(),
+        user: { id: "user-1" },
+      });
+      const { proxy } = await loadProxy(env);
+      const res = await proxy(
+        brokenRequest("/signup?plan=pro_monthly&template=ios-swift", "shipsprint.site")
+      );
+
+      expect(res.headers.get("location")).toBe(
+        "https://shipsprint.site/dashboard/billing?upgrade=pro_monthly&template=ios-swift"
+      );
+    });
+
+    it("ignores an unknown plan on /signup instead of trusting it", async () => {
+      updateSessionMock.mockResolvedValue({
+        supabaseResponse: NextResponse.next(),
+        user: { id: "user-1" },
+      });
+      const { proxy } = await loadProxy(env);
+      const res = await proxy(
+        brokenRequest("/signup?plan=bogus&template=saas-dev", "shipsprint.site")
+      );
+
+      expect(res.headers.get("location")).toBe(
+        "https://shipsprint.site/dashboard?template=saas-dev"
+      );
+    });
+
+    it("honors a validated ?next= for a signed-in visitor on /login", async () => {
+      updateSessionMock.mockResolvedValue({
+        supabaseResponse: NextResponse.next(),
+        user: { id: "user-1" },
+      });
+      const { proxy } = await loadProxy(env);
+      const res = await proxy(
+        brokenRequest("/login?next=%2Fdashboard%2Feditor%2Fabc", "shipsprint.site")
+      );
+
+      expect(res.headers.get("location")).toBe(
+        "https://shipsprint.site/dashboard/editor/abc"
+      );
+    });
+
+    it("rejects an off-origin ?next= for a signed-in visitor on /login", async () => {
+      updateSessionMock.mockResolvedValue({
+        supabaseResponse: NextResponse.next(),
+        user: { id: "user-1" },
+      });
+      const { proxy } = await loadProxy(env);
+      const res = await proxy(
+        brokenRequest("/login?next=https%3A%2F%2Fevil.com", "shipsprint.site")
+      );
+
+      expect(res.headers.get("location")).toBe("https://shipsprint.site/dashboard");
+    });
+
+    it.each(["%2Flogin", "%2Fsignup%3Fplan%3Dpro_monthly"])(
+      "does not bounce a signed-in visitor back to an auth entry page (?next=%s)",
+      async (next) => {
+        updateSessionMock.mockResolvedValue({
+          supabaseResponse: NextResponse.next(),
+          user: { id: "user-1" },
+        });
+        const { proxy } = await loadProxy(env);
+        const res = await proxy(
+          brokenRequest(`/login?next=${next}`, "shipsprint.site")
+        );
+
+        expect(res.headers.get("location")).toBe("https://shipsprint.site/dashboard");
+      }
+    );
+
+    it("redirects an unauthenticated /dashboard/templates to login, preserving next", async () => {
+      updateSessionMock.mockResolvedValue({
+        supabaseResponse: NextResponse.next(),
+        user: null,
+      });
+      const { proxy } = await loadProxy(env);
+      const res = await proxy(
+        brokenRequest("/dashboard/templates", "shipsprint.site")
+      );
+
+      expect(res.status).toBe(307);
+      expect(res.headers.get("location")).toBe(
+        "https://shipsprint.site/login?next=%2Fdashboard%2Ftemplates"
+      );
+    });
+
+    it("lets a signed-in visitor through to /dashboard/templates", async () => {
+      updateSessionMock.mockResolvedValue({
+        supabaseResponse: NextResponse.next(),
+        user: { id: "user-1" },
+      });
+      const { proxy } = await loadProxy(env);
+      const res = await proxy(
+        brokenRequest("/dashboard/templates", "shipsprint.site")
+      );
+      expect(noRedirect(res)).toBe(true);
+    });
+
+    it("does not gate the public /templates gallery", async () => {
+      const { proxy } = await loadProxy(env);
+      const res = await proxy(
+        publicRequest("https://shipsprint.site/templates", "shipsprint.site")
+      );
+      expect(noRedirect(res)).toBe(true);
+      expect(updateSessionMock).not.toHaveBeenCalled();
+    });
+
     it("lets a logged-in visitor through to /dashboard", async () => {
       updateSessionMock.mockResolvedValue({
         supabaseResponse: NextResponse.next(),
