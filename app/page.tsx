@@ -1,12 +1,12 @@
 /* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V5 */
-/* Marketing: Bento Grid · F1 knobs: tiles=5, spans=mosaic, border=hairline · H2 split diptych (ratio 7/5, divider hairline) · F5 annotated proof · T4 stat strip · N5 floating pill · Ft2 inline single line · studied-DNA (nexbit-temlis) */
+/* Marketing: Bento Grid · blue-panel hero + CSS iPhone (explicit user overrides gates 2/47) · F1 knobs: tiles=5, spans=mosaic, border=hairline · H2 split diptych (ratio 7/5, divider hairline) · F5 annotated proof · T4 stat strip · N5 floating pill · Ft2 inline single line · studied-DNA (nexbit-temlis) */
 import Link from "next/link";
 import { ShipSprintLogo } from "@/components/brand/logo";
 import { unstable_cache } from "next/cache";
 import { fetchCatalogue, groupTiers } from "@/lib/catalogue";
 import { FREE_PLAN, formatPrice, PLAN_FEATURES, planForDisplay } from "@/lib/plans";
 import { yearlySavingPercent } from "@/types/billing";
-import { ArrowRight, ArrowUpRight, Check, Star } from "lucide-react";
+import { ArrowRight, Check, Signal, Star, Wifi, BatteryFull } from "lucide-react";
 
 /**
  * Prices come from the `products` table, not from literals in this file.
@@ -69,77 +69,135 @@ export default async function HomePage() {
         </header>
       </div>
 
-      {/* Hero — H2 split diptych 7/5: promise left, phone proof right */}
-      <section className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-10 px-4 pt-14 pb-16 sm:px-6 md:grid-cols-7 md:pt-20 md:pb-20 lg:px-8">
-        <div className="md:col-span-4">
-          <p className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium whitespace-nowrap text-[#505050] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-600" aria-hidden="true" />
-            <span>Built for indie iOS &amp; Android developers</span>
-          </p>
-          <h1 className="hero__display mt-5 font-display text-[clamp(2.5rem,5vw+0.5rem,4.25rem)] leading-[1.02] font-semibold tracking-[-0.03em] text-balance">
-            Launch a landing page for your app in 3 minutes.
-          </h1>
-          <p className="mt-5 max-w-[52ch] text-base leading-relaxed text-[#505050] sm:text-lg dark:text-zinc-300">
-            Pick an App Store template, make it yours, and publish to your
-            domain. Store buttons, screenshots, and analytics — live from the
-            same component visitors see.
-          </p>
-          <div className="mt-7 flex flex-wrap items-center gap-3 leading-none">
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#131313] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-black active:bg-black active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-white"
-            >
-              <span>Start building for free</span>
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-            <Link
-              href="/templates"
-              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-zinc-300 bg-white px-6 py-3 text-sm font-medium text-[#131313] transition-colors hover:border-zinc-400 hover:bg-zinc-50 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-            >
-              <span>Browse templates</span>
-              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </div>
-          <p className="mt-4 text-[13px] text-[#505050] dark:text-zinc-400">
-            Free subdomain included. No credit card. Cancel anytime.
-          </p>
-        </div>
-        <div className="md:col-span-3">
-          <figure className="overflow-hidden rounded-3xl border border-zinc-200 bg-[#f7f7f7] dark:border-zinc-800 dark:bg-zinc-900/40">
-            <figcaption className="border-b border-zinc-200 px-5 py-2.5 text-center font-mono text-[11px] text-[#505050] dark:border-zinc-800 dark:text-zinc-400">
-              zenhabit.shipsprint.site — live page
-            </figcaption>
-            <div className="p-5 sm:p-7">
-              <p className="inline-flex items-center gap-1.5 rounded-full bg-blue-600/10 px-2.5 py-1 text-[11px] font-medium whitespace-nowrap text-blue-600 dark:text-blue-400">
-                Featured on the App Store
+      {/* Hero — full-bleed blue panel mirroring the reference: white promise
+          copy left, iPhone proof right. Explicit user overrides: monochrome
+          blue wash (gate 2), CSS iPhone frame (gate 47). ShipSprint copy only. */}
+      <section className="px-3 pt-4 sm:px-4">
+        <div
+          className="relative overflow-hidden rounded-[2rem] text-white sm:rounded-[2.5rem]"
+          style={{ background: "linear-gradient(135deg, #2EA3DC 0%, #1B7FC4 60%, #14679E 100%)" }}
+        >
+          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-6 pt-12 pb-14 sm:px-10 md:grid-cols-7 md:pt-16 md:pb-20">
+            <div className="md:col-span-4">
+              <p className="inline-flex items-center whitespace-nowrap rounded-full border border-white/40 px-3.5 py-1.5 text-[11px] font-semibold tracking-widest uppercase">
+                Built for indie app makers
               </p>
-              <p className="mt-3 text-xl font-semibold tracking-tight text-balance">
-                ZenHabit — Daily Mindfulness
+              <h1 className="hero__display mt-6 font-display text-[clamp(2.75rem,6vw+0.5rem,4.75rem)] leading-[1.0] font-semibold tracking-[-0.02em] text-balance">
+                Launch your app page.
+                <br />
+                Without the code.
+              </h1>
+              <p className="mt-5 max-w-[52ch] text-base leading-relaxed text-white/85 sm:text-lg">
+                Plan, pick, and publish your App Store landing page in one
+                simple workspace. Stay on-brand, track every install, and never
+                touch frontend code again.
               </p>
-              <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-[#505050] dark:text-zinc-300">
-                Gentle nudges, progress rings, and private cloud sync that make
-                healthy routines stick without anxiety.
-              </p>
-              <div className="mt-5 flex flex-wrap items-center gap-2.5 leading-none">
-                <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[#131313] px-4 py-2.5 text-xs font-medium text-white dark:bg-zinc-50 dark:text-zinc-950">
-                  Download on App Store
-                </span>
-                <span className="inline-flex items-center whitespace-nowrap rounded-full border border-zinc-300 px-4 py-2.5 text-xs font-medium text-[#131313] dark:border-zinc-700 dark:text-zinc-100">
-                  Get it on Google Play
-                </span>
+              <div className="mt-8 flex flex-wrap items-center gap-3.5 leading-none">
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center gap-2.5 rounded-full bg-white py-2 pr-2 pl-6 text-[13px] font-semibold tracking-wider whitespace-nowrap text-[#131313] uppercase transition-colors hover:bg-zinc-100 active:bg-zinc-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  <span>Start building</span>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#131313] text-white" aria-hidden="true">
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                </Link>
+                <Link
+                  href="/templates"
+                  className="inline-flex items-center whitespace-nowrap rounded-full bg-[#131313] px-6 py-3 text-[13px] font-semibold tracking-wider text-white uppercase transition-colors hover:bg-black active:bg-black active:scale-[0.98]"
+                >
+                  <span>Browse templates</span>
+                </Link>
               </div>
-              <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-zinc-200 bg-zinc-200 text-left dark:border-zinc-800 dark:bg-zinc-800">
-                <div className="bg-white p-3.5 dark:bg-zinc-950">
-                  <dt className="text-[11px] font-medium text-[#505050] dark:text-zinc-400">Setup</dt>
-                  <dd className="mt-0.5 text-sm font-semibold">3 minutes</dd>
-                </div>
-                <div className="bg-white p-3.5 dark:bg-zinc-950">
-                  <dt className="text-[11px] font-medium text-[#505050] dark:text-zinc-400">Preview drift</dt>
-                  <dd className="mt-0.5 text-sm font-semibold">Zero</dd>
-                </div>
-              </dl>
+              <p className="mt-8 flex items-center gap-2.5" role="img" aria-label="Starred by indie makers">
+                <span className="flex items-center gap-1" aria-hidden="true">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-300 text-yellow-300" aria-hidden="true" />
+                  ))}
+                </span>
+                <span className="text-xs font-semibold tracking-widest whitespace-nowrap uppercase">
+                  Built for App Store launches
+                </span>
+              </p>
             </div>
-          </figure>
+            <div className="md:col-span-3">
+              <div className="relative mx-auto w-full max-w-[290px]">
+                {/* iPhone frame — explicit user request overriding gate 47 */}
+                <div className="rounded-[3rem] bg-zinc-950 p-2.5 shadow-[0_30px_60px_rgba(0,0,0,0.35)]">
+                  <div className="relative overflow-hidden rounded-[2.4rem] bg-white text-zinc-900">
+                    {/* Dynamic island */}
+                    <div className="absolute top-2.5 left-1/2 h-6 w-24 -translate-x-1/2 rounded-full bg-zinc-950" aria-hidden="true" />
+                    {/* Status bar */}
+                    <div className="flex items-center justify-between px-6 pt-3 pb-1 text-[11px] font-semibold">
+                      <span>9:41</span>
+                      <span className="flex items-center gap-1" aria-hidden="true">
+                        <Signal className="h-3 w-3" aria-hidden="true" />
+                        <Wifi className="h-3 w-3" aria-hidden="true" />
+                        <BatteryFull className="h-3.5 w-3.5" aria-hidden="true" />
+                      </span>
+                    </div>
+                    {/* Mini app page */}
+                    <div className="px-4 pt-2 pb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#131313] text-sm font-bold text-white" aria-hidden="true">Z</span>
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-semibold">ZenHabit</p>
+                          <p className="truncate font-mono text-[10px] text-zinc-500">zenhabit.shipsprint.site</p>
+                        </div>
+                      </div>
+                      <p className="mt-3 inline-flex rounded-full bg-blue-600/10 px-2 py-0.5 text-[10px] font-medium whitespace-nowrap text-blue-700">
+                        Featured on the App Store
+                      </p>
+                      <p className="mt-1.5 text-lg leading-snug font-semibold tracking-tight">
+                        Build habits that stick.
+                      </p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                        Gentle nudges and progress rings that make routines last.
+                      </p>
+                      <div className="mt-3 space-y-2">
+                        <span className="flex items-center justify-center whitespace-nowrap rounded-full bg-[#131313] px-3 py-2 text-[11px] font-semibold text-white">
+                          Download on App Store
+                        </span>
+                        <span className="flex items-center justify-center whitespace-nowrap rounded-full border border-zinc-300 px-3 py-2 text-[11px] font-semibold">
+                          Get it on Google Play
+                        </span>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2" aria-hidden="true">
+                        <span className="h-16 rounded-xl bg-zinc-100" />
+                        <span className="h-16 rounded-xl bg-zinc-100" />
+                      </div>
+                    </div>
+                    {/* Home indicator */}
+                    <div className="flex justify-center bg-white pt-1 pb-2" aria-hidden="true">
+                      <span className="h-1 w-24 rounded-full bg-zinc-900" />
+                    </div>
+                  </div>
+                </div>
+                {/* Floating card: publish proof */}
+                <div className="absolute top-20 -right-3 hidden rounded-2xl border border-zinc-200 bg-white p-3.5 text-zinc-900 shadow-xl sm:block lg:-right-10" aria-hidden="true">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold">
+                    <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
+                    Published
+                  </p>
+                  <p className="mt-1 font-mono text-[10px] text-zinc-500">zenhabit.shipsprint.site</p>
+                  <p className="mt-1.5 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                    TLS Active
+                  </p>
+                </div>
+                {/* Floating card: install tracking */}
+                <div className="absolute bottom-24 -left-3 hidden rounded-2xl border border-zinc-200 bg-white p-3.5 text-zinc-900 shadow-xl sm:block lg:-left-10" aria-hidden="true">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold">
+                    <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
+                    Install tracked
+                  </p>
+                  <p className="mt-1 text-[10px] text-zinc-500">+1 App Store tap · just now</p>
+                  <p className="mt-1.5 inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600">
+                    Cookieless
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
