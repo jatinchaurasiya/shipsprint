@@ -370,8 +370,14 @@ create index if not exists idx_templates_active on public.templates (is_active, 
 do $$
 begin
   if not exists (
-    select 1 from pg_constraint
-     where conname = 'sites_template_id_fkey' and conrelid = 'public.sites'::regclass
+    select 1
+      from pg_constraint c
+      join pg_attribute a
+        on a.attrelid = c.conrelid and a.attnum = any (c.conkey)
+     where c.contype = 'f'
+       and c.conrelid = 'public.sites'::regclass
+       and c.confrelid = 'public.templates'::regclass
+       and a.attname = 'template_id'
   ) then
     alter table public.sites
       add constraint sites_template_id_fkey
@@ -673,9 +679,9 @@ select
   (ev.created_at at time zone 'utc')::date as day,
   count(*) filter (where ev.event_type = 'page_view')   as page_views,
   count(*) filter (where ev.event_type = 'button_click') as button_clicks,
-  count(*) filter (where ev.meta->>'device' = 'mobile')  as mobile,
-  count(*) filter (where ev.meta->>'device' = 'tablet')  as tablet,
-  count(*) filter (where ev.meta->>'device' = 'desktop') as desktop
+  count(*) filter (where ev.event_type = 'page_view' and ev.meta->>'device' = 'mobile')  as mobile,
+  count(*) filter (where ev.event_type = 'page_view' and ev.meta->>'device' = 'tablet')  as tablet,
+  count(*) filter (where ev.event_type = 'page_view' and ev.meta->>'device' = 'desktop') as desktop
 from public.analytics_events ev
 group by ev.site_id, (ev.created_at at time zone 'utc')::date;
 
@@ -686,8 +692,7 @@ select
   (ev.created_at at time zone 'utc')::date as day,
   case
     when ev.meta->>'referrer' is null
-      or ev.meta->>'referrer' = ''
-      or ev.meta->>'referrer' = 'Direct'
+      or lower(trim(ev.meta->>'referrer')) in ('', 'direct')
       then 'Direct'
     else regexp_replace(regexp_replace(ev.meta->>'referrer', '^https?://(www\.)?', ''), '/.*$', '')
   end as source,
@@ -699,8 +704,7 @@ group by
   (ev.created_at at time zone 'utc')::date,
   case
     when ev.meta->>'referrer' is null
-      or ev.meta->>'referrer' = ''
-      or ev.meta->>'referrer' = 'Direct'
+      or lower(trim(ev.meta->>'referrer')) in ('', 'direct')
       then 'Direct'
     else regexp_replace(regexp_replace(ev.meta->>'referrer', '^https?://(www\.)?', ''), '/.*$', '')
   end;
@@ -709,11 +713,15 @@ create or replace view public.site_analytics_cta
 with (security_invoker = true) as
 select
   ev.site_id,
+  (ev.created_at at time zone 'utc')::date as day,
   coalesce(nullif(ev.meta->>'button_type', ''), 'unknown') as button_type,
   count(*) as clicks
 from public.analytics_events ev
 where ev.event_type = 'button_click'
-group by ev.site_id, coalesce(nullif(ev.meta->>'button_type', ''), 'unknown');
+group by
+  ev.site_id,
+  (ev.created_at at time zone 'utc')::date,
+  coalesce(nullif(ev.meta->>'button_type', ''), 'unknown');
 
 -- Daily rollup without Cartesian multiplication or null-key crashes
 create or replace function public.rollup_telemetry(p_days integer default 3)

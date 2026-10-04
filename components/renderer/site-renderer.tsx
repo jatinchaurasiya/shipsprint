@@ -66,7 +66,7 @@ export function SiteRenderer({
           site_id: siteId,
           event_type: "page_view",
           meta: {
-            referrer: document.referrer || "direct",
+            referrer: document.referrer || "Direct",
             path: window.location.pathname,
             screen: `${window.innerWidth}x${window.innerHeight}`,
           },
@@ -78,18 +78,33 @@ export function SiteRenderer({
 
   const handleCtaClick = (buttonType: string, targetUrl?: string) => {
     if (isPreview || !siteId) return;
+    const payload = JSON.stringify({
+      site_id: siteId,
+      event_type: "button_click",
+      meta: {
+        button_type: buttonType,
+        target_url: targetUrl || "",
+        referrer: document.referrer || "Direct",
+        path: window.location.pathname,
+      },
+    });
+
+    try {
+      if (
+        typeof navigator !== "undefined" &&
+        typeof navigator.sendBeacon === "function"
+      ) {
+        const blob = new Blob([payload], { type: "application/json" });
+        const sent = navigator.sendBeacon("/api/track", blob);
+        if (sent) return;
+      }
+    } catch {}
+
     try {
       fetch("/api/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          site_id: siteId,
-          event_type: "button_click",
-          meta: {
-            button_type: buttonType,
-            target_url: targetUrl || "",
-          },
-        }),
+        body: payload,
         keepalive: true,
       }).catch(() => {});
     } catch {}
@@ -126,7 +141,7 @@ export function SiteRenderer({
               rel="noopener noreferrer"
               onClick={() =>
                 handleCtaClick(
-                  "nav_download",
+                  store_links.app_store_url ? "app_store_nav" : "play_store_nav",
                   store_links.app_store_url || store_links.play_store_url
                 )
               }

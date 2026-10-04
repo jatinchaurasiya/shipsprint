@@ -26,6 +26,7 @@ const META_KEY_ALLOWLIST = new Set([
   "screen",
   "button_type",
   "target_host",
+  "target_url",
 ]);
 
 const MAX_META_BYTES = 1024;
@@ -81,7 +82,8 @@ export async function POST(request: NextRequest) {
 
   let body: TrackBody;
   try {
-    body = (await request.json()) as TrackBody;
+    const raw = await request.text();
+    body = (raw ? JSON.parse(raw) : {}) as TrackBody;
   } catch {
     return new NextResponse(null, { status: 204 });
   }

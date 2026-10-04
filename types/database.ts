@@ -198,6 +198,7 @@ export interface AnalyticsSourceRow {
 /** Row shape returned by `site_analytics_cta`. */
 export interface AnalyticsCtaRow {
   site_id: string;
+  day: string;
   button_type: string;
   clicks: number;
 }
