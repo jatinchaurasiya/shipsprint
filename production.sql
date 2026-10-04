@@ -771,6 +771,33 @@ begin
 end;
 $$ language plpgsql security definer set search_path = public, pg_temp;
 
+-- Anonymous platform-wide metrics for marketing social proof
+create or replace function public.get_platform_metrics()
+returns jsonb as $$
+declare
+  v_published_sites integer;
+  v_active_templates integer;
+  v_total_clicks bigint;
+begin
+  select count(*) into v_published_sites 
+  from public.sites 
+  where status = 'published';
+
+  select count(*) into v_active_templates 
+  from public.templates 
+  where is_active = true;
+
+  select coalesce(sum(button_clicks), 0) into v_total_clicks 
+  from public.telemetry_daily;
+
+  return jsonb_build_object(
+    'published_sites', v_published_sites,
+    'active_templates', v_active_templates,
+    'total_clicks', v_total_clicks
+  );
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
 -- ===========================================================================
 -- 16. ROW LEVEL SECURITY & PERMISSIONS
 -- ===========================================================================
@@ -907,6 +934,7 @@ revoke all on public.webhook_events, public.audit_log from anon, authenticated;
 
 -- Views permissions
 grant select on public.site_analytics_summary, public.site_analytics_sources, public.site_analytics_cta to authenticated;
+grant execute on function public.get_platform_metrics() to anon, authenticated;
 
 -- Sequences & Service Role
 grant usage on all sequences in schema public to authenticated;

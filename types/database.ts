@@ -201,3 +201,15 @@ export interface AnalyticsCtaRow {
   button_type: string;
   clicks: number;
 }
+
+/** Aggregate platform-wide telemetry and marketing proof metrics. */
+export interface PlatformMetrics {
+  publishedSites: number;
+  activeTemplates: number;
+  uptimePercent: number;
+  launchSpeedMinutes: number;
+  makerRating: number;
+  reviewCount: number;
+  weeklyInstallsSample: number;
+  conversionRate: number;
+}

@@ -17,7 +17,7 @@ Theme route: **studied-DNA full-shape** (gate 57 — user demanded exact Temlis 
 - Banner: `--banner-height: 40px`. `--z-sticky-nav: 300`, `--z-sticky: 200` (gate 56).
 
 ## Macrostructures (diversified, never repeat)
-- Marketing `app/page.tsx`: **Bento Grid** (rotated from Split Studio per gate 8; F1 tiles=5 mosaic hairline, F5 annotated rows, T4 stats) (H2 split diptych hero, alternating proof modules). Nav **N5 floating pill**, Footer **Ft2 inline single line**.
+- Marketing `app/page.tsx`: **Bento Grid** (rotated from Split Studio per gate 8; F1 tiles=5 mosaic hairline, F5 annotated rows, T4 stats) (H2 split diptych hero, alternating proof modules). Nav **N5 floating pill**, Footer **Ft5 Statement** (shared `components/brand/site-footer.tsx`: giant `/logo-dark.png` wordmark + Our-office contact + legal bar).
 - Renderer `components/renderer/site-renderer.tsx`: **Narrative Workflow** (1.0/2.0/3.0 stages). Nav **N9 edge-aligned minimal**, Footer **Ft1 mast-headed**.
 - Templates gallery: Catalogue index (no hero duplication).
 

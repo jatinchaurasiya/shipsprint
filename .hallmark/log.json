@@ -5,6 +5,15 @@
     "theme": "studied-DNA (source: nexbit-temlis.webflow.io, full-shape rebuild, ShipSprint copy)",
     "enrichment": "none",
     "nav": "N5",
+    "footer": "Ft5",
+    "brief": "ShipSprint footers \u2014 Ft5 statement, shared component (rotated from Ft2)"
+  },
+  {
+    "date": "2026-10-03",
+    "macrostructure": "Bento Grid",
+    "theme": "studied-DNA (source: nexbit-temlis.webflow.io, full-shape rebuild, ShipSprint copy)",
+    "enrichment": "none",
+    "nav": "N5",
     "footer": "Ft2",
     "brief": "ShipSprint landing \u2014 Temlis-shape Bento rebuild"
   },

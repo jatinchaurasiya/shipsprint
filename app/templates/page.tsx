@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShipSprintLogo } from "@/components/brand/logo";
+import { SiteFooter } from "@/components/brand/site-footer";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { TemplateGallery } from "@/components/templates/template-gallery";
 import type { Metadata } from "next";
@@ -94,33 +95,8 @@ export default function TemplatesPage() {
         </div>
       </section>
 
-      {/* Ft2 inline single line */}
-      <footer className="border-t border-zinc-200 dark:border-zinc-800">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-4 px-4 py-8 text-[13px] text-zinc-600 sm:flex-row sm:items-center sm:px-6 lg:px-8 dark:text-zinc-400">
-          <p className="inline-flex min-w-0 items-center gap-3 leading-none">
-            <ShipSprintLogo href="/" size="sm" />
-            <span className="hidden sm:inline">The landing-page platform for indie apps.</span>
-          </p>
-          <nav aria-label="Footer" className="flex flex-wrap items-center gap-5 leading-none">
-            <Link href="/templates" aria-current="page" className="whitespace-nowrap font-medium text-zinc-950 dark:text-zinc-100">
-              Templates
-            </Link>
-            <Link href="/terms" className="whitespace-nowrap transition-colors hover:text-zinc-950 active:text-zinc-950 dark:hover:text-zinc-100">
-              Terms
-            </Link>
-            <Link href="/privacy" className="whitespace-nowrap transition-colors hover:text-zinc-950 active:text-zinc-950 dark:hover:text-zinc-100">
-              Privacy
-            </Link>
-            <Link href="/imprint" className="whitespace-nowrap transition-colors hover:text-zinc-950 active:text-zinc-950 dark:hover:text-zinc-100">
-              Imprint
-            </Link>
-            <Link href="/login" className="whitespace-nowrap transition-colors hover:text-zinc-950 active:text-zinc-950 dark:hover:text-zinc-100">
-              Sign in
-            </Link>
-            <span className="whitespace-nowrap">© {new Date().getFullYear()} ShipSprint</span>
-          </nav>
-        </div>
-      </footer>
+      {/* Ft5 Statement — shared SiteFooter (giant wordmark + office) */}
+      <SiteFooter />
     </div>
   );
 }
