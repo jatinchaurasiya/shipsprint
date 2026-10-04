@@ -814,16 +814,47 @@ group by
 create or replace view public.site_analytics_cta
 with (security_invoker = true) as
 select
-  ev.site_id,
-  (ev.created_at at time zone 'utc')::date as day,
-  coalesce(nullif(ev.meta->>'button_type', ''), 'unknown') as button_type,
+  site_id,
+  day,
+  button_type,
+  store,
   count(*) as clicks
-from public.analytics_events ev
-where ev.event_type = 'button_click'
-group by
-  ev.site_id,
-  (ev.created_at at time zone 'utc')::date,
-  coalesce(nullif(ev.meta->>'button_type', ''), 'unknown');
+from (
+  select
+    site_id,
+    day,
+    button_type,
+    case
+      -- 1. An explicit store in the button type is authoritative.
+      when lower(button_type) ~ '(app_store|ios|apple)' then 'apple'
+      when lower(button_type) ~ '(play_store|android|google)' then 'google'
+      -- 2. Legacy store-agnostic types ('nav_download') still carry the store
+      --    in the destination they opened. Comparing the hostname rather than
+      --    the whole URL keeps a lookalike such as
+      --    'https://apps.apple.com.evil.example/' out of the Apple total.
+      when target_host in ('apps.apple.com', 'itunes.apple.com') then 'apple'
+      when target_host in ('play.google.com', 'market.android.com') then 'google'
+      -- 3. Anything else is not a store click.
+      else 'other'
+    end as store
+  from (
+    select
+      ev.site_id,
+      (ev.created_at at time zone 'utc')::date as day,
+      coalesce(nullif(ev.meta->>'button_type', ''), 'unknown') as button_type,
+      -- scheme, then path, then port, leaving the bare hostname
+      split_part(
+        split_part(
+          split_part(lower(coalesce(ev.meta->>'target_url', '')), '://', 2),
+          '/', 1
+        ),
+        ':', 1
+      ) as target_host
+    from public.analytics_events ev
+    where ev.event_type = 'button_click'
+  ) with_target
+) classified
+group by site_id, day, button_type, store;
 
 create or replace function public.rollup_telemetry(p_days integer default 3)
 returns integer as $$

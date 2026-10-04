@@ -12,6 +12,7 @@ import type {
   AnalyticsCtaRow,
 } from "@/types/database";
 import type { AnalyticsPeriod } from "@/app/(dashboard)/dashboard/analytics/page";
+import { resolveCtaStore } from "@/lib/analytics";
 import {
   TrendingUp,
   MousePointerClick,
@@ -123,7 +124,7 @@ export function AnalyticsView({
       }
     });
 
-    // Store button clicks from CTA view: Apple App Store vs Google Play
+    // Store button clicks: Apple App Store vs Google Play, as attributed by the view.
     let appStoreClicks = 0;
     let playStoreClicks = 0;
     let otherClicks = 0;
@@ -132,19 +133,16 @@ export function AnalyticsView({
       const dayKey = typeof cta.day === "string" ? cta.day.slice(0, 10) : "";
       if (dayKey && !dailyMap[dayKey]) return;
 
-      const btn = (cta.button_type || "").toLowerCase();
       const clicks = Number(cta.clicks) || 0;
-      if (
-        btn.includes("app_store") ||
-        btn.includes("ios") ||
-        btn.includes("apple")
-      ) {
+      // The view resolves the store, falling back to the destination a legacy
+      // `nav_download` click opened. Matching the button type here instead
+      // filed every header download click under "Other Buttons" — see
+      // lib/analytics.ts.
+      const store = resolveCtaStore(cta);
+
+      if (store === "apple") {
         appStoreClicks += clicks;
-      } else if (
-        btn.includes("play_store") ||
-        btn.includes("android") ||
-        btn.includes("google")
-      ) {
+      } else if (store === "google") {
         playStoreClicks += clicks;
       } else {
         otherClicks += clicks;

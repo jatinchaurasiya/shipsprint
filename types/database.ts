@@ -200,6 +200,18 @@ export interface AnalyticsCtaRow {
   site_id: string;
   day: string;
   button_type: string;
+  /**
+   * Canonical store attribution computed by the view: 'apple' | 'google' |
+   * 'other'. It resolves the store from button_type and falls back to the
+   * recorded target_url, which is what attributes the legacy 'nav_download'
+   * events the navbar used to emit.
+   *
+   * Optional because the column arrives with migration 007. Until that is
+   * applied to a database the value is undefined and callers fall back to
+   * deriving it from button_type, so a pending migration degrades the
+   * attribution rather than breaking the dashboard.
+   */
+  store?: "apple" | "google" | "other" | null;
   clicks: number;
 }
 
