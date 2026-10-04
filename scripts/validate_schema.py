@@ -29,6 +29,17 @@ except ImportError:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA = ROOT / "supabase" / "schema.sql"
+MIGRATIONS_DIR = ROOT / "supabase" / "migrations"
+
+
+def read_migrations() -> str:
+    """All migration files concatenated, oldest first."""
+    if not MIGRATIONS_DIR.is_dir():
+        return ""
+    return "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted(MIGRATIONS_DIR.glob("*.sql"))
+    )
 
 GREEN, RED, YELLOW, CYAN, BOLD, RESET = (
     "\033[32m", "\033[31m", "\033[33m", "\033[36m", "\033[1m", "\033[39m"
@@ -70,6 +81,7 @@ if not SCHEMA.exists():
     sys.exit(1)
 
 sql = SCHEMA.read_text(encoding="utf-8")
+migrations_sql = read_migrations()
 info(f"{len(sql.splitlines())} lines")
 
 # pglast cannot parse psql meta-commands, so strip them.
@@ -301,6 +313,64 @@ for table, label in [
         ok(f"client writes revoked on {table} ({label})")
     else:
         warn(f"no explicit revoke on {table}; verify no INSERT policy grants it")
+
+# ---------------------------------------------------------------------------
+# 7. Foreign keys guarded by column pair, never by constraint name
+# ---------------------------------------------------------------------------
+head("7. Foreign key guards")
+
+# `create table ... user_id uuid references public.profiles (id)` already makes
+# Postgres name that constraint `sites_user_id_fkey`. An idempotent guard of the
+# form `if not exists (select 1 from pg_constraint where conname =
+# 'sites_user_fkey')` therefore never matches it and appends a SECOND constraint
+# for the same column pair. PostgREST then refuses the relationship outright:
+#
+#   PGRST201: Could not embed because more than one relationship was found
+#   for 'sites' and 'profiles'
+#
+# That is not cosmetic. `/site/[slug]` embedded the owner profile inline, so
+# the query errored, the page treated "error" and "no such site" identically, and
+# every published landing page answered "Page Not Found" while /api/health kept
+# reporting the database healthy.
+named_fk_guards = sorted(
+    set(re.findall(r"conname\s*=\s*'([a-z0-9_]+_fkey)'", sql, re.IGNORECASE))
+)
+if named_fk_guards:
+    for name in named_fk_guards:
+        bad(
+            f"foreign key guarded by constraint name '{name}': an inline "
+            "`references` clause already creates a constraint for that column, "
+            "so this guard adds a duplicate; guard the column pair instead"
+        )
+else:
+    ok("no foreign key guard is keyed by constraint name")
+
+for label, pattern in (
+    (
+        "sites.user_id -> profiles.id guarded by column pair",
+        r"conrelid\s*=\s*'public\.sites'::regclass.{0,400}?confrelid\s*=\s*'public\.profiles'::regclass.{0,400}?attname\s*=\s*'user_id'",
+    ),
+    (
+        "products.plan_id -> plans.id guarded by column pair",
+        r"conrelid\s*=\s*'public\.products'::regclass.{0,400}?confrelid\s*=\s*'public\.plans'::regclass.{0,400}?attname\s*=\s*'plan_id'",
+    ),
+):
+    if re.search(pattern, sql, re.IGNORECASE | re.DOTALL):
+        ok(label)
+    else:
+        bad(f"missing: {label}")
+
+# The repair migration must exist, otherwise an already-provisioned database
+# keeps the duplicates that this file now refuses to create.
+if re.search(
+    r"drop\s+constraint", migrations_sql, re.IGNORECASE
+) and "duplicate" in migrations_sql.lower():
+    ok("a migration exists that drops duplicate foreign keys")
+else:
+    warn(
+        "no migration drops duplicate foreign keys; an existing database will "
+        "keep the duplicates this file no longer creates"
+    )
 
 # ---------------------------------------------------------------------------
 # Summary

@@ -402,8 +402,14 @@ create index if not exists idx_templates_active on public.templates (is_active, 
 do $$
 begin
   if not exists (
-    select 1 from pg_constraint
-     where conname = 'sites_template_id_fkey' and conrelid = 'public.sites'::regclass
+    select 1
+      from pg_constraint c
+      join pg_attribute a
+        on a.attrelid = c.conrelid and a.attnum = any (c.conkey)
+     where c.contype = 'f'
+       and c.conrelid = 'public.sites'::regclass
+       and c.confrelid = 'public.templates'::regclass
+       and a.attname = 'template_id'
   ) then
     alter table public.sites
       add constraint sites_template_id_fkey
@@ -512,8 +518,22 @@ begin
     alter table public.products add constraint products_price_check
       check (price_cents >= 0);
   end if;
-  if not exists (select 1 from pg_constraint where conname='products_plan_fkey'
-                 and conrelid='public.products'::regclass) then
+  -- Foreign keys are guarded by the column pair they cover, NOT by constraint
+  -- name. `create table ... plan_id text references public.plans (id)` already
+  -- creates a constraint named products_plan_id_fkey, so a guard keyed on the
+  -- name products_plan_fkey never matched it and this block appended a SECOND
+  -- constraint for the same column. PostgREST then refuses to embed `plans`
+  -- ("more than one relationship was found"). See also the sites block below.
+  if not exists (
+    select 1
+      from pg_constraint c
+      join pg_attribute a
+        on a.attrelid = c.conrelid and a.attnum = any (c.conkey)
+     where c.contype = 'f'
+       and c.conrelid = 'public.products'::regclass
+       and c.confrelid = 'public.plans'::regclass
+       and a.attname = 'plan_id'
+  ) then
     alter table public.products add constraint products_plan_fkey
       foreign key (plan_id) references public.plans (id);
   end if;
@@ -538,8 +558,23 @@ begin
     alter table public.sites add constraint sites_content_size_check
       check (pg_column_size(content) <= 262144);
   end if;
-  if not exists (select 1 from pg_constraint where conname='sites_user_fkey'
-                 and conrelid='public.sites'::regclass) then
+  -- Guarded by column pair, not by name: the inline
+  -- `user_id uuid references public.profiles (id)` in the create table above
+  -- already produced sites_user_id_fkey, and this block used to add a second
+  -- constraint (sites_user_fkey) for the same column. PostgREST then rejected
+  -- every `profiles` embed with PGRST201 ("more than one relationship was found
+  -- for 'sites' and 'profiles'"), which is what made published landing pages
+  -- render as "Page Not Found".
+  if not exists (
+    select 1
+      from pg_constraint c
+      join pg_attribute a
+        on a.attrelid = c.conrelid and a.attnum = any (c.conkey)
+     where c.contype = 'f'
+       and c.conrelid = 'public.sites'::regclass
+       and c.confrelid = 'public.profiles'::regclass
+       and a.attname = 'user_id'
+  ) then
     alter table public.sites add constraint sites_user_fkey
       foreign key (user_id) references public.profiles (id) on delete cascade;
   end if;
@@ -742,9 +777,9 @@ select
   (ev.created_at at time zone 'utc')::date as day,
   count(*) filter (where ev.event_type = 'page_view')   as page_views,
   count(*) filter (where ev.event_type = 'button_click') as button_clicks,
-  count(*) filter (where ev.meta->>'device' = 'mobile')  as mobile,
-  count(*) filter (where ev.meta->>'device' = 'tablet')  as tablet,
-  count(*) filter (where ev.meta->>'device' = 'desktop') as desktop
+  count(*) filter (where ev.event_type = 'page_view' and ev.meta->>'device' = 'mobile')  as mobile,
+  count(*) filter (where ev.event_type = 'page_view' and ev.meta->>'device' = 'tablet')  as tablet,
+  count(*) filter (where ev.event_type = 'page_view' and ev.meta->>'device' = 'desktop') as desktop
 from public.analytics_events ev
 group by ev.site_id, (ev.created_at at time zone 'utc')::date;
 
@@ -759,8 +794,7 @@ select
   (ev.created_at at time zone 'utc')::date as day,
   case
     when ev.meta->>'referrer' is null
-      or ev.meta->>'referrer' = ''
-      or ev.meta->>'referrer' = 'Direct'
+      or lower(trim(ev.meta->>'referrer')) in ('', 'direct')
       then 'Direct'
     else regexp_replace(regexp_replace(ev.meta->>'referrer', '^https?://(www\.)?', ''), '/.*$', '')
   end as source,
@@ -772,8 +806,7 @@ group by
   (ev.created_at at time zone 'utc')::date,
   case
     when ev.meta->>'referrer' is null
-      or ev.meta->>'referrer' = ''
-      or ev.meta->>'referrer' = 'Direct'
+      or lower(trim(ev.meta->>'referrer')) in ('', 'direct')
       then 'Direct'
     else regexp_replace(regexp_replace(ev.meta->>'referrer', '^https?://(www\.)?', ''), '/.*$', '')
   end;
@@ -782,11 +815,15 @@ create or replace view public.site_analytics_cta
 with (security_invoker = true) as
 select
   ev.site_id,
+  (ev.created_at at time zone 'utc')::date as day,
   coalesce(nullif(ev.meta->>'button_type', ''), 'unknown') as button_type,
   count(*) as clicks
 from public.analytics_events ev
 where ev.event_type = 'button_click'
-group by ev.site_id, coalesce(nullif(ev.meta->>'button_type', ''), 'unknown');
+group by
+  ev.site_id,
+  (ev.created_at at time zone 'utc')::date,
+  coalesce(nullif(ev.meta->>'button_type', ''), 'unknown');
 
 create or replace function public.rollup_telemetry(p_days integer default 3)
 returns integer as $$

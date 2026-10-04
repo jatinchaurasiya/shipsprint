@@ -3,9 +3,10 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolvePublicSite } from "@/lib/site-lookup";
 import { appOrigin } from "@/lib/redirect";
 import { SiteRenderer } from "@/components/renderer/site-renderer";
-import type { Site, Plan } from "@/types/database";
+import type { Site } from "@/types/database";
 import Link from "next/link";
 import { Eye, ArrowLeft, Globe } from "lucide-react";
 
@@ -14,51 +15,13 @@ interface SitePageProps {
 }
 
 /**
- * Resolve site record by either custom domain or subdomain slug.
- * Wrapped in React cache() so generateMetadata and PublicSitePage share a single fetch.
+ * Resolve the site behind a public hostname, or null when there is none.
+ * Wrapped in React cache() so generateMetadata and PublicSitePage share a single
+ * fetch. The lookup itself lives in lib/site-lookup.ts, which keeps this page's
+ * existence dependent on the site row alone rather than on a profile/plan join.
  */
 const getSiteBySlugOrDomain = cache(async (slugParam: string) => {
-  const supabase = createAdminClient();
-
-  const isCustom = slugParam.startsWith("custom:");
-  const lookupValue = isCustom ? slugParam.replace(/^custom:/, "") : slugParam;
-
-  const query = supabase
-    .from("sites")
-    .select(`
-      *,
-      profiles (
-        id,
-        plan_id,
-        plans (
-          id,
-          name,
-          has_branding,
-          has_custom_domain,
-          has_analytics_dashboard
-        )
-      )
-    `);
-
-  if (isCustom) {
-    query.eq("custom_domain", lookupValue);
-  } else {
-    query.eq("slug", lookupValue.toLowerCase());
-  }
-
-  const { data, error } = await query.maybeSingle();
-
-  if (error || !data) {
-    return null;
-  }
-
-  return data as Site & {
-    profiles: {
-      id: string;
-      plan_id: string;
-      plans: Plan;
-    };
-  };
+  return resolvePublicSite(slugParam, createAdminClient());
 });
 
 /**
@@ -68,15 +31,16 @@ export async function generateMetadata({
   params,
 }: SitePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const site = await getSiteBySlugOrDomain(slug);
+  const resolved = await getSiteBySlugOrDomain(slug);
 
-  if (!site) {
+  if (!resolved) {
     return {
       title: "Landing Page Not Found | ShipSprint",
       description: "The requested landing page does not exist or has been removed.",
       robots: { index: false, follow: false },
     };
   }
+  const site = resolved.site;
 
   // Prevent draft headlines and info leaking into search index for non-owners
   if (site.status !== "published") {
@@ -128,9 +92,9 @@ export async function generateMetadata({
 
 export default async function PublicSitePage({ params }: SitePageProps) {
   const { slug } = await params;
-  const site = await getSiteBySlugOrDomain(slug);
+  const resolved = await getSiteBySlugOrDomain(slug);
 
-  if (!site) {
+  if (!resolved) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 text-center font-sans">
         <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-600 mb-6 shadow-sm">
@@ -153,6 +117,11 @@ export default async function PublicSitePage({ params }: SitePageProps) {
     );
   }
 
+  // The site row alone decides whether this page exists; the plan below only
+  // affects branding and entitlements, and already degrades to the free tier
+  // when it cannot be read.
+  const site: Site = resolved.site;
+
   // Check if site is published or accessed by the logged in author
   const isPublished = site.status === "published";
   let isOwner = false;
@@ -173,15 +142,7 @@ export default async function PublicSitePage({ params }: SitePageProps) {
     }
   }
 
-  const ownerPlan: Plan = site.profiles?.plans || {
-    id: "free",
-    name: "Free",
-    price_cents: 0,
-    site_limit: 1,
-    has_branding: true,
-    has_custom_domain: false,
-    has_analytics_dashboard: false,
-  };
+  const ownerPlan = resolved.plan;
 
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "shipsprint.site";
   const liveUrl = site.custom_domain
