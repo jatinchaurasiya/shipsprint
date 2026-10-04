@@ -55,6 +55,31 @@ export function TemplateGallery({ authenticated = false }: TemplateGalleryProps)
       ? BUILTIN_TEMPLATES
       : BUILTIN_TEMPLATES.filter((t) => t.category === selectedCategory);
 
+  if (BUILTIN_TEMPLATES.length === 0) {
+    return (
+      <div className="text-center py-20 px-6 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 max-w-2xl mx-auto">
+        <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4 text-zinc-500">
+          <Smartphone className="w-6 h-6 text-zinc-600 dark:text-zinc-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          Curated App Launch Templates in Curation
+        </h3>
+        <p className="mt-2 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-md mx-auto">
+          We are hand-crafting dedicated, high-converting launch templates tailored specifically for iOS &amp; Android app releases with integrated store attribution.
+        </p>
+        <div className="mt-6">
+          <Link
+            href={authenticated ? "/dashboard" : "/signup"}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold hover:bg-zinc-800 dark:hover:bg-white transition-colors shadow-xs"
+          >
+            <span>Create App Launch Page</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Category Pills */}
