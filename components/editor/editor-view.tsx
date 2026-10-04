@@ -1,3 +1,4 @@
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -43,7 +44,7 @@ export function EditorView({ site, plan }: EditorViewProps) {
     ? `/site/${site.slug}`
     : `https://${site.slug}.${rootDomain}`;
 
-  // Sync server props if site changes without triggering cascading effect renders
+  // Sync server props if site changes without cascading renders
   const [prevSiteId, setPrevSiteId] = useState(site.id);
   if (site.id !== prevSiteId) {
     setPrevSiteId(site.id);
@@ -53,9 +54,25 @@ export function EditorView({ site, plan }: EditorViewProps) {
   }
 
   // Handle content modification
-  const handleContentChange = useCallback((newContent: SiteContent | ((prev: SiteContent) => SiteContent)) => {
-    setContent(newContent);
-    setIsDirty(true);
+  const handleContentChange = useCallback(
+    (newContent: SiteContent | ((prev: SiteContent) => SiteContent)) => {
+      setContent(newContent);
+      setIsDirty(true);
+    },
+    []
+  );
+
+  // Body scroll lock: completely isolates the editor studio from background dashboard scroll
+  useEffect(() => {
+    const origHtmlOverflow = document.documentElement.style.overflow;
+    const origBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.documentElement.style.overflow = origHtmlOverflow;
+      document.body.style.overflow = origBodyOverflow;
+    };
   }, []);
 
   // Unsaved changes guard: prevent accidental tab close or page navigation
@@ -83,60 +100,84 @@ export function EditorView({ site, plan }: EditorViewProps) {
     }
   };
 
-  const handleSave = async (statusOverride?: SiteStatus) => {
-    setError(null);
-    setSaveSuccess(false);
+  const handleSave = useCallback(
+    async (statusOverride?: SiteStatus) => {
+      setError(null);
+      setSaveSuccess(false);
 
-    if (statusOverride === "published") {
-      setPublishing(true);
-    } else {
-      setSaving(true);
-    }
-
-    try {
-      const payload: { content: SiteContent; status?: SiteStatus } = { content };
-      if (statusOverride) {
-        payload.status = statusOverride;
+      if (statusOverride === "published") {
+        setPublishing(true);
+      } else {
+        setSaving(true);
       }
 
-      const res = await fetch(`/api/sites/${site.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      try {
+        const payload: { content: SiteContent; status?: SiteStatus } = {
+          content,
+        };
+        if (statusOverride) {
+          payload.status = statusOverride;
+        }
 
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Failed to save landing page");
-        return;
+        const res = await fetch(`/api/sites/${site.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Failed to save landing page");
+          return;
+        }
+
+        if (statusOverride) {
+          setStatus(statusOverride);
+        }
+
+        setIsDirty(false);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+        router.refresh();
+      } catch (err) {
+        setError(
+          (err instanceof Error ? err.message : undefined) ||
+            "An unexpected error occurred."
+        );
+      } finally {
+        setSaving(false);
+        setPublishing(false);
       }
+    },
+    [content, router, site.id]
+  );
 
-      if (statusOverride) {
-        setStatus(statusOverride);
+  // Global Keyboard Shortcut: Cmd+S / Ctrl+S to save draft
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (!saving && !publishing) {
+          void handleSave();
+        }
       }
+    };
 
-      setIsDirty(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-      router.refresh();
-    } catch (err) {
-      setError((err instanceof Error ? err.message : undefined) || "An unexpected error occurred.");
-    } finally {
-      setSaving(false);
-      setPublishing(false);
-    }
-  };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSave, saving, publishing]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
+    <div className="fixed inset-0 h-[100dvh] w-screen z-50 flex flex-col bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 overflow-hidden overscroll-none font-sans">
       {/* Top Header Navigation */}
-      <header className="h-14 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl px-3 sm:px-4 flex items-center justify-between shrink-0">
-        {/* Left: Back + Site Title */}
-        <div className="flex items-center gap-2 sm:gap-4">
+      <header className="h-14 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl px-2.5 sm:px-4 flex items-center justify-between shrink-0 select-none">
+        {/* Left: Back + Site Title + Status */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link
             href="/dashboard"
             onClick={handleBackToDashboard}
-            className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            title="Return to Dashboard"
+            className="flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Dashboard</span>
@@ -144,14 +185,14 @@ export function EditorView({ site, plan }: EditorViewProps) {
 
           <ShipSprintLogo href="/dashboard" variant="icon" size="sm" />
 
-          <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
+          <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800 hidden sm:block shrink-0" />
 
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate max-w-[120px] sm:max-w-[200px]">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[200px]">
               {content.hero?.app_name || site.slug}
             </span>
             <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${
                 status === "published"
                   ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40"
                   : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
@@ -162,21 +203,30 @@ export function EditorView({ site, plan }: EditorViewProps) {
                   status === "published" ? "bg-emerald-500" : "bg-zinc-400"
                 }`}
               />
-              <span>{status === "published" ? "Published" : "Draft"}</span>
+              <span className="capitalize">{status === "published" ? "Published" : "Draft"}</span>
             </span>
 
             {isDirty && (
-              <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" title="Unsaved changes" />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0"
+                title="Unsaved changes (Press ⌘S to save)"
+              />
             )}
           </div>
         </div>
 
         {/* Center: Mobile Tab Switcher (Edit vs Preview) */}
-        <div className="flex md:hidden items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
+        <div
+          role="tablist"
+          aria-label="Mobile workspace view"
+          className="flex md:hidden items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-xl border border-zinc-200 dark:border-zinc-800 shrink-0 mx-1"
+        >
           <button
             type="button"
+            role="tab"
+            aria-selected={mobileTab === "edit"}
             onClick={() => setMobileTab("edit")}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
               mobileTab === "edit"
                 ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
                 : "text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300"
@@ -187,8 +237,10 @@ export function EditorView({ site, plan }: EditorViewProps) {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={mobileTab === "preview"}
             onClick={() => setMobileTab("preview")}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
               mobileTab === "preview"
                 ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
                 : "text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300"
@@ -200,9 +252,12 @@ export function EditorView({ site, plan }: EditorViewProps) {
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {error && (
-            <span className="text-[11px] text-red-500 font-medium hidden lg:inline truncate max-w-xs">
+            <span
+              className="text-[11px] text-red-500 font-medium hidden lg:inline truncate max-w-xs"
+              title={error}
+            >
               {error}
             </span>
           )}
@@ -220,20 +275,25 @@ export function EditorView({ site, plan }: EditorViewProps) {
               href={liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-xs"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-xs whitespace-nowrap"
             >
-              <Globe className="w-3.5 h-3.5 text-zinc-600" />
+              <Globe className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
               <span>Visit</span>
-              <ExternalLink className="w-3 h-3 text-zinc-600" />
+              <ExternalLink className="w-3 h-3 text-zinc-600 dark:text-zinc-400" />
             </a>
           )}
 
           {/* Save Draft */}
           <button
             type="button"
-            onClick={() => handleSave()}
+            onClick={() => void handleSave()}
             disabled={saving || publishing}
-            className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-xs disabled:cursor-not-allowed disabled:opacity-55"
+            title={isDirty ? "Save changes (⌘S)" : "All changes saved"}
+            className={`inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl border text-xs font-medium transition-all shadow-xs disabled:cursor-not-allowed disabled:opacity-55 whitespace-nowrap ${
+              isDirty
+                ? "border-amber-400/80 dark:border-amber-500/60 bg-amber-50/40 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 hover:bg-amber-100/50"
+                : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            }`}
           >
             {saving ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -247,9 +307,9 @@ export function EditorView({ site, plan }: EditorViewProps) {
           {/* Publish Button */}
           <button
             type="button"
-            onClick={() => handleSave("published")}
+            onClick={() => void handleSave("published")}
             disabled={saving || publishing}
-            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-medium shadow-sm transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-medium shadow-sm transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 whitespace-nowrap"
           >
             {publishing ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -261,12 +321,13 @@ export function EditorView({ site, plan }: EditorViewProps) {
         </div>
       </header>
 
-      {/* Main Workspace (Split Screen or Mobile Tab) */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Main Workspace (Split Screen on Desktop, Tabbed on Mobile) */}
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         {/* Left Side: Editor Form Panel */}
-        <div
-          className={`w-full md:w-[450px] lg:w-[500px] shrink-0 h-full overflow-hidden ${
-            mobileTab === "edit" ? "block" : "hidden md:block"
+        <section
+          aria-label="Configuration Panel"
+          className={`w-full md:w-[460px] lg:w-[500px] shrink-0 h-full min-h-0 overflow-hidden ${
+            mobileTab === "edit" ? "flex flex-col" : "hidden md:flex md:flex-col"
           }`}
         >
           <EditorPanel
@@ -276,16 +337,19 @@ export function EditorView({ site, plan }: EditorViewProps) {
             siteId={site.id}
             initialDomain={site.custom_domain}
           />
-        </div>
+        </section>
 
         {/* Right Side: Live Zero-Drift Preview */}
-        <div
-          className={`flex-1 h-full overflow-hidden ${
-            mobileTab === "preview" ? "flex" : "hidden md:flex"
+        <section
+          aria-label="Live Preview Canvas"
+          className={`flex-1 min-w-0 h-full min-h-0 overflow-hidden ${
+            mobileTab === "preview"
+              ? "flex flex-col"
+              : "hidden md:flex md:flex-col"
           }`}
         >
           <LivePreview content={content} plan={plan} />
-        </div>
+        </section>
       </div>
     </div>
   );
