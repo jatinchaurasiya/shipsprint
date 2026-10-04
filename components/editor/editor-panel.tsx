@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   SiteContent,
   FeatureItem,
+  ReleaseInfo,
   Plan,
   DomainStatus,
   SslStatus,
@@ -92,6 +93,13 @@ export function EditorPanel({
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
+  // Generic image picker serving feature / logo-wall / release targets.
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageTarget, setImageTarget] = useState<{
+    kind: "feature" | "logo" | "release";
+    index: number;
+  } | null>(null);
 
   // Custom domain state
   const [domainInput, setDomainInput] = useState<string>(initialDomain || "");
@@ -288,6 +296,119 @@ export function EditorPanel({
     }));
   };
 
+  const pickImageFor = (
+    kind: "feature" | "logo" | "release",
+    index: number
+  ) => {
+    setImageTarget({ kind, index });
+    // Let state settle before opening the picker so the target is current.
+    setTimeout(() => imageInputRef.current?.click(), 0);
+  };
+
+  const blankRelease: ReleaseInfo = {
+    eyebrow: "",
+    title: "",
+    description: "",
+    version: "",
+    rating: "",
+    rating_count: "",
+    age_rating: "",
+    chart_rank: "",
+    release_notes: [],
+    image_url: "",
+  };
+
+  const updateRelease = (field: keyof ReleaseInfo, value: string | string[]) => {
+    updateContent((prev) => ({
+      ...prev,
+      release: { ...blankRelease, ...prev.release, [field]: value },
+    }));
+  };
+
+  const handleGenericImageSelect = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const target = imageTarget;
+    if (!file || !target) return;
+
+    handleFileUpload(
+      file,
+      (url) => {
+        updateContent((prev) => {
+          if (target.kind === "feature") {
+            const updated = [...prev.features];
+            const existing = updated[target.index];
+            if (!existing) return prev;
+            updated[target.index] = { ...existing, image_url: url };
+            return { ...prev, features: updated };
+          }
+          if (target.kind === "logo") {
+            const logos = [...(prev.logo_wall?.logos ?? [])];
+            const existing = logos[target.index];
+            if (!existing) return prev;
+            logos[target.index] = { ...existing, image_url: url };
+            return {
+              ...prev,
+              logo_wall: {
+                eyebrow: prev.logo_wall?.eyebrow ?? "",
+                logos,
+              },
+            };
+          }
+          return {
+            ...prev,
+            release: { ...blankRelease, ...prev.release, image_url: url },
+          };
+        });
+      },
+      setUploadingImage
+    );
+  };
+
+  const addLogoEntry = () => {
+    updateContent((prev) => ({
+      ...prev,
+      logo_wall: {
+        eyebrow: prev.logo_wall?.eyebrow ?? "Featured in",
+        logos: [
+          ...(prev.logo_wall?.logos ?? []),
+          {
+            id: `logo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            name: "Press name",
+            image_url: "",
+          },
+        ],
+      },
+    }));
+  };
+
+  const removeLogoEntry = (indexToRemove: number) => {
+    updateContent((prev) => ({
+      ...prev,
+      logo_wall: {
+        eyebrow: prev.logo_wall?.eyebrow ?? "",
+        logos: (prev.logo_wall?.logos ?? []).filter(
+          (_, idx) => idx !== indexToRemove
+        ),
+      },
+    }));
+  };
+
+  const addFooterColumn = () => {
+    updateContent((prev) => ({
+      ...prev,
+      footer: {
+        ...prev.footer,
+        columns: [
+          ...(prev.footer.columns ?? []),
+          { heading: "Column", links: [] },
+        ],
+      },
+    }));
+  };
+
   const addFeature = () => {
     // `Date.now()` is not unique: two adds in the same millisecond produce
     // duplicate React keys and duplicate feature ids.
@@ -330,6 +451,8 @@ export function EditorPanel({
     { id: "store", label: "Store Links" },
     { id: "features", label: `Features (${content.features?.length || 0})` },
     { id: "screenshots", label: `Screenshots (${content.screenshots?.length || 0})` },
+    { id: "logos", label: `Logo Wall (${content.logo_wall?.logos?.length || 0})` },
+    { id: "release", label: "Release" },
     { id: "footer", label: "Footer & Legal" },
     { id: "domain", label: "Custom Domain" },
   ];
@@ -356,6 +479,14 @@ export function EditorPanel({
       </div>
 
       <div className="p-6 space-y-6">
+        {/* Shared picker for feature / logo-wall / release images */}
+        <input
+          type="file"
+          ref={imageInputRef}
+          onChange={handleGenericImageSelect}
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+        />
         {/* 1. HERO & BRAND SECTION */}
         {activeSection === "hero" && (
           <div className="space-y-5 animate-in fade-in duration-200">
@@ -486,6 +617,99 @@ export function EditorPanel({
                 className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 placeholder="Gentle nudges, intuitive progress rings, and private cloud sync designed to make healthy routines stick."
               />
+            </div>
+
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                  Email Capture Form
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateContent((prev) => ({
+                      ...prev,
+                      hero: {
+                        ...prev.hero,
+                        email_capture_enabled: !(prev.hero.email_capture_enabled ?? false),
+                      },
+                    }))
+                  }
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                    content.hero?.email_capture_enabled
+                      ? "bg-blue-600"
+                      : "bg-zinc-300 dark:bg-zinc-700"
+                  }`}
+                  role="switch"
+                  aria-checked={content.hero?.email_capture_enabled ?? false}
+                  aria-label="Show email capture form on the landing page"
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+                      content.hero?.email_capture_enabled ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+              {content.hero?.email_capture_enabled && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Input Placeholder
+                    </label>
+                    <input
+                      type="text"
+                      value={content.hero?.email_placeholder || ""}
+                      onChange={(e) =>
+                        updateContent((prev) => ({
+                          ...prev,
+                          hero: { ...prev.hero, email_placeholder: e.target.value },
+                        }))
+                      }
+                      placeholder="Your email address"
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Button Label
+                    </label>
+                    <input
+                      type="text"
+                      value={content.hero?.email_cta_label || ""}
+                      onChange={(e) =>
+                        updateContent((prev) => ({
+                          ...prev,
+                          hero: { ...prev.hero, email_cta_label: e.target.value },
+                        }))
+                      }
+                      placeholder="Get Early Access"
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Success Message
+                    </label>
+                    <input
+                      type="text"
+                      value={content.hero?.email_success_message || ""}
+                      onChange={(e) =>
+                        updateContent((prev) => ({
+                          ...prev,
+                          hero: { ...prev.hero, email_success_message: e.target.value },
+                        }))
+                      }
+                      placeholder="You're on the list. We'll be in touch."
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                    Sample phase: the form validates and confirms inline.
+                    Addresses are not stored yet.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -636,6 +860,50 @@ export function EditorPanel({
                       className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Phone Image <span className="font-normal">(powers the dark phone band)</span>
+                    </label>
+                    {feature.image_url ? (
+                      <div className="flex items-center gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={feature.image_url}
+                          alt=""
+                          aria-hidden="true"
+                          className="h-16 w-10 rounded-lg border border-zinc-200 dark:border-zinc-800 object-cover"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => pickImageFor("feature", idx)}
+                            disabled={uploadingImage}
+                            className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[11px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-55"
+                          >
+                            {uploadingImage ? "Uploading…" : "Replace"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateFeature(idx, "image_url", "")}
+                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => pickImageFor("feature", idx)}
+                        disabled={uploadingImage}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 hover:border-blue-500 transition-colors disabled:cursor-not-allowed disabled:opacity-55"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{uploadingImage ? "Uploading…" : "Upload phone image"}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -714,7 +982,278 @@ export function EditorPanel({
           </div>
         )}
 
-        {/* 5. FOOTER SECTION */}
+        {/* 5. LOGO WALL SECTION */}
+        {activeSection === "logos" && (
+          <div className="space-y-5 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  Press & Trust Logos
+                </h3>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+                  Only add logos you have the right to display. Each entry
+                  needs a name and, ideally, a monochrome logo image.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addLogoEntry}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-medium hover:bg-zinc-800 dark:hover:bg-white transition-colors shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Logo</span>
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                Strip Eyebrow
+              </label>
+              <input
+                type="text"
+                value={content.logo_wall?.eyebrow || ""}
+                onChange={(e) =>
+                  updateContent((prev) => ({
+                    ...prev,
+                    logo_wall: {
+                      eyebrow: e.target.value,
+                      logos: prev.logo_wall?.logos ?? [],
+                    },
+                  }))
+                }
+                placeholder="Featured in"
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-4">
+              {(content.logo_wall?.logos ?? []).map((logo, idx) => (
+                <div
+                  key={logo.id || idx}
+                  className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wider">
+                      Logo #{idx + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeLogoEntry(idx)}
+                      className="p-1 text-zinc-600 hover:text-red-500 transition-colors"
+                      title="Delete Logo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      value={logo.name}
+                      onChange={(e) =>
+                        updateContent((prev) => {
+                          const logos = [...(prev.logo_wall?.logos ?? [])];
+                          const existing = logos[idx];
+                          if (!existing) return prev;
+                          logos[idx] = { ...existing, name: e.target.value };
+                          return {
+                            ...prev,
+                            logo_wall: {
+                              eyebrow: prev.logo_wall?.eyebrow ?? "",
+                              logos,
+                            },
+                          };
+                        })
+                      }
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Logo Image
+                    </label>
+                    {logo.image_url ? (
+                      <div className="flex items-center gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={logo.image_url}
+                          alt=""
+                          aria-hidden="true"
+                          className="h-8 w-auto max-w-[120px] rounded-md border border-zinc-200 dark:border-zinc-800 bg-white object-contain p-1"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => pickImageFor("logo", idx)}
+                            disabled={uploadingImage}
+                            className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[11px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-55"
+                          >
+                            {uploadingImage ? "Uploading…" : "Replace"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateContent((prev) => {
+                                const logos = [...(prev.logo_wall?.logos ?? [])];
+                                const existing = logos[idx];
+                                if (!existing) return prev;
+                                logos[idx] = { ...existing, image_url: "" };
+                                return {
+                                  ...prev,
+                                  logo_wall: {
+                                    eyebrow: prev.logo_wall?.eyebrow ?? "",
+                                    logos,
+                                  },
+                                };
+                              })
+                            }
+                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => pickImageFor("logo", idx)}
+                        disabled={uploadingImage}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 hover:border-blue-500 transition-colors disabled:cursor-not-allowed disabled:opacity-55"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{uploadingImage ? "Uploading…" : "Upload logo image"}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {(content.logo_wall?.logos ?? []).length === 0 && (
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 p-4 text-center">
+                  No logos yet. The strip stays hidden until you add at least one.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 6. RELEASE SECTION */}
+        {activeSection === "release" && (
+          <div className="space-y-5 animate-in fade-in duration-200">
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                App Release Panel
+              </h3>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+                The App Store listing block: rating, age, chart, version, and
+                notes. Only use numbers that are real for your app.
+              </p>
+            </div>
+
+            {(
+              [
+                ["eyebrow", "Eyebrow", "Now available"],
+                ["title", "Title", "To be released on the App Store soon…"],
+                ["version", "Version", "2.4"],
+                ["rating", "Rating (e.g. 4.8)", "4.8"],
+                ["rating_count", "Rating Count (e.g. 12.4K ratings)", "12.4K ratings"],
+                ["age_rating", "Age Rating (e.g. 4+)", "4+"],
+                ["chart_rank", "Chart Rank (e.g. #3 in Finance)", "#3 in Finance"],
+              ] as [keyof ReleaseInfo, string, string][]
+            ).map(([field, label, placeholder]) => (
+              <div key={field}>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  {label}
+                </label>
+                <input
+                  type="text"
+                  value={(content.release?.[field] as string) || ""}
+                  onChange={(e) => updateRelease(field, e.target.value)}
+                  placeholder={placeholder}
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                />
+              </div>
+            ))}
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                Description
+              </label>
+              <textarea
+                rows={3}
+                value={content.release?.description || ""}
+                onChange={(e) => updateRelease("description", e.target.value)}
+                placeholder="What ships in this release and why it matters."
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                Release Notes <span className="font-normal">(one per line)</span>
+              </label>
+              <textarea
+                rows={3}
+                value={(content.release?.release_notes ?? []).join("\n")}
+                onChange={(e) =>
+                  updateRelease(
+                    "release_notes",
+                    e.target.value.split("\n").map((line) => line.trim()).filter(Boolean)
+                  )
+                }
+                placeholder={"Instant QR transfers\nLive transaction detail\nCard spend controls"}
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                Release Image
+              </label>
+              {content.release?.image_url ? (
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={content.release.image_url}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-20 w-16 rounded-lg border border-zinc-200 dark:border-zinc-800 object-cover"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => pickImageFor("release", 0)}
+                      disabled={uploadingImage}
+                      className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[11px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      {uploadingImage ? "Uploading…" : "Replace"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateRelease("image_url", "")}
+                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => pickImageFor("release", 0)}
+                  disabled={uploadingImage}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 hover:border-blue-500 transition-colors disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{uploadingImage ? "Uploading…" : "Upload release image"}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 7. FOOTER SECTION */}
         {activeSection === "footer" && (
           <div className="space-y-5 animate-in fade-in duration-200">
             <div>
@@ -760,6 +1299,168 @@ export function EditorPanel({
                 className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 placeholder="support@zenhabit.app"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                Footer Tagline
+              </label>
+              <input
+                type="text"
+                value={content.footer?.tagline || ""}
+                onChange={(e) =>
+                  updateContent((prev) => ({
+                    ...prev,
+                    footer: { ...prev.footer, tagline: e.target.value },
+                  }))
+                }
+                placeholder="A launch page built with ShipSprint."
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                  Link Columns
+                </label>
+                <button
+                  type="button"
+                  onClick={addFooterColumn}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[11px] font-medium hover:bg-zinc-800 dark:hover:bg-white transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add Column</span>
+                </button>
+              </div>
+              {(content.footer?.columns ?? []).map((column, colIdx) => (
+                <div
+                  key={colIdx}
+                  className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 space-y-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={column.heading}
+                      onChange={(e) =>
+                        updateContent((prev) => {
+                          const columns = [...(prev.footer.columns ?? [])];
+                          const existing = columns[colIdx];
+                          if (!existing) return prev;
+                          columns[colIdx] = { ...existing, heading: e.target.value };
+                          return { ...prev, footer: { ...prev.footer, columns } };
+                        })
+                      }
+                      placeholder="Column heading"
+                      aria-label={`Column ${colIdx + 1} heading`}
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateContent((prev) => ({
+                          ...prev,
+                          footer: {
+                            ...prev.footer,
+                            columns: (prev.footer.columns ?? []).filter((_, i) => i !== colIdx),
+                          },
+                        }))
+                      }
+                      className="p-1.5 text-zinc-600 hover:text-red-500 transition-colors shrink-0"
+                      title="Delete column"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  {column.links.map((link, linkIdx) => (
+                    <div key={linkIdx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={link.label}
+                        onChange={(e) =>
+                          updateContent((prev) => {
+                            const columns = [...(prev.footer.columns ?? [])];
+                            const existing = columns[colIdx];
+                            if (!existing) return prev;
+                            const links = [...existing.links];
+                            const current = links[linkIdx];
+                            if (!current) return prev;
+                            links[linkIdx] = { ...current, label: e.target.value };
+                            columns[colIdx] = { ...existing, links };
+                            return { ...prev, footer: { ...prev.footer, columns } };
+                          })
+                        }
+                        placeholder="Label"
+                        aria-label={`Column ${colIdx + 1} link ${linkIdx + 1} label`}
+                        className="w-1/3 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                      />
+                      <input
+                        type="text"
+                        value={link.url}
+                        onChange={(e) =>
+                          updateContent((prev) => {
+                            const columns = [...(prev.footer.columns ?? [])];
+                            const existing = columns[colIdx];
+                            if (!existing) return prev;
+                            const links = [...existing.links];
+                            const current = links[linkIdx];
+                            if (!current) return prev;
+                            links[linkIdx] = { ...current, url: e.target.value };
+                            columns[colIdx] = { ...existing, links };
+                            return { ...prev, footer: { ...prev.footer, columns } };
+                          })
+                        }
+                        placeholder="/terms or https://…"
+                        aria-label={`Column ${colIdx + 1} link ${linkIdx + 1} URL`}
+                        className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateContent((prev) => {
+                            const columns = [...(prev.footer.columns ?? [])];
+                            const existing = columns[colIdx];
+                            if (!existing) return prev;
+                            columns[colIdx] = {
+                              ...existing,
+                              links: existing.links.filter((_, i) => i !== linkIdx),
+                            };
+                            return { ...prev, footer: { ...prev.footer, columns } };
+                          })
+                        }
+                        className="p-1.5 text-zinc-600 hover:text-red-500 transition-colors shrink-0"
+                        title="Delete link"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateContent((prev) => {
+                        const columns = [...(prev.footer.columns ?? [])];
+                        const existing = columns[colIdx];
+                        if (!existing) return prev;
+                        columns[colIdx] = {
+                          ...existing,
+                          links: [...existing.links, { label: "New link", url: "" }],
+                        };
+                        return { ...prev, footer: { ...prev.footer, columns } };
+                      })
+                    }
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 hover:border-blue-500 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Link</span>
+                  </button>
+                </div>
+              ))}
+              {(content.footer?.columns ?? []).length === 0 && (
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 p-4 text-center">
+                  No columns yet. The footer shows the flat legal-links row until you add one.
+                </p>
+              )}
             </div>
           </div>
         )}

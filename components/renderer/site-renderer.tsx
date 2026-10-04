@@ -2,11 +2,12 @@
 /* Renderer: Narrative Workflow (stages 1.0/2.0/3.0, thick numbered rules) · Nav N9 edge-aligned minimal · Footer Ft1 mast-headed · knobs differ from marketing Split Studio */
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { SiteContent, Plan } from "@/types/database";
 import { safeHref } from "@/lib/validation";
 import { appOrigin } from "@/lib/redirect";
-import { Mail } from "lucide-react";
+import { trackEvent } from "@/lib/track-client";
+import { Check, Mail, Star } from "lucide-react";
 import { getFeatureIcon } from "@/lib/icons";
 
 interface SiteRendererProps {
@@ -34,6 +35,8 @@ export function SiteRenderer({
         "Engineered with craft and attention to detail. Designed to elevate your daily routine.",
     },
     features = [],
+    logo_wall,
+    release,
     store_links = {
       app_store_url: "",
       play_store_url: "",
@@ -46,7 +49,30 @@ export function SiteRenderer({
     },
   } = content || {};
 
-  const primaryCtaHref = safeHref(
+  const emailCapture = {
+    enabled: hero.email_capture_enabled ?? false,
+    placeholder: hero.email_placeholder || "Your email address",
+    ctaLabel: hero.email_cta_label || "Get Early Access",
+    successMessage:
+      hero.email_success_message || "You're on the list. We'll be in touch.",
+  };
+  const [emailValue, setEmailValue] = useState("");
+  const [emailDone, setEmailDone] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const submitEmailCapture = (event: React.FormEvent) => {
+    event.preventDefault();
+    // Visual-only in the sample phase: validates + confirms inline.
+    // TODO: POST /api/leads { site_id, email } once lead storage ships.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim())) {
+      setEmailError("Enter a valid email address.");
+      return;
+    }
+    setEmailError("");
+    setEmailDone(true);
+  };
+  const phoneFeatures = features.filter((f) => f.image_url).slice(0, 3);
+
+const primaryCtaHref = safeHref(
     store_links.app_store_url || store_links.play_store_url
   );
   const hasStoreLinks = Boolean(
@@ -58,29 +84,22 @@ export function SiteRenderer({
 
   useEffect(() => {
     if (isPreview || !siteId) return;
-    try {
-      fetch("/api/track", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          site_id: siteId,
-          event_type: "page_view",
-          meta: {
-            referrer: document.referrer || "Direct",
-            path: window.location.pathname,
-            screen: `${window.innerWidth}x${window.innerHeight}`,
-          },
-        }),
-        keepalive: true,
-      }).catch(() => {});
-    } catch {}
+    trackEvent({
+      siteId,
+      eventType: "page_view",
+      meta: {
+        referrer: document.referrer || "Direct",
+        path: window.location.pathname,
+        screen: `${window.innerWidth}x${window.innerHeight}`,
+      },
+    });
   }, [isPreview, siteId]);
 
   const handleCtaClick = (buttonType: string, targetUrl?: string) => {
     if (isPreview || !siteId) return;
-    const payload = JSON.stringify({
-      site_id: siteId,
-      event_type: "button_click",
+    trackEvent({
+      siteId,
+      eventType: "button_click",
       meta: {
         button_type: buttonType,
         target_url: targetUrl || "",
@@ -88,26 +107,6 @@ export function SiteRenderer({
         path: window.location.pathname,
       },
     });
-
-    try {
-      if (
-        typeof navigator !== "undefined" &&
-        typeof navigator.sendBeacon === "function"
-      ) {
-        const blob = new Blob([payload], { type: "application/json" });
-        const sent = navigator.sendBeacon("/api/track", blob);
-        if (sent) return;
-      }
-    } catch {}
-
-    try {
-      fetch("/api/track", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: payload,
-        keepalive: true,
-      }).catch(() => {});
-    } catch {}
   };
 
   const showWatermark = plan?.has_branding ?? true;
@@ -192,13 +191,77 @@ export function SiteRenderer({
               Get it on Google Play
             </a>
           )}
-          {!hasStoreLinks && (
+          {!hasStoreLinks && !emailCapture.enabled && (
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
               Store links have not been added yet.
             </p>
           )}
         </div>
+        {/* Email capture — visual-only until lead storage ships */}
+        {emailCapture.enabled &&
+          (emailDone ? (
+            <p role="status" className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              {emailCapture.successMessage}
+            </p>
+          ) : (
+            <form onSubmit={submitEmailCapture} className="mt-6 max-w-md" noValidate={false}>
+              <div className="flex items-center gap-2 rounded-full border border-zinc-300 bg-white p-1.5 pl-4 dark:border-zinc-700 dark:bg-zinc-950">
+                <Mail className="h-4 w-4 shrink-0 text-zinc-500" aria-hidden="true" />
+                <label htmlFor="site-email-capture" className="sr-only">
+                  Email address
+                </label>
+                <input
+                  id="site-email-capture"
+                  type="email"
+                  required
+                  value={emailValue}
+                  onChange={(event) => setEmailValue(event.target.value)}
+                  placeholder={emailCapture.placeholder}
+                  className="min-h-0 w-full min-w-0 flex-1 bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-500 dark:text-zinc-50"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-blue-700 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  {emailCapture.ctaLabel}
+                </button>
+              </div>
+              <p className="helper-slot mt-1.5 min-h-[1lh] text-xs text-red-600 dark:text-red-400" role={emailError ? "alert" : undefined}>
+                {emailError}
+              </p>
+            </form>
+          ))}
       </section>
+
+      {/* Logo wall — press/trust strip */}
+      {logo_wall && logo_wall.logos.length > 0 && (
+        <section aria-label={logo_wall.eyebrow || "Featured in"} className="border-y border-zinc-200 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-900/20">
+          <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+            {logo_wall.eyebrow && (
+              <p className="text-center text-[11px] font-semibold tracking-widest text-zinc-600 uppercase dark:text-zinc-400">
+                {logo_wall.eyebrow}
+              </p>
+            )}
+            <ul className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+              {logo_wall.logos.slice(0, 12).map((logo) => (
+                <li key={logo.id} className="flex items-center gap-2.5 text-zinc-500 grayscale dark:text-zinc-400">
+                  {logo.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={logo.image_url}
+                      alt={logo.name}
+                      loading="lazy"
+                      className="h-6 w-auto object-contain opacity-70"
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold whitespace-nowrap">{logo.name}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
 
       {/* Stages 1.0+ — one rule per stage, alternating proof side */}
       {features.length > 0 && (
@@ -230,21 +293,73 @@ export function SiteRenderer({
                     </p>
                   </div>
                   <div
-                    aria-hidden="true"
-                    className={`flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40 ${flip ? "md:order-1" : ""}`}
+                    className={`min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/40 ${flip ? "md:order-1" : ""}`}
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-blue-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-blue-400">
-                      <IconComponent className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <span className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-                      Stage {stage} — {feature.title}. Small, concrete, done in
-                      the app itself.
-                    </span>
+                    {feature.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={feature.image_url}
+                        alt=""
+                        aria-hidden="true"
+                        loading="lazy"
+                        className="aspect-[16/10] w-full object-cover"
+                      />
+                    ) : (
+                      <div aria-hidden="true" className="flex items-start gap-3 p-5">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-blue-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-blue-400">
+                          <IconComponent className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <span className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
+                          Stage {stage} — {feature.title}. Small, concrete, done in
+                          the app itself.
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </li>
               );
             })}
           </ol>
+        </section>
+      )}
+
+      {/* Dark phone band — up to 3 feature phones with captions */}
+      {phoneFeatures.length > 0 && (
+        <section aria-label="App highlights" className="mt-14 bg-zinc-950 py-16 text-white sm:py-20 dark:bg-zinc-900">
+          <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
+            <h2 className="mx-auto max-w-2xl text-center text-2xl font-semibold tracking-tight text-balance sm:text-4xl">
+              Made for the moments that matter.
+            </h2>
+            <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-3">
+              {phoneFeatures.map((feature) => {
+                const PhoneIcon = getFeatureIcon(feature.icon);
+                return (
+                  <figure key={feature.id} className="min-w-0">
+                    <div className="overflow-hidden rounded-[2rem] border border-zinc-800 bg-zinc-900 p-2">
+                      <div className="overflow-hidden rounded-[1.6rem] bg-white">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={feature.image_url}
+                          alt={`${feature.title} in ${appName}`}
+                          loading="lazy"
+                          className="aspect-[9/16] w-full object-cover"
+                        />
+                      </div>
+                    </div>
+                    <figcaption className="mt-4 text-center">
+                      <p className="flex items-center justify-center gap-1.5 text-[15px] font-semibold">
+                        <PhoneIcon className="h-4 w-4 text-blue-400" aria-hidden="true" />
+                        {feature.title}
+                      </p>
+                      <p className="mx-auto mt-1 max-w-[40ch] text-[13px] leading-relaxed text-zinc-400">
+                        {feature.description}
+                      </p>
+                    </figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+          </div>
         </section>
       )}
 
@@ -271,6 +386,124 @@ export function SiteRenderer({
                 />
               </figure>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Release panel — App Store listing with rating/version proof */}
+      {release && (
+        <section aria-label="App release" className="mx-auto w-full max-w-5xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 items-center gap-8 rounded-3xl border border-zinc-200 bg-zinc-50 p-6 sm:p-10 md:grid-cols-2 dark:border-zinc-800 dark:bg-zinc-900/30">
+            <div className="min-w-0">
+              {release.eyebrow && (
+                <p className="text-xs font-semibold tracking-widest text-blue-600 uppercase dark:text-blue-400">
+                  {release.eyebrow}
+                </p>
+              )}
+              <h2 className="section__title mt-2 text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+                {release.title}
+              </h2>
+              <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
+                {release.description}
+              </p>
+              <dl className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-4">
+                {release.rating && (
+                  <div>
+                    <dt className="sr-only">Average rating</dt>
+                    <dd>
+                      <span className="flex items-center gap-1" role="img" aria-label={`${release.rating} out of 5 stars${release.rating_count ? ` from ${release.rating_count}` : ""}`}>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+                        ))}
+                      </span>
+                      <span className="mt-1 block text-xs font-semibold">
+                        {release.rating}
+                        {release.rating_count && <span className="font-normal text-zinc-600 dark:text-zinc-400"> · {release.rating_count}</span>}
+                      </span>
+                    </dd>
+                  </div>
+                )}
+                {release.age_rating && (
+                  <div>
+                    <dt className="sr-only">Age rating</dt>
+                    <dd className="text-center">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-300 text-xs font-bold dark:border-zinc-700">
+                        {release.age_rating}
+                      </span>
+                      <span className="mt-1 block text-[11px] text-zinc-600 dark:text-zinc-400">Age</span>
+                    </dd>
+                  </div>
+                )}
+                {release.chart_rank && (
+                  <div>
+                    <dt className="sr-only">Chart position</dt>
+                    <dd className="text-center">
+                      <span className="text-lg font-semibold">{release.chart_rank}</span>
+                      <span className="mt-0.5 block text-[11px] text-zinc-600 dark:text-zinc-400">Top chart</span>
+                    </dd>
+                  </div>
+                )}
+                {release.version && (
+                  <div>
+                    <dt className="sr-only">Version</dt>
+                    <dd className="text-center">
+                      <span className="font-mono text-sm font-semibold">v{release.version}</span>
+                      <span className="mt-0.5 block text-[11px] text-zinc-600 dark:text-zinc-400">Latest</span>
+                    </dd>
+                  </div>
+                )}
+              </dl>
+              {release.release_notes.length > 0 && (
+                <ul className="mt-6 space-y-2 text-[13px] text-zinc-600 dark:text-zinc-300">
+                  {release.release_notes.map((note, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                      <span>{note}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="min-w-0">
+              {release.image_url ? (
+                <figure className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={release.image_url}
+                    alt={`${appName} app preview`}
+                    loading="lazy"
+                    className="aspect-[4/5] w-full object-cover"
+                  />
+                </figure>
+              ) : (
+                hasStoreLinks && (
+                  <div className="flex flex-wrap items-center gap-3 leading-none">
+                    {store_links.app_store_url && (
+                      <a
+                        href={safeHref(store_links.app_store_url)}
+                        target={isPreview ? "_self" : "_blank"}
+                        rel="noopener noreferrer"
+                        onClick={() => handleCtaClick("app_store_release", store_links.app_store_url)}
+                        className="inline-flex items-center justify-center whitespace-nowrap rounded-full bg-zinc-950 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-white"
+                      >
+                        Download on App Store
+                      </a>
+                    )}
+                    {store_links.play_store_url && (
+                      <a
+                        href={safeHref(store_links.play_store_url)}
+                        target={isPreview ? "_self" : "_blank"}
+                        rel="noopener noreferrer"
+                        onClick={() => handleCtaClick("play_store_release", store_links.play_store_url)}
+                        className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-zinc-300 bg-white px-6 py-3 text-sm font-medium text-zinc-950 transition-colors hover:bg-zinc-50 active:bg-zinc-100 dark:border-zinc-700 dark:bg-transparent dark:text-zinc-50 dark:hover:bg-zinc-900"
+                      >
+                        Get it on Google Play
+                      </a>
+                    )}
+                  </div>
+                )
+              )}
+            </div>
           </div>
         </section>
       )}
@@ -315,9 +548,32 @@ export function SiteRenderer({
             <div className="min-w-0">
               <p className="text-lg font-semibold tracking-tight">{footer.brand_name || appName}</p>
               <p className="mt-1 max-w-[52ch] text-[13px] text-zinc-600 dark:text-zinc-400">
-                A launch page built with ShipSprint.
+                {footer.tagline || "A launch page built with ShipSprint."}
               </p>
             </div>
+            {footer.columns && footer.columns.length > 0 ? (
+              <div className="grid min-w-0 grid-cols-2 gap-8 sm:grid-cols-3">
+                {footer.columns.slice(0, 4).map((column) => (
+                  <div key={column.heading} className="min-w-0">
+                    <p className="text-[11px] font-semibold tracking-widest text-zinc-600 uppercase dark:text-zinc-400">
+                      {column.heading}
+                    </p>
+                    <ul className="mt-3 space-y-2.5 text-[13px] leading-none text-zinc-600 dark:text-zinc-400">
+                      {column.links.map((link) => (
+                        <li key={link.label}>
+                          <a
+                            href={resolveAppHref(link.url)}
+                            className="whitespace-nowrap transition-colors hover:text-zinc-950 active:text-zinc-950 dark:hover:text-zinc-100"
+                          >
+                            {link.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : (
             <nav aria-label="Legal" className="flex flex-wrap items-center gap-5 text-[13px] leading-none text-zinc-600 dark:text-zinc-400">
               {footer.legal_links?.map((link, i) => (
                 <a
@@ -338,6 +594,7 @@ export function SiteRenderer({
                 </a>
               )}
             </nav>
+            )}
           </div>
           <div className="mt-8 flex flex-col gap-3 border-t border-zinc-200 pt-6 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:text-zinc-500">
             <p>© {new Date().getFullYear()} {footer.brand_name || appName}. All rights reserved.</p>

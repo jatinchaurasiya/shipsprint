@@ -54,6 +54,36 @@ export interface FeatureItem {
   icon: string;
   title: string;
   description: string;
+  image_url?: string;
+}
+
+export interface LogoWallLogo {
+  id: string;
+  name: string;
+  image_url: string;
+}
+
+export interface LogoWall {
+  eyebrow: string;
+  logos: LogoWallLogo[];
+}
+
+export interface ReleaseInfo {
+  eyebrow: string;
+  title: string;
+  description: string;
+  version: string;
+  rating: string;
+  rating_count: string;
+  age_rating: string;
+  chart_rank: string;
+  release_notes: string[];
+  image_url?: string;
+}
+
+export interface FooterColumn {
+  heading: string;
+  links: { label: string; url: string }[];
 }
 
 export interface StoreLinks {
@@ -71,14 +101,22 @@ export interface SiteContent {
     badge_text: string;
     header: string;
     short_description: string;
+    email_capture_enabled?: boolean;
+    email_placeholder?: string;
+    email_cta_label?: string;
+    email_success_message?: string;
   };
   features: FeatureItem[];
+  logo_wall?: LogoWall;
+  release?: ReleaseInfo;
   store_links: StoreLinks;
   screenshots: string[];
   footer: {
     brand_name: string;
+    tagline?: string;
     legal_links: { label: string; url: string }[];
     contact_email?: string;
+    columns?: FooterColumn[];
   };
 }
 
@@ -134,6 +172,7 @@ export interface AnalyticsMeta {
   screen?: string;
   button_type?: string;
   target_host?: string;
+  target_url?: string;
   device?: "mobile" | "tablet" | "desktop";
   recorded_at?: string;
 }

@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { clientKey, looksLikeBot } from "@/lib/request";
+import { readBodyText } from "@/lib/request-body";
+import { buildAnalyticsRow, MAX_BEACON_BYTES, parseBeacon } from "@/lib/track";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import type { EventType } from "@/types/database";
 
 /**
  * Public analytics beacon.
@@ -15,61 +16,23 @@ import type { EventType } from "@/types/database";
  *
  * Responses are 204 for every accepted or rejected request. Returning 404 for
  * a missing site turned this endpoint into a site-id oracle.
+ *
+ * This handler owns no parsing logic. Everything it trusts lives in
+ * `lib/track.ts` and `lib/request-body.ts`, both of which are pure and
+ * unit-tested, so the failure modes are enumerated there rather than here.
  */
 
-const VALID_EVENT_TYPES: EventType[] = ["page_view", "button_click"];
-
-/** `meta` is attacker-controlled and later rendered in the dashboard. */
-const META_KEY_ALLOWLIST = new Set([
-  "referrer",
-  "path",
-  "screen",
-  "button_type",
-  "target_host",
-  "target_url",
-]);
-
-const MAX_META_BYTES = 1024;
-
-interface TrackBody {
-  site_id?: unknown;
-  event_type?: unknown;
-  meta?: unknown;
-}
-
-function sanitizeMeta(input: unknown): Record<string, string> {
-  if (typeof input !== "object" || input === null || Array.isArray(input)) return {};
-
-  const out: Record<string, string> = {};
-  let bytes = 0;
-
-  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
-    if (!META_KEY_ALLOWLIST.has(key)) continue;
-    if (typeof value !== "string") continue;
-    if (value.length > 512) continue;
-    bytes += key.length + value.length;
-    if (bytes > MAX_META_BYTES) break;
-    out[key] = value;
-  }
-
-  return out;
-}
-
-function inferDevice(userAgent: string): "mobile" | "tablet" | "desktop" {
-  if (/ipad|tablet|playbook|silk|(?!.*mobile)android/i.test(userAgent)) {
-    return "tablet";
-  }
-  if (/mobile|iphone|ipod|windows.*phone|blackberry|opera mini/i.test(userAgent)) {
-    return "mobile";
-  }
-  return "desktop";
-}
+const NO_CONTENT = () => new NextResponse(null, { status: 204 });
 
 export async function POST(request: NextRequest) {
-  const key = clientKey(request);
+  // Cheapest possible reject first: a crawler should not cost a Redis
+  // round-trip or a buffered request body.
+  if (looksLikeBot(request)) {
+    return NO_CONTENT();
+  }
 
   const limit = await rateLimit({
-    identifier: key,
+    identifier: clientKey(request),
     bucket: "track",
     limit: 60,
     windowSeconds: 60,
@@ -77,66 +40,64 @@ export async function POST(request: NextRequest) {
 
   if (!limit.success) {
     logger.warn("analytics rate limit exceeded", { bucket: "track" });
-    return new NextResponse(null, { status: 204 });
+    return NO_CONTENT();
   }
 
-  let body: TrackBody;
-  try {
-    const raw = await request.text();
-    body = (raw ? JSON.parse(raw) : {}) as TrackBody;
-  } catch {
-    return new NextResponse(null, { status: 204 });
+  // Bounded read. `Content-Type` is deliberately not consulted: `sendBeacon`
+  // with a string body, older WebKit, and privacy extensions all send
+  // `text/plain` or nothing, and treating that as an error loses real page
+  // views. `parseBeacon` reads JSON *or* form encoding and, critically, can
+  // never hand back a non-object — the previous `const { site_id } =
+  // JSON.parse(raw)` threw an unhandled 500 on a body of literal `null`.
+  const raw = await readBodyText(request, { maxBytes: MAX_BEACON_BYTES });
+  if (!raw.ok) {
+    if (raw.reason === "too_large") {
+      logger.warn("analytics beacon body rejected", {
+        max_bytes: MAX_BEACON_BYTES,
+      });
+    }
+    return NO_CONTENT();
   }
 
-  const { site_id, event_type, meta } = body;
-
-  if (typeof site_id !== "string" || typeof event_type !== "string") {
-    return new NextResponse(null, { status: 204 });
+  const parsed = parseBeacon(raw.text);
+  if (!parsed.ok) {
+    return NO_CONTENT();
   }
 
-  if (!VALID_EVENT_TYPES.includes(event_type as EventType)) {
-    return new NextResponse(null, { status: 204 });
-  }
-
-  if (looksLikeBot(request)) {
-    return new NextResponse(null, { status: 204 });
-  }
+  const { siteId } = parsed.event;
 
   try {
     const supabase = createAdminClient();
 
     // Only published sites accept traffic. Without this, a draft site's metrics
     // could be inflated and any competitor's numbers could be poisoned.
+    // `siteId` is already a validated UUID, so this cannot raise a Postgres
+    // `invalid input syntax for type uuid` error.
     const { data: site } = await supabase
       .from("sites")
       .select("id")
-      .eq("id", site_id)
+      .eq("id", siteId)
       .eq("status", "published")
       .maybeSingle();
 
     if (!site) {
-      return new NextResponse(null, { status: 204 });
+      return NO_CONTENT();
     }
 
-    const userAgent = request.headers.get("user-agent") ?? "unknown";
-
-    const { error } = await supabase.from("analytics_events").insert({
-      site_id,
-      event_type: event_type as EventType,
-      meta: {
-        ...sanitizeMeta(meta),
-        device: inferDevice(userAgent),
-        recorded_at: new Date().toISOString(),
-      },
-    });
+    const { error } = await supabase.from("analytics_events").insert(
+      buildAnalyticsRow(
+        parsed.event,
+        request.headers.get("user-agent") ?? "unknown"
+      )
+    );
 
     if (error) {
       logger.error("failed to record analytics event", { detail: error.message });
     }
   } catch (error) {
     // Analytics must never break a customer's page.
-    logger.exception("analytics beacon failed", error, { site_id });
+    logger.exception("analytics beacon failed", error, { site_id: siteId });
   }
 
-  return new NextResponse(null, { status: 204 });
+  return NO_CONTENT();
 }

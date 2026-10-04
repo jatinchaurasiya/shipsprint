@@ -2,6 +2,119 @@ import type { Template, SiteContent } from "@/types/database";
 
 export const BUILTIN_TEMPLATES: Template[] = [
   {
+    id: "fintech-launch",
+    name: "FinPay Launch",
+    tagline: "Fintech waitlist page with email capture, phone feature band, and App Store release panel.",
+    category: "finance",
+    preview_image_url: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&auto=format&fit=crop&q=80",
+    is_active: true,
+    sort_order: 5,
+    content: {
+      brand: {
+        name: "FinPay",
+        logo_url: "",
+      },
+      hero: {
+        app_name: "FinPay",
+        badge_text: "Sample badge — replace with your launch status",
+        header: "Modern banking for teams that move fast.",
+        short_description: "Corporate cards, real-time spend insights, and instant transfers for finance teams. Join the waitlist and get early access.",
+        email_capture_enabled: true,
+        email_placeholder: "Your email address",
+        email_cta_label: "Get Early Access",
+        email_success_message: "You're on the list. We'll be in touch.",
+      },
+      features: [
+        {
+          id: "feat-1",
+          icon: "Zap",
+          title: "Instant QR transfers",
+          description: "Send money in seconds with a scan. No account numbers, no waiting.",
+          image_url: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&auto=format&fit=crop&q=80",
+        },
+        {
+          id: "feat-2",
+          icon: "BarChart3",
+          title: "Live transaction detail",
+          description: "Every payment itemized the second it happens, with receipts attached.",
+          image_url: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&auto=format&fit=crop&q=80",
+        },
+        {
+          id: "feat-3",
+          icon: "Shield",
+          title: "Card spend controls",
+          description: "Freeze cards, set limits, and approve spend before it happens.",
+          image_url: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&auto=format&fit=crop&q=80",
+        },
+      ],
+      logo_wall: {
+        eyebrow: "Sample press strip — replace with your own logos",
+        logos: [
+          { id: "logo-1", name: "Press logo 1 (sample)", image_url: "" },
+          { id: "logo-2", name: "Press logo 2 (sample)", image_url: "" },
+          { id: "logo-3", name: "Press logo 3 (sample)", image_url: "" },
+          { id: "logo-4", name: "Press logo 4 (sample)", image_url: "" },
+        ],
+      },
+      release: {
+        eyebrow: "Coming soon",
+        title: "To be released on the App Store soon…",
+        description: "FinPay is in final review. Join the waitlist and be first in when it lands.",
+        version: "2.0",
+        rating: "4.8 (sample)",
+        rating_count: "12.4K ratings (sample)",
+        age_rating: "4+",
+        chart_rank: "#3 in Finance (sample)",
+        release_notes: [
+          "Instant QR transfers",
+          "Live transaction detail",
+          "Card spend controls",
+        ],
+        image_url: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&auto=format&fit=crop&q=80",
+      },
+      store_links: {
+        app_store_url: "",
+        play_store_url: "",
+      },
+      screenshots: [
+        "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&auto=format&fit=crop&q=80",
+      ],
+      footer: {
+        brand_name: "FinPay",
+        tagline: "Modern banking for teams that move fast.",
+        legal_links: [
+          { label: "Terms of Service", url: "/terms" },
+          { label: "Privacy Policy", url: "/privacy" },
+        ],
+        contact_email: "hello@finpay.app",
+        columns: [
+          {
+            heading: "Product",
+            links: [
+              { label: "Templates", url: "/templates" },
+              { label: "Pricing", url: "/#pricing" },
+            ],
+          },
+          {
+            heading: "Company",
+            links: [
+              { label: "About", url: "/#impacts" },
+              { label: "Contact", url: "" },
+            ],
+          },
+          {
+            heading: "Support",
+            links: [
+              { label: "Help Center", url: "" },
+              { label: "Privacy", url: "/privacy" },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  {
     id: "ios-swift",
     name: "SwiftLaunch",
     tagline: "Apple-grade mobile app landing page with App Store badges and screenshot carousel.",

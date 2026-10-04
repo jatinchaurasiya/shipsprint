@@ -87,7 +87,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         .in("site_id", siteIds)
         .gte("day", cutoffStr)
         .order("views", { ascending: false })
-        .limit(200),
+        .limit(1000),
       supabase
         .from("site_analytics_cta")
         .select("*")

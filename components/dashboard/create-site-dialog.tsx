@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, Loader2, ArrowRight, Sparkles, Lock, Smartphone, Terminal, Cpu, Users, Briefcase } from "lucide-react";
+import { Plus, X, Loader2, ArrowRight, Sparkles, Lock, Smartphone, Terminal, Cpu, Users, Briefcase, Landmark } from "lucide-react";
 import Link from "next/link";
 import { BUILTIN_TEMPLATES } from "@/lib/templates";
 
@@ -94,6 +94,8 @@ export function CreateSiteDialog({
         return <Cpu className="w-3.5 h-3.5 text-purple-500" />;
       case "social":
         return <Users className="w-3.5 h-3.5 text-amber-500" />;
+      case "finance":
+        return <Landmark className="w-3.5 h-3.5 text-teal-500" />;
       default:
         return <Briefcase className="w-3.5 h-3.5 text-indigo-500" />;
     }

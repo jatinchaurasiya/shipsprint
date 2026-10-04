@@ -20,6 +20,7 @@ import {
 const CATEGORIES = [
   { id: "all", label: "All Templates" },
   { id: "productivity", label: "Mobile Apps" },
+  { id: "finance", label: "Finance" },
   { id: "developer", label: "Developer & SaaS" },
   { id: "saas", label: "AI & Agents" },
   { id: "social", label: "Waitlist & Stealth" },

@@ -12,7 +12,7 @@ import type {
   AnalyticsCtaRow,
 } from "@/types/database";
 import type { AnalyticsPeriod } from "@/app/(dashboard)/dashboard/analytics/page";
-import { resolveCtaStore } from "@/lib/analytics";
+import { resolveCtaStore, getChartTickIndices } from "@/lib/analytics";
 import {
   TrendingUp,
   MousePointerClick,
@@ -52,6 +52,7 @@ export function AnalyticsView({
   const [hoveredDay, setHoveredDay] = useState<{
     date: string;
     label: string;
+    fullDate?: string;
     views: number;
     clicks: number;
   } | null>(null);
@@ -89,8 +90,6 @@ export function AnalyticsView({
 
   // Aggregate metrics from SQL views with UTC timezone alignment
   const metrics = useMemo(() => {
-    let pageViews = 0;
-    let buttonClicks = 0;
     let mobile = 0;
     let tablet = 0;
     let desktop = 0;
@@ -116,15 +115,19 @@ export function AnalyticsView({
         const clicks = Number(row.button_clicks) || 0;
         dailyMap[dayKey].views += views;
         dailyMap[dayKey].clicks += clicks;
-        pageViews += views;
-        buttonClicks += clicks;
+
         mobile += Number(row.mobile) || 0;
         tablet += Number(row.tablet) || 0;
         desktop += Number(row.desktop) || 0;
       }
     });
 
-    // Store button clicks: Apple App Store vs Google Play, as attributed by the view.
+// Store button clicks: Apple App Store vs Google Play.
+    //
+    // The store comes from the view's `store` column, which also attributes the
+    // legacy `nav_download` events by the destination they opened. Matching the
+    // button type here instead filed every header download click under "Other
+    // Buttons" — see lib/analytics.ts.
     let appStoreClicks = 0;
     let playStoreClicks = 0;
     let otherClicks = 0;
@@ -134,10 +137,6 @@ export function AnalyticsView({
       if (dayKey && !dailyMap[dayKey]) return;
 
       const clicks = Number(cta.clicks) || 0;
-      // The view resolves the store, falling back to the destination a legacy
-      // `nav_download` click opened. Matching the button type here instead
-      // filed every header download click under "Other Buttons" — see
-      // lib/analytics.ts.
       const store = resolveCtaStore(cta);
 
       if (store === "apple") {
@@ -153,7 +152,7 @@ export function AnalyticsView({
     const refMap: Record<string, number> = {};
     filteredSources.forEach((src) => {
       const dayKey = typeof src.day === "string" ? src.day.slice(0, 10) : "";
-      if (dayKey && !dailyMap[dayKey]) return;
+      if (!dayKey || !dailyMap[dayKey]) return;
 
       const rawRef = (src.source || "").trim();
       const ref =
@@ -165,9 +164,6 @@ export function AnalyticsView({
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    const ctr =
-      pageViews > 0 ? ((buttonClicks / pageViews) * 100).toFixed(1) : "0.0";
-
     const timeline = Object.entries(dailyMap).map(([date, data]) => ({
       date,
       label: new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
@@ -176,9 +172,29 @@ export function AnalyticsView({
         month: "numeric",
         day: "numeric",
       }),
+      shortLabel: new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
+        timeZone: "UTC",
+        weekday: period === "7d" ? "short" : undefined,
+        month: period === "7d" ? undefined : "numeric",
+        day: period === "7d" ? undefined : "numeric",
+      }),
+      fullDate: new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
+        timeZone: "UTC",
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
       views: data.views,
       clicks: data.clicks,
     }));
+
+    // Guaranteed mathematical identity: top cards strictly equal timeline sums
+    const pageViews = timeline.reduce((acc, d) => acc + d.views, 0);
+    const buttonClicks = timeline.reduce((acc, d) => acc + d.clicks, 0);
+
+    const ctr =
+      pageViews > 0 ? ((buttonClicks / pageViews) * 100).toFixed(1) : "0.0";
 
     const maxDayViews = Math.max(
       1,
@@ -201,6 +217,11 @@ export function AnalyticsView({
 
   const periodLabel =
     period === "7d" ? "Last 7 days" : period === "90d" ? "Last 90 days" : "Last 30 days";
+
+  const tickIndices = useMemo(
+    () => getChartTickIndices(metrics.timeline.length, period),
+    [metrics.timeline.length, period]
+  );
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -423,19 +444,29 @@ export function AnalyticsView({
 
               {/* Legend & Hover Details */}
               <div className="flex items-center gap-4 text-xs">
-                {hoveredDay ? (
-                  <div className="flex items-center gap-3 font-mono text-[11px] bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-lg">
-                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                      {hoveredDay.label}:
-                    </span>
-                    <span className="text-blue-600 dark:text-blue-400">
-                      {hoveredDay.views} views
-                    </span>
-                    <span className="text-emerald-600 dark:text-emerald-400">
-                      {hoveredDay.clicks} clicks
-                    </span>
-                  </div>
-                ) : (
+                {hoveredDay ? (() => {
+                  const dayCtr =
+                    hoveredDay.views > 0
+                      ? ((hoveredDay.clicks / hoveredDay.views) * 100).toFixed(1)
+                      : "0.0";
+                  return (
+                    <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-lg border border-zinc-200/60 dark:border-zinc-800">
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {hoveredDay.fullDate || hoveredDay.label}
+                      </span>
+                      <span className="text-zinc-300 dark:text-zinc-700">·</span>
+                      <span className="text-blue-600 dark:text-blue-400 font-medium">
+                        {hoveredDay.views.toLocaleString()} {hoveredDay.views === 1 ? "view" : "views"}
+                      </span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                        {hoveredDay.clicks.toLocaleString()} {hoveredDay.clicks === 1 ? "click" : "clicks"}
+                      </span>
+                      <span className="text-purple-600 dark:text-purple-400 font-medium">
+                        {dayCtr}% CTR
+                      </span>
+                    </div>
+                  );
+                })() : (
                   <>
                     <div className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-sm bg-blue-600" aria-hidden="true" />
@@ -451,7 +482,7 @@ export function AnalyticsView({
             </div>
 
             {/* Responsive Bar Grid */}
-            <div className="flex items-end gap-1.5 sm:gap-2.5 h-48 pt-6 border-b border-zinc-100 dark:border-zinc-900 overflow-x-auto scrollbar-thin">
+            <div className="flex items-end gap-1 sm:gap-1.5 h-48 pt-6 overflow-x-auto scrollbar-thin">
               {metrics.timeline.map((day, idx) => {
                 const viewHeight =
                   day.views > 0
@@ -463,44 +494,100 @@ export function AnalyticsView({
                     : 0;
 
                 const totalPoints = metrics.timeline.length;
-                const showLabel =
-                  period === "7d" ||
-                  (period === "30d" && (idx % 5 === 0 || idx === totalPoints - 1)) ||
-                  (period === "90d" && (idx % 14 === 0 || idx === totalPoints - 1));
+                const showLabel = tickIndices.has(idx);
+
+                const labelAlignClass =
+                  idx === 0
+                    ? "left-0 text-left"
+                    : idx === totalPoints - 1
+                    ? "right-0 text-right"
+                    : "-translate-x-1/2 left-1/2 text-center";
+
+                const isHovered = hoveredDay?.date === day.date;
+                const anyHovered = hoveredDay !== null;
 
                 return (
                   <div
                     key={day.date}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${day.fullDate}: ${day.views} views, ${day.clicks} clicks`}
+                    onClick={() => setHoveredDay(isHovered ? null : day)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setHoveredDay(isHovered ? null : day);
+                      }
+                    }}
                     onMouseEnter={() => setHoveredDay(day)}
                     onMouseLeave={() => setHoveredDay(null)}
-                    className="flex-1 min-w-[20px] flex flex-col items-center gap-2 h-full justify-end group cursor-pointer"
+                    className={`flex-1 flex flex-col items-center h-full justify-end group cursor-pointer transition-opacity duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm ${
+                      period === "7d"
+                        ? "min-w-[32px] sm:min-w-[44px]"
+                        : period === "30d"
+                        ? "min-w-[14px] sm:min-w-[18px]"
+                        : "min-w-[7px] sm:min-w-[9px]"
+                    } ${anyHovered && !isHovered ? "opacity-45" : "opacity-100"}`}
                   >
-                    <div className="w-full flex items-end justify-center gap-0.5 sm:gap-1.5 h-full">
+                    <div className="w-full flex-1 flex items-end justify-center gap-0.5 sm:gap-1 pb-1.5 border-b border-zinc-200/80 dark:border-zinc-800/80">
                       {/* View Bar */}
                       {viewHeight > 0 ? (
                         <div
-                          className="w-full max-w-[14px] bg-blue-600 rounded-t-sm transition-all duration-200 group-hover:bg-blue-500"
+                          className={`w-full ${
+                            period === "7d"
+                              ? "max-w-[18px] sm:max-w-[22px]"
+                              : period === "30d"
+                              ? "max-w-[8px] sm:max-w-[11px]"
+                              : "max-w-[4px] sm:max-w-[5px]"
+                          } bg-blue-600 rounded-t-sm transition-all duration-200 ${
+                            isHovered
+                              ? "bg-blue-500 brightness-110 shadow-sm"
+                              : "group-hover:bg-blue-500"
+                          }`}
                           style={{ height: `${viewHeight}%` }}
-                          title={`${day.views} views on ${day.label}`}
+                          title={`${day.views} views on ${day.fullDate || day.label}`}
                         />
                       ) : (
-                        <div className="w-full max-w-[14px] h-0.5 bg-zinc-200 dark:bg-zinc-800 rounded-full opacity-60" />
+                        <div className="w-full max-w-[10px] h-0.5 bg-zinc-200 dark:bg-zinc-800 rounded-full opacity-60" />
                       )}
                       {/* Click Bar */}
                       {clickHeight > 0 ? (
                         <div
-                          className="w-full max-w-[14px] bg-emerald-500 rounded-t-sm transition-all duration-200 group-hover:bg-emerald-400"
+                          className={`w-full ${
+                            period === "7d"
+                              ? "max-w-[18px] sm:max-w-[22px]"
+                              : period === "30d"
+                              ? "max-w-[8px] sm:max-w-[11px]"
+                              : "max-w-[4px] sm:max-w-[5px]"
+                          } bg-emerald-500 rounded-t-sm transition-all duration-200 ${
+                            isHovered
+                              ? "bg-emerald-400 brightness-110 shadow-sm"
+                              : "group-hover:bg-emerald-400"
+                          }`}
                           style={{ height: `${clickHeight}%` }}
-                          title={`${day.clicks} clicks on ${day.label}`}
+                          title={`${day.clicks} clicks on ${day.fullDate || day.label}`}
                         />
                       ) : (
-                        <div className="w-full max-w-[14px] h-0.5 bg-zinc-200 dark:bg-zinc-800 rounded-full opacity-60" />
+                        <div className="w-full max-w-[10px] h-0.5 bg-zinc-200 dark:bg-zinc-800 rounded-full opacity-60" />
                       )}
                     </div>
-                    {/* Clean stride date label */}
-                    <span className="text-[10px] text-zinc-500 font-mono text-center truncate w-full h-4">
-                      {showLabel ? day.label : ""}
-                    </span>
+                    {/* Unconstrained, unclipped date label with responsive mobile format */}
+                    <div className="h-5 w-full relative pt-1">
+                      {showLabel && (
+                        <span
+                          className={`absolute ${labelAlignClass} text-[10px] text-zinc-500 dark:text-zinc-400 font-mono whitespace-nowrap pointer-events-none select-none`}
+                        >
+                          {period === "7d" ? (
+                            <>
+                              <span className="hidden sm:inline">{day.label}</span>
+                              <span className="sm:hidden">{day.shortLabel}</span>
+                            </>
+                          ) : (
+                            day.label
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })}

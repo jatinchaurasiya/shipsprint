@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { EventType } from "@/types/database";
 
 /**
  * Request validation.
@@ -91,7 +92,32 @@ export const featureSchema = z.object({
   icon: shortText(32),
   title: shortText(120),
   description: shortText(600),
+  image_url: httpUrl.optional(),
 });
+
+const logoWallLogoSchema = z
+  .object({
+    id: shortText(64),
+    name: shortText(60),
+    image_url: httpUrl,
+  })
+  .strict();
+
+const footerColumnSchema = z
+  .object({
+    heading: shortText(40),
+    links: z
+      .array(
+        z
+          .object({
+            label: shortText(60),
+            url: httpOrRelativeUrl,
+          })
+          .strict()
+      )
+      .max(8),
+  })
+  .strict();
 
 /**
  * The full editor payload.
@@ -114,9 +140,35 @@ export const siteContentSchema = z
         badge_text: shortText(120),
         header: shortText(200),
         short_description: shortText(500),
+        email_capture_enabled: z.boolean().optional(),
+        email_placeholder: shortText(80).optional(),
+        email_cta_label: shortText(40).optional(),
+        email_success_message: shortText(200).optional(),
       })
       .strict(),
     features: z.array(featureSchema).max(24),
+    logo_wall: z
+      .object({
+        eyebrow: shortText(80),
+        logos: z.array(logoWallLogoSchema).max(12),
+      })
+      .strict()
+      .optional(),
+    release: z
+      .object({
+        eyebrow: shortText(80),
+        title: shortText(120),
+        description: shortText(500),
+        version: shortText(40),
+        rating: shortText(20),
+        rating_count: shortText(40),
+        age_rating: shortText(20),
+        chart_rank: shortText(60),
+        release_notes: z.array(shortText(200)).max(8),
+        image_url: httpUrl,
+      })
+      .strict()
+      .optional(),
     store_links: z
       .object({
         app_store_url: httpUrl,
@@ -127,6 +179,7 @@ export const siteContentSchema = z
     footer: z
       .object({
         brand_name: shortText(80),
+        tagline: shortText(200).optional(),
         legal_links: z
           .array(
             z
@@ -138,6 +191,7 @@ export const siteContentSchema = z
           )
           .max(10),
         contact_email: z.union([z.literal(""), z.email()]),
+        columns: z.array(footerColumnSchema).max(4).optional(),
       })
       .strict(),
   })
@@ -206,9 +260,27 @@ export const deleteDomainSchema = z.object({
   site_id: z.uuid("site_id must be a UUID"),
 });
 
+/**
+ * The analytics event types, as a runtime value.
+ *
+ * `EventType` in `types/database.ts` mirrors the Postgres enum and is the type
+ * everyone annotates against. The `satisfies` clause makes that mirror
+ * load-bearing in both directions: adding a string here that the database does
+ * not have, or renaming one, is a compile error rather than a beacon that is
+ * silently rejected at runtime.
+ */
+export const EVENT_TYPES = [
+  "page_view",
+  "button_click",
+] as const satisfies readonly EventType[];
+
 export const trackEventSchema = z.object({
+  // Parsed as a UUID, not merely "a non-empty string". The route feeds this
+  // straight into a Postgres `uuid` column lookup, and an unvalidated value
+  // there raises `invalid input syntax for type uuid` — a wasted round trip on
+  // an unauthenticated endpoint.
   site_id: z.uuid(),
-  event_type: z.enum(["page_view", "button_click"]),
+  event_type: z.enum(EVENT_TYPES),
   meta: z.record(z.string(), z.unknown()).optional(),
 });
 
