@@ -108,7 +108,7 @@ export function LogoManager({
     const currentList = logoWall?.logos || [];
     if (currentList.some((l) => l.name === preset.name)) return;
     const newEntry: LogoWallLogo = {
-      id: `logo-preset-${Date.now()}`,
+      id: `logo-preset-${preset.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
       name: preset.name,
       image_url: preset.image_url,
     };

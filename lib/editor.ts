@@ -25,8 +25,10 @@ export interface DomainState {
 
 export type EditorSectionId =
   | "hero"
-  | "store"
+  | "impacts"
   | "features"
+  | "how"
+  | "store"
   | "screenshots"
   | "logos"
   | "release"

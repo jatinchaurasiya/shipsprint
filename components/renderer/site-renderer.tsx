@@ -1,14 +1,11 @@
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
 "use client";
 
-import React, { useEffect, useState } from "react";
-import type { SiteContent, Plan } from "@/types/database";
-import { safeHref } from "@/lib/validation";
+import React, { useState } from "react";
+import type { SiteContent, Plan, FeatureItem, HowItWorksStep, BentoImpacts } from "@/types/database";
 import { trackEvent } from "@/lib/track-client";
-import { Check, Mail, Star, Plus, Minus } from "lucide-react";
+import { ArrowRight, Check, Star } from "lucide-react";
 import { getFeatureIcon } from "@/lib/icons";
-import { IphoneMockup, type MockupFallbackKind } from "@/components/ui/iphone-mockup";
-import { getHallmarkThemeTokens } from "@/lib/theme-tokens";
 import { AppStoreBadge, GooglePlayBadge, TestFlightBadge } from "@/components/ui/store-badges";
 
 interface SiteRendererProps {
@@ -21,62 +18,12 @@ interface SiteRendererProps {
   viewport?: "desktop" | "tablet" | "mobile";
 }
 
-const STAGE_LABELS = ["1.0", "2.0", "3.0", "4.0", "5.0", "6.0"];
-
-function mapThemeToFallback(theme?: string): MockupFallbackKind {
-  switch (theme) {
-    case "minimal":
-      return "generic";
-    case "midnight":
-
-      return "audio";
-    case "brutal":
-      return "discipline";
-    case "garden":
-      return "botanical";
-    case "atelier":
-      return "luxury";
-    case "newsprint":
-      return "broadsheet";
-    case "terminal":
-      return "terminal";
-    case "manifesto":
-      return "manifesto";
-    case "almanac":
-      return "astronomy";
-    case "sport":
-      return "sport";
-    case "studio":
-      return "studio";
-    case "riso":
-      return "print";
-    case "bloom":
-      return "wellness";
-    case "coral":
-      return "finance";
-    case "cobalt":
-      return "developer";
-    case "aurora":
-      return "cinema";
-    case "editorial":
-      return "podcast";
-    case "carnival":
-      return "party";
-    case "lumen":
-      return "ai";
-    case "hum":
-      return "curiosity";
-    default:
-      return "generic";
-  }
-}
-
 export function SiteRenderer({
   content,
-  plan,
+  plan: _plan,
   isPreview = false,
   siteId,
-  theme,
+  theme: _theme,
   slug: _slug,
   viewport = "desktop",
 }: SiteRendererProps) {
@@ -84,26 +31,21 @@ export function SiteRenderer({
     brand = { name: "App Name", logo_url: "" },
     hero = {
       app_name: "App Name",
-      badge_text: "Now Available on iOS & Android",
-      header: "The simplest way to achieve your daily goals.",
+      badge_text: "Built for indie app makers",
+      header: "Launch your app page. Without the code.",
       short_description:
-        "Engineered with craft and attention to detail. Designed to elevate your daily routine.",
+        "Plan, prioritize, and publish your App Store landing page in one simple workspace. Stay on-brand, track every install, and never touch frontend code again.",
     },
+    impacts,
     features = [],
-    logo_wall,
-    release,
+    how_it_works,
     store_links = {
       availability: "both",
       app_store_url: "",
       play_store_url: "",
+      testflight_url: "",
     },
     pages = [],
-    trust,
-    showcase,
-    stats,
-    testimonials,
-    pricing,
-    faq,
     footer = {
       brand_name: "App Name",
       legal_links: [],
@@ -111,14 +53,14 @@ export function SiteRenderer({
     },
   } = content || {};
 
-  const tokens = getHallmarkThemeTokens(theme);
+  const appName = hero.app_name || brand.name || "App Name";
   const isMobileView = viewport === "mobile";
   const isTabletView = viewport === "tablet";
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
+  // Email capture state (if configured)
   const emailCapture = {
     enabled: hero.email_capture_enabled ?? false,
-    placeholder: hero.email_placeholder || "Your email address",
+    placeholder: hero.email_placeholder || "Enter your email for early access",
     ctaLabel: hero.email_cta_label || "Get Early Access",
     successMessage:
       hero.email_success_message || "You're on the list. We'll be in touch.",
@@ -137,9 +79,6 @@ export function SiteRenderer({
     setEmailDone(true);
   };
 
-  const fallbackKind = mapThemeToFallback(theme);
-
-
   const availability = store_links.availability || "both";
   const hasAppStore =
     (availability === "both" || availability === "app_store_only") &&
@@ -149,739 +88,639 @@ export function SiteRenderer({
     Boolean(store_links.play_store_url);
   const hasTestFlight =
     availability === "testflight" && Boolean(store_links.testflight_url);
-
   const hasAnyStore = hasAppStore || hasPlayStore || hasTestFlight;
 
-  const primaryCtaHref = safeHref(
-    hasAppStore
-      ? store_links.app_store_url
-      : hasPlayStore
-      ? store_links.play_store_url
-      : store_links.testflight_url
-  );
-
-  const primaryCtaLabel =
-    availability === "app_store_only"
-      ? "Download on App Store"
-      : availability === "play_store_only"
-      ? "Get on Google Play"
-      : availability === "testflight"
-      ? "Join TestFlight Beta"
-      : "Get the app";
-
-  const resolveSubpageHref = (pageSlug: string) => {
-    if (isPreview) return "#";
-    return `/${pageSlug}`;
-  };
-
-  useEffect(() => {
-    if (isPreview || !siteId) return;
-    trackEvent({
-      siteId,
-      eventType: "page_view",
-      meta: {
-        referrer: document.referrer || "Direct",
-        path: window.location.pathname,
-        screen: `${window.innerWidth}x${window.innerHeight}`,
-      },
-    });
-  }, [isPreview, siteId]);
-
-  const handleCtaClick = (buttonType: string, targetUrl?: string) => {
+  const handleCtaClick = (ctaType: string, targetUrl?: string) => {
     if (isPreview || !siteId) return;
     trackEvent({
       siteId,
       eventType: "button_click",
       meta: {
-        button_type: buttonType,
+        cta_type: ctaType,
         target_url: targetUrl || "",
-        referrer: document.referrer || "Direct",
-        path: window.location.pathname,
+        path: typeof window !== "undefined" ? window.location.pathname : "/",
       },
     });
   };
 
-  const showWatermark = plan?.has_branding ?? true;
-  const appName = brand.name || hero.app_name || "App Name";
+  const resolveSubpageHref = (pageSlug: string) => {
+    if (isPreview) return `#${pageSlug}`;
+    return `/${pageSlug}`;
+  };
 
-  // System and custom navigation pages
-  const navPages =
-    pages.length > 0
-      ? pages.filter((p) => p.page_type !== "home" && p.show_in_nav !== false)
-      : [
-          { id: "def-privacy", slug: "privacy", title: "Privacy" },
-          { id: "def-terms", slug: "terms", title: "Terms" },
-          { id: "def-support", slug: "support", title: "Support" },
-        ];
+  const navPages = (pages || []).filter(
+    (p) => p.is_published !== false && p.show_in_nav !== false && p.slug !== "home"
+  );
 
-  const footerPages =
-    pages.length > 0
-      ? pages.filter((p) => p.page_type !== "home" && p.show_in_footer !== false)
-      : [
-          { id: "def-privacy", slug: "privacy", title: "Privacy Policy" },
-          { id: "def-terms", slug: "terms", title: "Terms of Service" },
-          { id: "def-support", slug: "support", title: "Support & Help" },
-        ];
+  const primaryCtaLabel = hero.primary_cta_label || (hasAnyStore ? "Get the app" : "Start building");
+  const secondaryCtaLabel = hero.secondary_cta_label || "See How It Works";
 
-  const fontClass =
-    tokens.fontCategory === "serif"
-      ? "font-serif"
-      : tokens.fontCategory === "mono"
-      ? "font-mono"
-      : "font-sans";
+  // Impacts fallbacks
+  const impactsData: BentoImpacts = {
+    eyebrow: impacts?.eyebrow || "Our impacts",
+    title: impacts?.title || "Real results. Real impact.",
+    description:
+      impacts?.description ||
+      `See how indie makers turn visitors into installs. From faster launches to calmer workflows, ${appName} helps you ship more — every single day.`,
+    trust_avatars: impacts?.trust_avatars || ["ZH", "FF", "SA"],
+    trust_headline: impacts?.trust_headline || "Trusted by indie makers",
+    metric_stat: impacts?.metric_stat || "1,200+",
+    metric_label: impacts?.metric_label || "Live app landing pages published worldwide",
+    rating_score: impacts?.rating_score ?? 4.9,
+    rating_reviews_label:
+      impacts?.rating_reviews_label || "Average indie maker rating across launches",
+    sla_stat: impacts?.sla_stat || "99.9%",
+    sla_label: impacts?.sla_label || "Uptime SLA via Caddy edge & automated TLS",
+    speed_stat: impacts?.speed_stat || "< 2 min",
+    speed_label: impacts?.speed_label || "From setup to live custom domain",
+  };
+
+  // How it works steps fallback
+  const stepsData: HowItWorksStep[] = how_it_works && how_it_works.length > 0
+    ? how_it_works
+    : [
+        {
+          step: "Step 1",
+          title: "Craft your identity",
+          description:
+            "Add your icon, screenshots, store links, and copy. Watch the live preview update instantly with zero drift.",
+        },
+        {
+          step: "Step 2",
+          title: "Showcase verified proof",
+          description:
+            "Highlight core capabilities, checklist milestones, and verified ratings to build immediate trust with visitors.",
+        },
+        {
+          step: "Step 3",
+          title: "Publish & track installs",
+          description:
+            "Publish to your subdomain or custom domain with automated TLS. Track cookieless store taps from day one.",
+        },
+      ];
+
+  const categories = brand.categories && brand.categories.length > 0
+    ? brand.categories
+    : ["Habit", "Focus", "Productivity", "Health", "Design", "Life"];
 
   return (
-    <div
-      data-theme={tokens.id}
-      style={{
-        backgroundColor: tokens.paper,
-        color: tokens.ink,
-      }}
-      className={`min-h-screen ${fontClass} antialiased selection:bg-zinc-900 selection:text-white dark:selection:bg-zinc-100 dark:selection:text-zinc-950 transition-colors duration-200`}
-    >
-      {/* Navigation Header */}
-      <header
-        style={{
-          backgroundColor: tokens.paper,
-          borderColor: tokens.border,
-        }}
-        className="sticky top-0 z-[200] border-b backdrop-blur-md"
-      >
-        <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4 leading-none sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            {/* App Icon or Brand Logo */}
-            {brand.app_icon_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={brand.app_icon_url}
-                alt={`${appName} Icon`}
-                className="h-8 w-8 rounded-[22%] object-cover shadow-xs ring-1 ring-black/10 dark:ring-white/10"
-              />
-            ) : brand.logo_url ? (
+    <div className="min-h-screen bg-white font-sans text-[#131313] antialiased selection:bg-[#131313] selection:text-white dark:bg-zinc-950 dark:text-zinc-50 dark:selection:bg-zinc-50 dark:selection:text-zinc-950">
+      {/* N5 Floating Pill Header */}
+      <div className="sticky top-0 z-[300] px-4 pt-4">
+        <header className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-4 rounded-full border border-zinc-200 bg-white/90 py-2 pl-5 pr-2 shadow-[0_8px_24px_-12px_rgb(0,0,0,0.18)] backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/90">
+          {/* Brand Logo / Name */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            {brand.logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={brand.logo_url}
-                alt=""
-                aria-hidden="true"
-                style={{ borderColor: tokens.border }}
-                className="h-7 w-7 rounded-lg border object-cover"
+                alt={appName}
+                className="h-7 w-auto object-contain max-w-[120px]"
+              />
+            ) : brand.app_icon_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brand.app_icon_url}
+                alt={appName}
+                className="h-7 w-7 rounded-lg object-cover shadow-xs"
               />
             ) : (
-              <span
-                aria-hidden="true"
-                style={{
-                  backgroundColor: tokens.accent,
-                  color: tokens.accentInk,
-                }}
-                className={`flex h-7 w-7 items-center justify-center ${tokens.buttonRadius} text-sm font-semibold`}
-              >
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#131313] text-xs font-bold text-white shadow-xs dark:bg-white dark:text-[#131313]">
                 {appName.charAt(0).toUpperCase()}
               </span>
             )}
-            <span style={{ color: tokens.ink }} className="truncate text-[15px] font-semibold tracking-tight">{appName}</span>
+            <span className="truncate text-[15px] font-semibold tracking-tight text-[#131313] dark:text-white">
+              {appName}
+            </span>
           </div>
 
-          {/* Navigation Links */}
-          <nav aria-label="Main Navigation" className={`${isMobileView ? "hidden" : "hidden md:flex"} items-center gap-7 text-[13px] font-medium`}>
+          {/* Navigation Anchor Links */}
+          <nav
+            aria-label="Primary"
+            className={`${isMobileView ? "hidden" : "hidden sm:flex"} items-center gap-6 text-[13px] font-medium text-[#505050] dark:text-zinc-300`}
+          >
+            <a
+              href="#impacts"
+              className="whitespace-nowrap transition-colors hover:text-[#131313] active:text-[#131313] dark:hover:text-white"
+            >
+              Impacts
+            </a>
+            <a
+              href="#features"
+              className="whitespace-nowrap transition-colors hover:text-[#131313] active:text-[#131313] dark:hover:text-white"
+            >
+              Features
+            </a>
+            <a
+              href="#how"
+              className="whitespace-nowrap transition-colors hover:text-[#131313] active:text-[#131313] dark:hover:text-white"
+            >
+              How it works
+            </a>
             {navPages.map((page) => (
               <a
                 key={page.id}
                 href={resolveSubpageHref(page.slug)}
-                style={{ color: tokens.inkMuted }}
-                className="transition-colors hover:opacity-100 active:opacity-100 opacity-80"
+                className="whitespace-nowrap transition-colors hover:text-[#131313] active:text-[#131313] dark:hover:text-white"
               >
                 {page.title}
               </a>
             ))}
           </nav>
 
-          {/* Header Action Button */}
-          {hasAnyStore && (
-            <a
-              href={primaryCtaHref}
-              target={isPreview ? "_self" : "_blank"}
-              rel="noopener noreferrer"
-              onClick={() =>
-                handleCtaClick(
-                  hasAppStore ? "app_store_nav" : hasPlayStore ? "play_store_nav" : "testflight_nav",
-                  hasAppStore
-                    ? store_links.app_store_url
-                    : hasPlayStore
-                    ? store_links.play_store_url
-                    : store_links.testflight_url
-                )
-              }
-              style={{
-                backgroundColor: tokens.accent,
-                color: tokens.accentInk,
-              }}
-              className={`inline-flex shrink-0 items-center whitespace-nowrap ${tokens.buttonRadius} px-4 py-2 text-[13px] font-semibold transition-all hover:opacity-90 active:scale-[0.98] shadow-xs`}
-            >
-              {primaryCtaLabel}
-            </a>
-          )}
-        </div>
-      </header>
+          {/* Action Button */}
+          <div className="flex items-center gap-2 leading-none">
+            {hasAnyStore ? (
+              <a
+                href="#download"
+                onClick={() => handleCtaClick("nav_download")}
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#131313] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-black active:scale-[0.98] dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-white"
+              >
+                <span>{primaryCtaLabel}</span>
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </a>
+            ) : (
+              <a
+                href="#features"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#131313] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-black active:scale-[0.98] dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-white"
+              >
+                <span>{secondaryCtaLabel}</span>
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </a>
+            )}
+          </div>
+        </header>
+      </div>
 
-      {/* Hero Section: Diptych with Copy & Photorealistic Hardware iPhone Mockup */}
-      <section className="mx-auto w-full max-w-5xl px-4 pt-12 pb-16 sm:px-6 md:pt-16 md:pb-20 lg:px-8">
+      {/* Hero — Full-Bleed Royal Blue Radial Chamber */}
+      <section className="px-3 pt-4 sm:px-4">
         <div
-          className={
-            isMobileView
-              ? "flex flex-col items-center text-center gap-10"
-              : isTabletView
-                ? "flex flex-col items-center text-center gap-12"
-                : "flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-14"
-          }
+          className="relative overflow-hidden rounded-[2rem] text-white sm:rounded-[2.5rem]"
+          style={{
+            background:
+              "radial-gradient(ellipse at 82% 20%, rgba(56, 189, 248, 0.35) 0%, transparent 50%), radial-gradient(ellipse at 30% 80%, rgba(20, 100, 190, 0.4) 0%, transparent 55%), linear-gradient(135deg, #2488eb 0%, #1772e0 50%, #0d5bbd 100%)",
+            boxShadow:
+              "0 30px 60px -15px rgba(13, 86, 190, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3)",
+          }}
         >
-          {/* Left Column: Headline, Copy, Store Badges, Email Form */}
-          <div className={isMobileView || isTabletView ? "w-full max-w-xl text-center" : "flex-1 min-w-0 max-w-2xl"}>
-            {hero.badge_text && (
-              <p
-                style={{
-                  backgroundColor: tokens.accentSubtle,
-                  borderColor: tokens.border,
-                  color: tokens.accent,
-                }}
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap ${
-                  isMobileView || isTabletView ? "mx-auto" : ""
-                }`}
-              >
-                <span
-                  style={{ backgroundColor: tokens.accent }}
-                  className="h-1.5 w-1.5 rounded-full"
-                  aria-hidden="true"
-                />
-                <span>{hero.badge_text}</span>
-              </p>
-            )}
-            <h1
-              style={{ color: tokens.ink }}
-              className="hero__display mt-5 text-[clamp(2.25rem,4.5vw+0.5rem,3.75rem)] leading-[1.04] font-semibold tracking-[-0.025em] text-balance overflow-wrap-anywhere"
-            >
-              {hero.header}
-            </h1>
-            {hero.short_description && (
-              <p
-                style={{ color: tokens.inkMuted }}
-                className={`mt-5 max-w-[55ch] text-base leading-relaxed sm:text-lg ${
-                  isMobileView || isTabletView ? "mx-auto" : ""
-                }`}
-              >
-                {hero.short_description}
-              </p>
-            )}
+          <div
+            className={`mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 pt-12 pb-14 sm:px-10 ${
+              isMobileView ? "" : "md:grid-cols-12 md:gap-8 md:pt-16 md:pb-20"
+            }`}
+          >
+            {/* Left Column: Eyebrow, Headline, Description, CTAs, Star Proof */}
+            <div className={isMobileView ? "text-center" : "md:col-span-6"}>
+              {hero.badge_text && (
+                <p className="inline-flex items-center whitespace-nowrap rounded-full border border-white/30 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold tracking-widest uppercase backdrop-blur-md">
+                  {hero.badge_text}
+                </p>
+              )}
 
-            {/* Official Store Badges / Download Options */}
-            <div className={`mt-8 ${isMobileView ? "text-center" : "text-left"}`}>
+              <h1 className="hero__display mt-6 font-display text-[clamp(2.5rem,5vw+0.5rem,4.25rem)] leading-[1.02] font-semibold tracking-[-0.03em] text-balance">
+                {hero.header}
+              </h1>
+
+              {hero.short_description && (
+                <p className="mt-5 max-w-[50ch] text-base leading-relaxed text-white/90 sm:text-lg">
+                  {hero.short_description}
+                </p>
+              )}
+
+              {/* Action Buttons */}
               <div
-                className={`flex flex-wrap items-center gap-3.5 leading-none ${
+                className={`mt-8 flex flex-wrap items-center gap-3.5 leading-none ${
                   isMobileView ? "justify-center" : "justify-start"
                 }`}
               >
-                {/* Apple App Store Official Badge Button */}
-                {hasAppStore && store_links.app_store_url && (
-                  <AppStoreBadge
-                    href={store_links.app_store_url}
-                    isPreview={isPreview}
-                    onClick={() => handleCtaClick("app_store_hero", store_links.app_store_url)}
-                  />
-                )}
+                <a
+                  href="#download"
+                  onClick={() => handleCtaClick("hero_primary")}
+                  className="inline-flex items-center gap-2.5 rounded-full bg-white py-2 pr-2 pl-6 text-[13px] font-semibold tracking-wider whitespace-nowrap text-[#131313] uppercase transition-all hover:bg-zinc-100 active:bg-zinc-200 active:scale-[0.98] shadow-lg shadow-black/10"
+                >
+                  <span>{primaryCtaLabel}</span>
+                  <span
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-[#131313] text-white"
+                    aria-hidden="true"
+                  >
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                </a>
 
-                {/* Google Play Official Badge Button */}
-                {hasPlayStore && store_links.play_store_url && (
-                  <GooglePlayBadge
-                    href={store_links.play_store_url}
-                    isPreview={isPreview}
-                    onClick={() => handleCtaClick("play_store_hero", store_links.play_store_url)}
-                  />
-                )}
-
-                {/* Apple TestFlight Public Beta Button */}
-                {hasTestFlight && store_links.testflight_url && (
-                  <TestFlightBadge
-                    href={store_links.testflight_url}
-                    isPreview={isPreview}
-                    onClick={() => handleCtaClick("testflight_hero", store_links.testflight_url)}
-                  />
-                )}
-
-                {!hasAnyStore && !emailCapture.enabled && (
-                  <p style={{ color: tokens.inkMuted }} className="text-xs">
-                    Store links have not been added yet. Add them in the editor.
-                  </p>
-                )}
+                <a
+                  href="#features"
+                  className="inline-flex items-center whitespace-nowrap rounded-full bg-black/25 px-6 py-3.5 text-[13px] font-semibold tracking-wider text-white uppercase backdrop-blur-md border border-white/20 transition-all hover:bg-black/35 active:scale-[0.98]"
+                >
+                  <span>{secondaryCtaLabel}</span>
+                </a>
               </div>
-            </div>
 
-            {/* Email capture option */}
-            {emailCapture.enabled && (
-              <div className="mt-8">
-                {emailDone ? (
-                  <p role="status" className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                    <Check className="h-4 w-4" />
-                    {emailCapture.successMessage}
-                  </p>
-                ) : (
-                  <form onSubmit={submitEmailCapture} className="max-w-md">
-                    <div
-                      style={{
-                        backgroundColor: tokens.paperSecondary,
-                        borderColor: tokens.border,
-                      }}
-                      className={`flex items-center gap-2 border p-1.5 pl-4 ${tokens.buttonRadius}`}
-                    >
-                      <Mail style={{ color: tokens.inkMuted }} className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {/* Star Rating Proof */}
+              <p
+                className={`mt-8 flex flex-wrap items-center gap-2.5 leading-tight sm:flex-nowrap ${
+                  isMobileView ? "justify-center" : "justify-start"
+                }`}
+                role="img"
+                aria-label={`Rated ${hero.rating_stars || 5} stars`}
+              >
+                <span className="flex items-center gap-1 shrink-0" aria-hidden="true">
+                  {Array.from({ length: hero.rating_stars || 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className="h-4 w-4 fill-yellow-300 text-yellow-300"
+                      aria-hidden="true"
+                    />
+                  ))}
+                </span>
+                <span className="text-xs font-semibold tracking-wider uppercase text-white/95">
+                  {hero.rating_text || "Built for App Store launches"}
+                </span>
+              </p>
+
+              {/* Optional Email Capture */}
+              {emailCapture.enabled && (
+                <div className="mt-6 max-w-md">
+                  {emailDone ? (
+                    <p className="rounded-xl bg-white/20 px-4 py-2 text-sm text-white backdrop-blur-sm">
+                      {emailCapture.successMessage}
+                    </p>
+                  ) : (
+                    <form onSubmit={submitEmailCapture} className="flex gap-2">
                       <input
                         type="email"
-                        required
                         value={emailValue}
                         onChange={(e) => setEmailValue(e.target.value)}
                         placeholder={emailCapture.placeholder}
-                        style={{ color: tokens.ink }}
-                        className="min-h-0 w-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:opacity-50"
+                        className="flex-1 rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-xs text-white placeholder-white/70 backdrop-blur-sm outline-hidden focus:border-white"
                       />
                       <button
                         type="submit"
-                        style={{
-                          backgroundColor: tokens.accent,
-                          color: tokens.accentInk,
-                        }}
-                        className={`inline-flex shrink-0 items-center justify-center whitespace-nowrap ${tokens.buttonRadius} px-5 py-2.5 text-[13px] font-semibold transition-opacity hover:opacity-90 active:scale-[0.98]`}
+                        className="rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-[#131313] hover:bg-zinc-100"
                       >
                         {emailCapture.ctaLabel}
                       </button>
-                    </div>
-                    {emailError && (
-                      <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">
-                        {emailError}
-                      </p>
-                    )}
-                  </form>
-                )}
-              </div>
-            )}
-          </div>
+                    </form>
+                  )}
+                  {emailError && (
+                    <p className="mt-1 text-xs text-red-200">{emailError}</p>
+                  )}
+                </div>
+              )}
+            </div>
 
-          {/* Right Column: Photorealistic iPhone Hardware Mockup with Ambient Glow & Floating Cards */}
-          <div className="shrink-0 flex items-center justify-center relative">
-            {/* Enormous Soft Purple Glow */}
+            {/* Right Column: Cascading Diptych Mockups */}
             <div
-              aria-hidden="true"
-              className="absolute -inset-10 sm:-inset-16 rounded-full bg-gradient-to-tr from-[#6D5DFB]/25 via-[#9D8BFF]/25 to-transparent blur-3xl -z-10 pointer-events-none"
-            />
+              className={`relative flex items-center justify-center ${
+                isMobileView ? "mt-4" : "md:col-span-6"
+              }`}
+            >
+              <div className="relative flex w-full max-w-[380px] items-center justify-center py-2 sm:max-w-[430px]">
+                {/* Back iPhone Mockup (Right) */}
+                <div className="relative z-10 w-[180px] rotate-[-1.5deg] translate-x-7 translate-y-2.5 opacity-95 transition-transform duration-500 hover:translate-x-9 hover:rotate-0 sm:w-[205px] sm:translate-x-10 sm:translate-y-3 lg:w-[220px]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={
+                      hero.device_screenshot_url_secondary ||
+                      hero.device_screenshot_url ||
+                      "/shipsprint-phone-mockup.png"
+                    }
+                    alt={`${appName} preview`}
+                    className="h-auto w-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.32)]"
+                  />
+                </div>
 
-            <IphoneMockup
-              imageUrl={hero.device_screenshot_url}
-              appName={appName}
-              fallbackKind={fallbackKind}
-              className={isMobileView ? "w-[270px]" : "w-[280px] sm:w-[300px] md:w-[316px]"}
-            />
+                {/* Front iPhone Mockup (Left, overlapping foreground with -6deg tilt) */}
+                <div className="absolute left-1 top-1 z-20 w-[190px] rotate-[-6deg] transition-transform duration-500 hover:scale-[1.02] hover:rotate-[-4deg] sm:left-3 sm:top-2 sm:w-[218px] lg:w-[235px]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={hero.device_screenshot_url || "/shipsprint-phone-mockup.png"}
+                    alt={`${appName} showcase`}
+                    className="h-auto w-full drop-shadow-[0_28px_56px_rgba(0,0,0,0.48)]"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Trust Section */}
-      {trust && (
-        <section aria-label="Social Proof & Trust" className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-          <div
-            style={{
-              backgroundColor: tokens.paperSecondary,
-              borderColor: tokens.border,
-            }}
-            className="flex flex-col sm:flex-row items-center justify-between gap-6 rounded-2xl border p-6 shadow-xs"
-          >
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-              <div className="flex items-center gap-1 text-amber-400">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" />
+      {/* Category Proof Strip */}
+      <section
+        aria-label="Made for"
+        className="border-y border-zinc-200 bg-[#f7f7f7] dark:border-zinc-800 dark:bg-zinc-900/30"
+      >
+        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+          <p className="text-center text-xs font-semibold tracking-widest text-[#505050] uppercase dark:text-zinc-400">
+            Made for indie apps shipping worldwide
+          </p>
+          <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-semibold text-[#262424] dark:text-zinc-300">
+            {categories.map((c) => (
+              <li key={c} className="whitespace-nowrap">
+                {c}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Impacts — 4-Tile Bento Mosaic Grid */}
+      <section
+        id="impacts"
+        className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 md:py-24 lg:px-8"
+      >
+        <div className="section__head block">
+          <p className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+            {impactsData.eyebrow}
+          </p>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-8 md:grid-cols-7">
+          <h2 className="section__title font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl md:col-span-4">
+            {impactsData.title}
+          </h2>
+          <p className="max-w-[52ch] self-end text-sm leading-relaxed text-[#505050] md:col-span-3 dark:text-zinc-300">
+            {impactsData.description}
+          </p>
+        </div>
+
+        <div
+          className={`mt-10 grid grid-cols-1 gap-5 ${
+            isMobileView ? "grid-cols-1" : isTabletView ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"
+          }`}
+        >
+          {/* Avatar trust tile */}
+          <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2" aria-hidden="true">
+                {(impactsData.trust_avatars || []).map((t) => (
+                  <span
+                    key={t}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#f7f7f7] text-[11px] font-semibold text-[#262424] dark:border-zinc-950 dark:bg-zinc-800 dark:text-zinc-200"
+                  >
+                    {t}
+                  </span>
                 ))}
               </div>
-              <div>
-                <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <span style={{ color: tokens.ink }} className="text-base font-bold">{trust.rating}</span>
-                  <span style={{ color: tokens.inkMuted }} className="text-xs">· Trusted by {trust.review_count_text}</span>
-                </div>
-                <p style={{ color: tokens.inkMuted }} className="text-xs italic mt-0.5">
-                  &ldquo;{trust.featured_quote}&rdquo;
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              {hasAppStore && store_links.app_store_url && (
-                <AppStoreBadge
-                  href={store_links.app_store_url}
-                  isPreview={isPreview}
-                  className="scale-90"
-                />
-              )}
-              {hasPlayStore && store_links.play_store_url && (
-                <GooglePlayBadge
-                  href={store_links.play_store_url}
-                  isPreview={isPreview}
-                  className="scale-90"
-                />
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-
-      {/* Logo wall — press/trust strip */}
-      {logo_wall && logo_wall.logos.length > 0 && (
-        <section
-          aria-label={logo_wall.eyebrow || "Featured in"}
-          style={{
-            backgroundColor: tokens.paperSecondary,
-            borderColor: tokens.border,
-          }}
-          className="border-y py-8"
-        >
-          <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
-            {logo_wall.eyebrow && (
-              <p
-                style={{ color: tokens.inkMuted }}
-                className="text-center text-[11px] font-semibold tracking-widest uppercase"
-              >
-                {logo_wall.eyebrow}
+              <p className="text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:text-zinc-400">
+                {impactsData.trust_headline}
               </p>
-            )}
-            <ul className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-              {logo_wall.logos.slice(0, 12).map((logo) => (
-                <li
-                  key={logo.id}
-                  style={{ color: tokens.inkMuted }}
-                  className="flex items-center gap-2.5 grayscale opacity-75 hover:opacity-100 transition-opacity"
-                >
-                  {logo.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={logo.image_url}
-                      alt={logo.name}
-                      loading="lazy"
-                      className="h-6 w-auto object-contain"
-                    />
-                  ) : (
-                    <span className="text-sm font-semibold whitespace-nowrap">{logo.name}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
+            </div>
+            <div className="mt-8">
+              <p className="max-w-[52ch] text-[15px] leading-relaxed font-medium">
+                Our platform helps you stay focused, meet launch day, and achieve more with every release.
+              </p>
+              <p className="mt-6 font-display text-5xl font-semibold tracking-tight">
+                {impactsData.metric_stat}
+                <span className="text-[#505050] dark:text-zinc-500">+</span>
+              </p>
+              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
+                {impactsData.metric_label}
+              </p>
+            </div>
           </div>
-        </section>
-      )}
 
-      {/* Features breakdown */}
-      {features.length > 0 && (
-        <section id="features" aria-label="Key Features" className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
-          <div
-            style={{ borderColor: tokens.borderStrong }}
-            className="border-t-2 pt-4"
-          >
-            <p
-              style={{ color: tokens.inkMuted }}
-              className="text-xs font-semibold tracking-widest uppercase"
-            >
-              Features
+          {/* Tall dark rating tile */}
+          <div className="flex min-w-0 flex-col justify-between rounded-3xl bg-[#131313] p-6 text-white sm:row-span-2 dark:bg-zinc-900">
+            <p className="max-w-[52ch] text-[15px] leading-relaxed font-medium text-zinc-100">
+              Every page published, every install tracked — our numbers reflect real progress made by real makers like you.
             </p>
-          </div>
-          <ol className="mt-2">
-                {features.map((feature, idx) => {
-                  const IconComponent = getFeatureIcon(feature.icon);
-                  const stage = STAGE_LABELS[idx] ?? `${idx + 1}.0`;
-                  const flip = idx % 2 === 1;
-                  return (
-                    <li
-                      key={feature.id || idx}
-                      style={{ borderColor: tokens.border }}
-                      className={`grid grid-cols-1 gap-6 border-t py-10 ${
-                        isMobileView ? "" : "md:grid-cols-2 md:gap-12"
-                      }`}
-                    >
-                      <div className={flip && !isMobileView ? "md:order-2" : ""}>
-                        <p
-                          style={{ color: tokens.accent }}
-                          className="font-mono text-xs font-semibold"
-                        >
-                          {stage}
-                        </p>
-                        <h2
-                          style={{ color: tokens.ink }}
-                          className="section__title mt-2 max-w-md text-2xl font-semibold tracking-tight text-balance"
-                        >
-                          {feature.title}
-                        </h2>
-                        <p
-                          style={{ color: tokens.inkMuted }}
-                          className="mt-3 max-w-[60ch] text-sm leading-relaxed"
-                        >
-                          {feature.description}
-                        </p>
-                      </div>
-                      <div
-                        style={{
-                          backgroundColor: tokens.paperSecondary,
-                          borderColor: tokens.border,
-                        }}
-                        className={`min-w-0 overflow-hidden ${tokens.buttonRadius} border ${
-                          flip && !isMobileView ? "md:order-1" : ""
-                        }`}
-                      >
-                        {feature.image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={feature.image_url}
-                            alt=""
-                            aria-hidden="true"
-                            loading="lazy"
-                            className="aspect-[16/10] w-full object-cover"
-                          />
-                        ) : (
-                          <div aria-hidden="true" className="flex items-start gap-3 p-5">
-                            <span
-                              style={{
-                                backgroundColor: tokens.accentSubtle,
-                                borderColor: tokens.border,
-                                color: tokens.accent,
-                              }}
-                              className={`flex h-9 w-9 shrink-0 items-center justify-center ${tokens.buttonRadius} border`}
-                            >
-                              <IconComponent className="h-4 w-4" aria-hidden="true" />
-                            </span>
-                            <span style={{ color: tokens.inkMuted }} className="text-sm leading-relaxed">
-                              {feature.title} — crafted natively for mobile.
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-        </section>
-      )}
-
-      {/* Product Showcase: 3 alternating sections */}
-      {showcase && showcase.length > 0 && (
-        <section id="showcase" aria-label="Product Showcase" className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8 space-y-24">
-          <div className="text-center max-w-2xl mx-auto mb-4">
-            <p style={{ color: tokens.accent }} className="text-xs font-bold uppercase tracking-wider">
-              Deep Dive
-            </p>
-            <h2 style={{ color: tokens.ink }} className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl text-balance">
-              Engineered for seamless daily flow.
-            </h2>
-          </div>
-          {showcase.map((item, idx) => {
-            const isReverse = item.align === "right";
-            return (
+            <div className="mt-10">
+              <p className="font-display text-5xl font-semibold tracking-tight">
+                {(impactsData.rating_score || 4.9).toFixed(1)}
+                <span className="text-zinc-500">/5</span>
+              </p>
               <div
-                key={item.id || idx}
-                className={`grid grid-cols-1 items-center gap-12 ${
-                  isMobileView ? "" : "md:grid-cols-2"
-                } ${isReverse && !isMobileView ? "md:grid-flow-dense" : ""}`}
+                className="mt-3 flex items-center gap-1"
+                role="img"
+                aria-label={`Average maker rating: ${impactsData.rating_score} out of 5 stars`}
               >
-                <div className={isReverse && !isMobileView ? "md:col-start-2" : ""}>
-                  <p style={{ color: tokens.accent }} className="font-mono text-xs font-bold uppercase tracking-wider">
-                    0{idx + 1} · Feature Focus
-                  </p>
-                  <h3 style={{ color: tokens.ink }} className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl text-balance">
-                    {item.title}
-                  </h3>
-                  <p style={{ color: tokens.inkMuted }} className="mt-4 text-base leading-relaxed max-w-[50ch]">
-                    {item.description}
-                  </p>
-                </div>
-                <div className={`flex justify-center ${isReverse && !isMobileView ? "md:col-start-1" : ""}`}>
-                  <IphoneMockup
-                    imageUrl={item.image_url || hero.device_screenshot_url}
-                    appName={appName}
-                    fallbackKind={fallbackKind}
-                    className="w-[260px] sm:w-[280px]"
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                    aria-hidden="true"
                   />
-                </div>
+                ))}
               </div>
-            );
-          })}
-        </section>
-      )}
-
-      {/* Stats Section */}
-      {stats && stats.length > 0 && (
-        <section aria-label="Metrics & Impact" className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-          <div
-            style={{
-              backgroundColor: tokens.paperSecondary,
-              borderColor: tokens.border,
-            }}
-            className="grid grid-cols-2 gap-6 sm:grid-cols-4 rounded-2xl border p-8 shadow-xs text-center"
-          >
-            {stats.map((s) => (
-              <div key={s.id} className="space-y-1">
-                <p style={{ color: tokens.accent }} className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-                  {s.value}
-                </p>
-                <p style={{ color: tokens.inkMuted }} className="text-xs font-semibold uppercase tracking-wider">
-                  {s.label}
-                </p>
-              </div>
-            ))}
+              <p className="mt-2 text-[13px] text-zinc-400">
+                {impactsData.rating_reviews_label}
+              </p>
+            </div>
           </div>
-        </section>
-      )}
 
-      {/* Testimonials Section */}
-      {testimonials && testimonials.length > 0 && (
-        <section id="testimonials" aria-label="User Reviews" className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p style={{ color: tokens.accent }} className="text-xs font-bold uppercase tracking-wider">
-              Reviews
+          {/* Uptime SLA tile */}
+          <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+            <p className="max-w-[52ch] text-[15px] leading-relaxed font-medium">
+              Our platform is built to deliver measurable results — from quicker launches to stronger install conversion.
             </p>
-            <h2 style={{ color: tokens.ink }} className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl text-balance">
-              Loved by creators worldwide.
-            </h2>
+            <div className="mt-8">
+              <p className="font-display text-5xl font-semibold tracking-tight">
+                {impactsData.sla_stat}
+              </p>
+              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
+                {impactsData.sla_label}
+              </p>
+            </div>
           </div>
 
-          {(() => {
-            const main = testimonials.find((t) => t.is_main) || testimonials[0];
-            const others = testimonials.filter((t) => t !== main);
-            return (
-              <div className="space-y-8">
-                {main && (
-                  <div
-                    style={{
-                      backgroundColor: tokens.paperSecondary,
-                      borderColor: tokens.borderStrong,
-                    }}
-                    className="rounded-2xl border p-8 sm:p-12 text-center max-w-3xl mx-auto shadow-sm"
-                  >
-                    <div className="flex items-center justify-center gap-1 text-amber-400 mb-4">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" aria-hidden="true" />
-                      ))}
-                    </div>
-                    <blockquote style={{ color: tokens.ink }} className="text-xl sm:text-2xl font-medium leading-relaxed">
-                      &ldquo;{main.quote}&rdquo;
-                    </blockquote>
-                    <div className="mt-6">
-                      <p style={{ color: tokens.ink }} className="font-bold text-base">{main.name}</p>
-                      <p style={{ color: tokens.inkMuted }} className="text-xs">{main.role}</p>
-                    </div>
-                  </div>
-                )}
+          {/* Speed chip tile */}
+          <div className="flex min-w-0 items-center gap-3 rounded-3xl border border-zinc-200 bg-white p-6 sm:col-span-2 lg:col-span-1 dark:border-zinc-800 dark:bg-zinc-950">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-base font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+              aria-hidden="true"
+            >
+              ⚡
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold whitespace-nowrap">
+                {impactsData.speed_stat} launch time
+              </p>
+              <p className="mt-0.5 text-[13px] text-[#505050] dark:text-zinc-400">
+                {impactsData.speed_label}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-                {others.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
-                    {others.map((t) => (
+      {/* Features — 3 Annotated Proof Rows */}
+      {features.length > 0 && (
+        <section
+          id="features"
+          className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 md:py-24 lg:px-8"
+        >
+          <div className="mx-auto block max-w-2xl text-center">
+            <p className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+              Our features
+            </p>
+            <h2 className="section__title mt-4 font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+              Features designed for your launch.
+            </h2>
+            <p className="mx-auto mt-4 max-w-[52ch] text-sm leading-relaxed text-[#505050] sm:text-base dark:text-zinc-300">
+              Explore the features designed to turn visitors into installs — and keep every page on-brand.
+            </p>
+          </div>
+
+          <div className="mt-14 space-y-6">
+            {features.map((feature: FeatureItem, idx) => {
+              const IconComponent = getFeatureIcon(feature.icon);
+              const isEven = idx % 2 === 0;
+              const proofType = feature.proof_type || (idx === 0 ? "checklist" : idx === 1 ? "chart" : "readiness");
+
+              return (
+                <div
+                  key={feature.id || idx}
+                  className={`grid grid-cols-1 items-center gap-8 rounded-3xl border border-zinc-200 p-6 sm:p-10 ${
+                    isEven ? "bg-[#f7f7f7] dark:bg-zinc-900/30" : "bg-white dark:bg-zinc-950"
+                  } ${isMobileView ? "" : "md:grid-cols-2"} dark:border-zinc-800`}
+                >
+                  {/* Proof Graphic Column */}
+                  <div
+                    className={`min-w-0 ${
+                      !isEven && !isMobileView ? "md:order-2" : ""
+                    }`}
+                  >
+                    {proofType === "checklist" && (
                       <div
-                        key={t.id}
-                        style={{
-                          backgroundColor: tokens.paperSecondary,
-                          borderColor: tokens.border,
-                        }}
-                        className="rounded-2xl border p-6 shadow-xs"
+                        className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950"
+                        aria-hidden="true"
                       >
-                        <div className="flex items-center gap-1 text-amber-400 mb-3">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+                        <ul className="space-y-3">
+                          {(
+                            feature.proof_meta?.checklist_items || [
+                              { label: "App icon + screenshots", date: "Feb 19", status: "Ready", urgent: false },
+                              { label: "Store badges + QR", date: "Feb 20", status: "High priority", urgent: true },
+                              { label: "Ratings + reviews", date: "Feb 21", status: "Normal", urgent: false },
+                            ]
+                          ).map((item, i) => (
+                            <li
+                              key={i}
+                              className="rounded-xl border border-zinc-200 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="flex min-w-0 items-center gap-2 text-[13px] font-medium">
+                                  <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                                  <span className="truncate">{item.label}</span>
+                                </p>
+                                {item.date && (
+                                  <span className="shrink-0 text-[11px] whitespace-nowrap text-[#505050] dark:text-zinc-500">
+                                    {item.date}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-[#505050] dark:bg-zinc-800 dark:text-zinc-300">
+                                <span
+                                  className={`h-1.5 w-1.5 rounded-full ${
+                                    item.urgent ? "bg-red-500" : "bg-zinc-400"
+                                  }`}
+                                  aria-hidden="true"
+                                />
+                                {item.status}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {proofType === "chart" && (
+                      <div
+                        className="rounded-2xl border border-zinc-200 bg-[#f7f7f7] p-5 dark:border-zinc-800 dark:bg-zinc-900/40"
+                        aria-hidden="true"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-[11px] font-semibold tracking-widest text-[#505050] uppercase dark:text-zinc-500">
+                            {feature.proof_meta?.chart_stat?.label || "Weekly installs"}
+                          </p>
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            {feature.proof_meta?.chart_stat?.ctr || "+24.8% CTR"}
+                          </span>
+                        </div>
+                        <p className="mt-1 font-mono text-2xl font-semibold">
+                          {feature.proof_meta?.chart_stat?.value || "14,820 installs"}
+                        </p>
+                        <div className="mt-3 flex h-16 items-end gap-1.5" aria-hidden="true">
+                          {(
+                            feature.proof_meta?.chart_stat?.bars || [35, 55, 40, 70, 52, 85, 64]
+                          ).map((h, i) => (
+                            <span
+                              key={i}
+                              className="w-full rounded-xs bg-blue-600 transition-all hover:bg-blue-500"
+                              style={{ height: `${h}%` }}
+                            />
                           ))}
                         </div>
-                        <p style={{ color: tokens.ink }} className="text-sm leading-relaxed">
-                          &ldquo;{t.quote}&rdquo;
-                        </p>
-                        <div className="mt-4 pt-3 border-t flex items-center justify-between" style={{ borderColor: tokens.border }}>
-                          <div>
-                            <p style={{ color: tokens.ink }} className="font-semibold text-xs">{t.name}</p>
-                            <p style={{ color: tokens.inkMuted }} className="text-[11px]">{t.role}</p>
-                          </div>
+                        <div className="mt-2 flex items-center justify-between text-[11px] text-[#505050] dark:text-zinc-500">
+                          <span>Mon – Sun</span>
+                          <span>Cookieless store attribution</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </section>
-      )}
-
-      {/* Pricing Section */}
-      {pricing && pricing.length > 0 && (
-        <section id="pricing" aria-label="Pricing Plans" className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p style={{ color: tokens.accent }} className="text-xs font-bold uppercase tracking-wider">
-              Transparent Pricing
-            </p>
-            <h2 style={{ color: tokens.ink }} className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl text-balance">
-              Simple plans for every ambition.
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-            {pricing.map((tier) => {
-              const isPopular = tier.is_popular;
-              return (
-                <div
-                  key={tier.id}
-                  style={{
-                    backgroundColor: tokens.paperSecondary,
-                    borderColor: isPopular ? tokens.accent : tokens.border,
-                  }}
-                  className={`relative flex flex-col justify-between rounded-2xl border p-8 shadow-xs transition-all ${
-                    isPopular
-                      ? "ring-2 ring-[#5B5BF7] shadow-lg md:-translate-y-2"
-                      : ""
-                  }`}
-                >
-                  {isPopular && (
-                    <span
-                      style={{
-                        backgroundColor: tokens.accent,
-                        color: tokens.accentInk,
-                      }}
-                      className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-[11px] font-bold tracking-wide uppercase shadow-xs whitespace-nowrap"
-                    >
-                      Most Popular
-                    </span>
-                  )}
-                  <div>
-                    <h3 style={{ color: tokens.ink }} className="text-lg font-bold">
-                      {tier.name}
-                    </h3>
-                    {tier.description && (
-                      <p style={{ color: tokens.inkMuted }} className="text-xs mt-1">
-                        {tier.description}
-                      </p>
                     )}
-                    <div className="mt-5 flex items-baseline gap-1">
-                      <span style={{ color: tokens.ink }} className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-                        {tier.price}
-                      </span>
-                      <span style={{ color: tokens.inkMuted }} className="text-xs font-medium">
-                        {tier.period}
-                      </span>
-                    </div>
-                    <ul className="mt-6 space-y-2.5 text-xs" style={{ color: tokens.inkMuted }}>
-                      {tier.features.map((feat, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <Check style={{ color: tokens.accent }} className="h-4 w-4 shrink-0 stroke-[2.5]" />
-                          <span>{feat}</span>
-                        </li>
-                      ))}
-                    </ul>
+
+                    {proofType === "readiness" && (
+                      <div
+                        className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950"
+                        aria-hidden="true"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-[11px] font-semibold tracking-widest text-[#505050] uppercase dark:text-zinc-500">
+                            Launch Readiness
+                          </p>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <Check className="h-3 w-3" aria-hidden="true" />
+                            <span>Ready</span>
+                          </span>
+                        </div>
+                        <ul className="mt-3 space-y-2.5 text-[13px]">
+                          {(
+                            feature.proof_meta?.readiness_items || [
+                              { key: "Launch checklist", value: "12 / 12 items verified" },
+                              { key: "Mobile Launch Suite", value: "Apple & Android ready" },
+                              { key: "Automatic SSL/TLS", value: "Active (Let's Encrypt)" },
+                            ]
+                          ).map((item, i) => (
+                            <li
+                              key={i}
+                              className="flex items-center justify-between gap-3 border-b border-zinc-100 pb-2.5 last:border-0 last:pb-0 dark:border-zinc-800"
+                            >
+                              <span className="font-medium">{item.key}</span>
+                              <span className="font-mono text-xs font-semibold whitespace-nowrap text-blue-600 dark:text-blue-400">
+                                {item.value}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {proofType === "image" && feature.image_url && (
+                      <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={feature.image_url}
+                          alt={feature.title}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    )}
                   </div>
-                  <div className="mt-8">
-                    <a
-                      href="#download"
-                      style={{
-                        backgroundColor: isPopular ? tokens.accent : "transparent",
-                        color: isPopular ? tokens.accentInk : tokens.ink,
-                        borderColor: isPopular ? "transparent" : tokens.borderStrong,
-                      }}
-                      className={`inline-flex w-full items-center justify-center font-semibold text-xs px-4 py-2.5 ${tokens.buttonRadius} border transition-opacity hover:opacity-90 active:scale-[0.98] shadow-xs`}
+
+                  {/* Feature Text Column */}
+                  <div
+                    className={`min-w-0 ${
+                      !isEven && !isMobileView ? "md:order-1" : ""
+                    }`}
+                  >
+                    <p
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-lg font-semibold text-blue-600 dark:text-blue-400"
+                      aria-hidden="true"
                     >
-                      {tier.cta_label}
-                    </a>
+                      <IconComponent className="h-5 w-5" />
+                    </p>
+                    <h3 className="mt-4 text-2xl font-semibold tracking-tight">
+                      {feature.title}
+                    </h3>
+                    <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-[#505050] sm:text-[15px] dark:text-zinc-300">
+                      {feature.description}
+                    </p>
                   </div>
                 </div>
               );
@@ -890,333 +729,153 @@ export function SiteRenderer({
         </section>
       )}
 
-      {/* FAQ Section */}
-      {faq && faq.length > 0 && (
-        <section id="faq" aria-label="Frequently Asked Questions" className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <p style={{ color: tokens.accent }} className="text-xs font-bold uppercase tracking-wider">
-              Answers
+      {/* How It Works — 3 Steps Grid */}
+      <section
+        id="how"
+        className="border-y border-zinc-200 bg-[#f7f7f7] dark:border-zinc-800 dark:bg-zinc-900/30"
+      >
+        <div className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 md:py-24 lg:px-8">
+          <div className="block max-w-2xl">
+            <p className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+              How it works
             </p>
-            <h2 style={{ color: tokens.ink }} className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl text-balance">
-              Frequently asked questions.
+            <h2 className="section__title mt-4 font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+              Live in 3 simple steps.
             </h2>
           </div>
-          <div className="space-y-3">
-            {faq.map((item, idx) => {
-              const isOpen = openFaqIndex === idx;
-              return (
-                <div
-                  key={item.id || idx}
-                  style={{
-                    backgroundColor: tokens.paperSecondary,
-                    borderColor: tokens.border,
-                  }}
-                  className="rounded-2xl border overflow-hidden shadow-xs transition-colors"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                    className="flex w-full items-center justify-between p-5 text-left transition-colors hover:bg-black/[0.02]"
-                  >
-                    <span style={{ color: tokens.ink }} className="text-sm font-semibold pr-4">
-                      {item.question}
-                    </span>
-                    <span style={{ color: tokens.accent }} className="shrink-0">
-                      {isOpen ? (
-                        <Minus className="h-4 w-4 stroke-[2.5]" />
-                      ) : (
-                        <Plus className="h-4 w-4 stroke-[2.5]" />
-                      )}
-                    </span>
-                  </button>
-                  {isOpen && (
-                    <div className="px-5 pb-5 pt-1 text-xs leading-relaxed border-t" style={{ borderColor: tokens.border, color: tokens.inkMuted }}>
-                      {item.answer}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Release Panel: App Store listing with rating/version proof */}
-      {release && (
-        <section aria-label="App release" className="mx-auto w-full max-w-5xl px-4 py-14 sm:px-6 lg:px-8">
-          <div
-            style={{
-              backgroundColor: tokens.paperSecondary,
-              borderColor: tokens.border,
-            }}
-            className={`grid grid-cols-1 items-center gap-8 ${tokens.buttonRadius} border p-6 sm:p-10 ${
-              isMobileView ? "" : "md:grid-cols-2"
-            } shadow-xs`}
+          <ol
+            className={`mt-10 grid grid-cols-1 gap-5 ${
+              isMobileView ? "grid-cols-1" : "md:grid-cols-3"
+            }`}
           >
-            <div className="min-w-0">
-              {release.eyebrow && (
-                <p
-                  style={{ color: tokens.accent }}
-                  className="text-xs font-semibold tracking-widest uppercase"
-                >
-                  {release.eyebrow}
+            {stepsData.map((s) => (
+              <li
+                key={s.step}
+                className="min-w-0 rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950"
+              >
+                <p className="text-[11px] font-semibold tracking-widest text-blue-600 uppercase dark:text-blue-400">
+                  {s.step}
                 </p>
-              )}
-              <h2
-                style={{ color: tokens.ink }}
-                className="section__title mt-2 text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
-              >
-                {release.title}
-              </h2>
-              <p
-                style={{ color: tokens.inkMuted }}
-                className="mt-3 max-w-[52ch] text-sm leading-relaxed"
-              >
-                {release.description}
-              </p>
-              <dl className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-4">
-                {release.rating && (
-                  <div>
-                    <dt className="sr-only">Average rating</dt>
-                    <dd>
-                      <span className="flex items-center gap-1" role="img" aria-label={`${release.rating} out of 5 stars`}>
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
-                        ))}
-                      </span>
-                      <span style={{ color: tokens.ink }} className="mt-1 block text-xs font-semibold">
-                        {release.rating}
-                        {release.rating_count && <span style={{ color: tokens.inkMuted }} className="font-normal"> · {release.rating_count}</span>}
-                      </span>
-                    </dd>
-                  </div>
-                )}
-                {release.age_rating && (
-                  <div>
-                    <dt className="sr-only">Age rating</dt>
-                    <dd className="text-center">
-                      <span
-                        style={{ borderColor: tokens.border, color: tokens.ink }}
-                        className={`inline-flex h-9 w-9 items-center justify-center ${tokens.buttonRadius} border text-xs font-bold`}
-                      >
-                        {release.age_rating}
-                      </span>
-                      <span style={{ color: tokens.inkMuted }} className="mt-1 block text-[11px]">Age</span>
-                    </dd>
-                  </div>
-                )}
-                {release.chart_rank && (
-                  <div>
-                    <dt className="sr-only">Chart position</dt>
-                    <dd className="text-center">
-                      <span style={{ color: tokens.ink }} className="text-lg font-semibold">{release.chart_rank}</span>
-                      <span style={{ color: tokens.inkMuted }} className="mt-0.5 block text-[11px]">Top chart</span>
-                    </dd>
-                  </div>
-                )}
-                {release.version && (
-                  <div>
-                    <dt className="sr-only">Version</dt>
-                    <dd className="text-center">
-                      <span style={{ color: tokens.ink }} className="font-mono text-sm font-semibold">v{release.version}</span>
-                      <span style={{ color: tokens.inkMuted }} className="mt-0.5 block text-[11px]">Latest</span>
-                    </dd>
-                  </div>
-                )}
-              </dl>
-              {release.release_notes && release.release_notes.length > 0 && (
-                <ul style={{ color: tokens.inkMuted }} className="mt-6 space-y-2 text-[13px]">
-                  {release.release_notes.map((note, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <Check style={{ color: tokens.accent }} className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                      <span>{note}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+                <h3 className="mt-2 text-xl font-semibold tracking-tight">
+                  {s.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#505050] dark:text-zinc-300">
+                  {s.description}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
 
-            <div className="min-w-0 flex justify-center">
-              {release.image_url ? (
-                <figure
-                  style={{
-                    backgroundColor: tokens.paper,
-                    borderColor: tokens.border,
-                  }}
-                  className={`overflow-hidden ${tokens.buttonRadius} border`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={release.image_url}
-                    alt={`${appName} preview`}
-                    loading="lazy"
-                    className="aspect-[4/5] w-full object-cover"
-                  />
-                </figure>
-              ) : (
-                <IphoneMockup
-                  imageUrl={hero.device_screenshot_url}
-                  appName={appName}
-                  fallbackKind={fallbackKind}
-                />
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Final Download Call to Action */}
-      <section id="download" className="mx-auto w-full max-w-5xl px-4 pb-20 sm:px-6 lg:px-8">
-        <div
-          style={{
-            backgroundColor: tokens.paperSecondary,
-            borderColor: tokens.borderStrong,
-          }}
-          className={`${tokens.buttonRadius} border p-8 sm:p-14 shadow-md text-center flex flex-col items-center relative overflow-hidden`}
-        >
-          {/* Subtle Ambient Radial Glow */}
-          <div
-            aria-hidden="true"
-            className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-gradient-to-b from-[#6D5DFB]/15 via-[#9D8BFF]/10 to-transparent blur-3xl -z-10 pointer-events-none"
-          />
-          <h2
-            style={{ color: tokens.ink }}
-            className="max-w-2xl text-2xl font-bold tracking-tight text-balance sm:text-4xl"
-          >
-            {`Get started with ${appName} today.`}
-          </h2>
-          <p style={{ color: tokens.inkMuted }} className="mt-3 text-sm sm:text-base max-w-md">
-            Download now and transform your everyday routine with clarity.
+      {/* Official Store Badges / Download Station */}
+      <section
+        id="download"
+        className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 md:py-24 lg:px-8 text-center"
+      >
+        <div className="mx-auto max-w-2xl">
+          <p className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+            Get the app
           </p>
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-3.5 leading-none">
+          <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+            Start using {appName} today.
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-[#505050] sm:text-base dark:text-zinc-300">
+            Available natively on iOS and Android. Download now to elevate your daily routine.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5 leading-none">
             {hasAppStore && store_links.app_store_url && (
               <AppStoreBadge
                 href={store_links.app_store_url}
                 isPreview={isPreview}
-                onClick={() => handleCtaClick("app_store_footer", store_links.app_store_url)}
+                onClick={() => handleCtaClick("app_store_download", store_links.app_store_url)}
               />
             )}
             {hasPlayStore && store_links.play_store_url && (
               <GooglePlayBadge
                 href={store_links.play_store_url}
                 isPreview={isPreview}
-                onClick={() => handleCtaClick("play_store_footer", store_links.play_store_url)}
+                onClick={() => handleCtaClick("play_store_download", store_links.play_store_url)}
               />
             )}
             {hasTestFlight && store_links.testflight_url && (
               <TestFlightBadge
                 href={store_links.testflight_url}
                 isPreview={isPreview}
-                onClick={() => handleCtaClick("testflight_footer", store_links.testflight_url)}
+                onClick={() => handleCtaClick("testflight_download", store_links.testflight_url)}
               />
             )}
-          </div>
-          {/* Single iPhone below final CTA */}
-          <div className="mt-12 -mb-28 flex justify-center">
-            <IphoneMockup
-              imageUrl={hero.device_screenshot_url}
-              appName={appName}
-              fallbackKind={fallbackKind}
-              className="w-[240px] sm:w-[270px]"
-            />
+            {!hasAnyStore && (
+              <p className="text-xs text-zinc-400 italic">
+                Store links not yet connected. Add your App Store or Google Play URL in the editor.
+              </p>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Footer with App Store Compliance & Multi-column Links */}
-      <footer
-        style={{ borderColor: tokens.border }}
-        className="border-t pt-14 pb-10"
-      >
-        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
-          {footer.columns && footer.columns.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 pb-12">
-              {footer.columns.map((col, i) => (
-                <div key={i} className="space-y-3">
-                  <p style={{ color: tokens.ink }} className="text-xs font-bold uppercase tracking-wider">
-                    {col.heading}
-                  </p>
-                  <ul className="space-y-2 text-xs">
-                    {col.links.map((link, j) => (
-                      <li key={j}>
-                        <a
-                          href={link.url}
-                          style={{ color: tokens.inkMuted }}
-                          className="transition-colors hover:opacity-100 opacity-80"
-                        >
-                          {link.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+      {/* Statement Footer */}
+      <footer className="bg-[#131313] text-white">
+        <div className="mx-auto w-full max-w-6xl px-4 pt-14 pb-8 sm:px-6 md:pt-20 lg:px-8">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-7">
+            {/* Giant Wordmark & Tagline */}
+            <div className="min-w-0 md:col-span-4">
+              <span className="font-display text-[clamp(2.5rem,8vw,5.5rem)] leading-none font-bold tracking-tight text-white block">
+                {appName}
+              </span>
+              <p className="mt-5 max-w-[52ch] text-[15px] leading-relaxed text-zinc-300">
+                {footer.tagline || `The official mobile companion for ${appName}. Built natively for iOS & Android.`}
+              </p>
             </div>
-          ) : (
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between pb-8">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  {brand.app_icon_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={brand.app_icon_url}
-                      alt=""
-                      className="h-6 w-6 rounded-[22%] object-cover ring-1 ring-black/10"
-                    />
-                  )}
-                  <p style={{ color: tokens.ink }} className="text-lg font-semibold tracking-tight">{footer.brand_name || appName}</p>
-                </div>
-                <p style={{ color: tokens.inkMuted }} className="mt-1 max-w-[52ch] text-[13px]">
-                  {footer.tagline || `Official application website for ${appName}.`}
-                </p>
-              </div>
 
-              {/* Legal & Compliance Nav Links */}
-              <nav aria-label="Legal" className="flex flex-wrap items-center gap-5 text-[13px] leading-none">
-                {footerPages.map((page) => (
-                  <a
-                    key={page.id}
-                    href={resolveSubpageHref(page.slug)}
-                    style={{ color: tokens.inkMuted }}
-                    className="whitespace-nowrap transition-colors hover:opacity-100 opacity-80"
-                  >
-                    {page.title}
-                  </a>
-                ))}
+            {/* Office / Contact */}
+            <div className="min-w-0 md:col-span-3">
+              <p className="text-[11px] font-semibold tracking-widest text-zinc-400 uppercase">
+                Contact &amp; Support
+              </p>
+              <ul className="mt-4 space-y-2.5 text-sm">
                 {footer.contact_email && (
-                  <a
-                    href={`mailto:${footer.contact_email}`}
-                    style={{ color: tokens.inkMuted }}
-                    className="inline-flex items-center gap-1.5 whitespace-nowrap transition-colors hover:opacity-100 opacity-80"
-                  >
-                    <Mail className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Contact</span>
-                  </a>
+                  <li>
+                    <a
+                      href={`mailto:${footer.contact_email}`}
+                      className="whitespace-nowrap transition-colors hover:text-white active:text-white"
+                    >
+                      {footer.contact_email}
+                    </a>
+                  </li>
                 )}
-              </nav>
+                <li>
+                  <a
+                    href="#download"
+                    className="whitespace-nowrap text-zinc-400 transition-colors hover:text-white active:text-white"
+                  >
+                    Download App
+                  </a>
+                </li>
+              </ul>
             </div>
-          )}
+          </div>
 
-          <div
-            style={{ borderColor: tokens.border }}
-            className="flex flex-col gap-3 border-t pt-6 text-xs sm:flex-row sm:items-center sm:justify-between"
-          >
-            <p style={{ color: tokens.inkMuted }}>© 2026 {footer.brand_name || appName}. All rights reserved.</p>
-            {showWatermark && (
-              <a
-                href="https://shipsprint.site"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ borderColor: tokens.border, color: tokens.inkMuted }}
-                className="inline-flex w-fit items-center whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-medium transition-colors hover:opacity-100 opacity-80"
-              >
-                Powered by ShipSprint
-              </a>
-            )}
+          {/* Legal Bar */}
+          <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-zinc-800 pt-6 sm:flex-row sm:items-center">
+            <p className="text-xs text-zinc-400">
+              © {new Date().getFullYear()} {footer.brand_name || appName}. All rights reserved.
+            </p>
+            <nav aria-label="Legal" className="flex flex-wrap items-center gap-6 text-xs text-zinc-400">
+              {pages.map((page) => (
+                <a
+                  key={page.id}
+                  href={resolveSubpageHref(page.slug)}
+                  className="transition-colors hover:text-white"
+                >
+                  {page.title}
+                </a>
+              ))}
+            </nav>
           </div>
         </div>
       </footer>
-
     </div>
   );
 }

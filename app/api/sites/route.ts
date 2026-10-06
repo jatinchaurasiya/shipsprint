@@ -3,9 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/logger";
 import { createSiteSchema, firstIssue } from "@/lib/validation";
-import { getTemplateById, customizeTemplateContent } from "@/lib/templates";
-import { getDefaultSitePages } from "@/lib/legal-pages";
-import type { SiteContent } from "@/types/database";
+import { getFlagshipDefaultContent } from "@/lib/templates";
 
 export async function POST(request: NextRequest) {
   const admin = createAdminClient();
@@ -36,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: firstIssue(parsed.error) }, { status: 400 });
     }
 
-    const { name, slug: cleanSlug, template_id } = parsed.data;
+    const { name, slug: cleanSlug } = parsed.data;
 
     // Fetch user profile and plan
     const { data: profile } = await supabase
@@ -86,58 +84,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initial default content matching PRD specification
-    const defaultContent: SiteContent = {
-      brand: {
-        name: name,
-        logo_url: "",
-      },
-      hero: {
-        app_name: name,
-        badge_text: "Now Available on iOS & Android",
-        header: `The modern companion for ${name}`,
-        short_description: `Designed with craft and precision to help you achieve more every day. Simple, fast, and delightful.`,
-      },
-      features: [
-        {
-          id: "feat-1",
-          icon: "Zap",
-          title: "Lightning Fast Performance",
-          description: "Engineered for speed and responsiveness with zero friction.",
-        },
-        {
-          id: "feat-2",
-          icon: "Shield",
-          title: "Privacy First by Design",
-          description: "Your data stays on your device. Never tracked, never sold.",
-        },
-        {
-          id: "feat-3",
-          icon: "Sparkles",
-          title: "Clean, Apple-Grade Aesthetics",
-          description: "Immersive dark mode, fluid micro-animations, and pure typography.",
-        },
-      ],
-      store_links: {
-        availability: "both",
-        app_store_url: "",
-        play_store_url: "",
-        testflight_url: "",
-      },
-      screenshots: [],
-      pages: getDefaultSitePages(name, user.email || "support@shipsprint.site"),
-      footer: {
-        brand_name: name,
-        legal_links: [],
-        contact_email: user.email || "",
-      },
-    };
-
-    // If template_id was provided, clone and customize the template content
-    const selectedTemplate = getTemplateById(template_id);
-    const initialContent: SiteContent = selectedTemplate
-      ? customizeTemplateContent(selectedTemplate, name, user.email)
-      : defaultContent;
+    // Generate initial flagship content mirroring ShipSprint landing page
+    const initialContent = getFlagshipDefaultContent(name, user.email);
 
     const { data: newSite, error: insertError } = await supabase
       .from("sites")
@@ -146,8 +94,8 @@ export async function POST(request: NextRequest) {
         slug: cleanSlug,
         content: initialContent,
         status: "draft",
-        theme: selectedTemplate?.theme || "minimal",
-        template_id: selectedTemplate ? selectedTemplate.id : null,
+        theme: "flagship",
+        template_id: null,
       })
       .select()
       .single();

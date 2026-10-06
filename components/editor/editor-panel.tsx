@@ -453,11 +453,10 @@ export function EditorPanel({
 
   const sections: { id: EditorSectionId; label: string; badge?: number | string }[] = [
     { id: "hero", label: "App & Hero" },
-    { id: "store", label: "Store Links" },
+    { id: "impacts", label: "Impacts Bento" },
     { id: "features", label: "Features", badge: content.features?.length || 0 },
-    { id: "screenshots", label: "Screenshots", badge: content.screenshots?.length || 0 },
-    { id: "logos", label: "Logo Wall", badge: content.logo_wall?.logos?.length || 0 },
-    { id: "release", label: "Release" },
+    { id: "how", label: "How It Works" },
+    { id: "store", label: "Store Links" },
     { id: "pages", label: "Legal & Pages", badge: appPages.length },
     { id: "footer", label: "Footer" },
     { id: "domain", label: "Domain" },
@@ -800,6 +799,141 @@ export function EditorPanel({
               </p>
             </div>
 
+            {/* Secondary iPhone Mockup Screenshot (Back Frame) */}
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                Secondary iPhone Screen Image (Background Phone)
+              </label>
+              <input
+                type="url"
+                value={content.hero?.device_screenshot_url_secondary || ""}
+                onChange={(e) =>
+                  updateContent((prev) => ({
+                    ...prev,
+                    hero: {
+                      ...prev.hero,
+                      device_screenshot_url_secondary: e.target.value,
+                    },
+                  }))
+                }
+                placeholder="Paste image URL for the tilted back iPhone frame"
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all font-mono"
+              />
+              <p className="mt-1 text-[11px] text-zinc-500">
+                Shown inside the cascading back iPhone (-1.5° tilt). If empty, mirrors the primary screenshot.
+              </p>
+            </div>
+
+            {/* Action CTA Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Primary Action Button Label
+                </label>
+                <input
+                  type="text"
+                  value={content.hero?.primary_cta_label || ""}
+                  onChange={(e) =>
+                    updateContent((prev) => ({
+                      ...prev,
+                      hero: { ...prev.hero, primary_cta_label: e.target.value },
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 transition-all"
+                  placeholder="Start building"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Secondary Action Button Label
+                </label>
+                <input
+                  type="text"
+                  value={content.hero?.secondary_cta_label || ""}
+                  onChange={(e) =>
+                    updateContent((prev) => ({
+                      ...prev,
+                      hero: { ...prev.hero, secondary_cta_label: e.target.value },
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 transition-all"
+                  placeholder="See How It Works"
+                />
+              </div>
+            </div>
+
+            {/* Star Rating Proof */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Rating Stars (1 - 5)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={content.hero?.rating_stars || 5}
+                  onChange={(e) =>
+                    updateContent((prev) => ({
+                      ...prev,
+                      hero: {
+                        ...prev.hero,
+                        rating_stars: parseInt(e.target.value, 10) || 5,
+                      },
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Rating Proof Text
+                </label>
+                <input
+                  type="text"
+                  value={content.hero?.rating_text || ""}
+                  onChange={(e) =>
+                    updateContent((prev) => ({
+                      ...prev,
+                      hero: { ...prev.hero, rating_text: e.target.value },
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                  placeholder="Built for App Store launches"
+                />
+              </div>
+            </div>
+
+            {/* Category Tags */}
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                Category Tags (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={(content.brand?.categories || []).join(", ")}
+                onChange={(e) =>
+                  updateContent((prev) => ({
+                    ...prev,
+                    brand: {
+                      ...prev.brand,
+                      categories: e.target.value
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    },
+                  }))
+                }
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                placeholder="Habit, Focus, Productivity, Health, Design, Life"
+              />
+              <p className="mt-1 text-[11px] text-zinc-500">
+                Shown in the category proof strip right below the hero chamber.
+              </p>
+            </div>
+
             {/* Email Capture Form Toggle & Settings */}
             <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 p-4 space-y-3">
               <div className="flex items-center justify-between">
@@ -910,6 +1044,240 @@ export function EditorPanel({
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* IMPACTS BENTO SECTION */}
+        {activeSection === "impacts" && (
+          <div className="space-y-5 animate-in fade-in duration-150">
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                Impacts Bento Mosaic
+              </h3>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+                Highlight social proof, ratings, uptime SLA, and launch speed metrics.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Section Eyebrow
+                </label>
+                <input
+                  type="text"
+                  value={content.impacts?.eyebrow || "Our impacts"}
+                  onChange={(e) =>
+                    updateContent((prev) => ({
+                      ...prev,
+                      impacts: { ...prev.impacts, eyebrow: e.target.value },
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 transition-all"
+                  placeholder="Our impacts"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Section Title
+                </label>
+                <input
+                  type="text"
+                  value={content.impacts?.title || "Real results. Real impact."}
+                  onChange={(e) =>
+                    updateContent((prev) => ({
+                      ...prev,
+                      impacts: { ...prev.impacts, title: e.target.value },
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 transition-all"
+                  placeholder="Real results. Real impact."
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                Description Subtitle
+              </label>
+              <textarea
+                rows={2}
+                value={content.impacts?.description || ""}
+                onChange={(e) =>
+                  updateContent((prev) => ({
+                    ...prev,
+                    impacts: { ...prev.impacts, description: e.target.value },
+                  }))
+                }
+                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 transition-all leading-relaxed"
+                placeholder="See how indie makers turn visitors into installs..."
+              />
+            </div>
+
+            {/* Tile 1: Trust & Volume */}
+            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30">
+              <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                Tile 1: Trust & Active Users
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Metric Stat (e.g. 1,200+)
+                  </label>
+                  <input
+                    type="text"
+                    value={content.impacts?.metric_stat || "1,200+"}
+                    onChange={(e) =>
+                      updateContent((prev) => ({
+                        ...prev,
+                        impacts: { ...prev.impacts, metric_stat: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Metric Label
+                  </label>
+                  <input
+                    type="text"
+                    value={content.impacts?.metric_label || "Live app landing pages published worldwide"}
+                    onChange={(e) =>
+                      updateContent((prev) => ({
+                        ...prev,
+                        impacts: { ...prev.impacts, metric_label: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Tile 2: Tall Dark Rating Card */}
+            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30">
+              <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                Tile 2: Star Rating Score
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Rating Score (0 to 5)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    max="5"
+                    value={content.impacts?.rating_score ?? 4.9}
+                    onChange={(e) =>
+                      updateContent((prev) => ({
+                        ...prev,
+                        impacts: { ...prev.impacts, rating_score: parseFloat(e.target.value) || 5 },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Rating Subtitle
+                  </label>
+                  <input
+                    type="text"
+                    value={content.impacts?.rating_reviews_label || "Average indie maker rating across launches"}
+                    onChange={(e) =>
+                      updateContent((prev) => ({
+                        ...prev,
+                        impacts: { ...prev.impacts, rating_reviews_label: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Tile 3 & 4: SLA and Speed */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30">
+                <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                  Tile 3: Reliability / SLA
+                </h4>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Stat (e.g. 99.9%)
+                  </label>
+                  <input
+                    type="text"
+                    value={content.impacts?.sla_stat || "99.9%"}
+                    onChange={(e) =>
+                      updateContent((prev) => ({
+                        ...prev,
+                        impacts: { ...prev.impacts, sla_stat: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Label
+                  </label>
+                  <input
+                    type="text"
+                    value={content.impacts?.sla_label || "Uptime SLA via Caddy edge & automated TLS"}
+                    onChange={(e) =>
+                      updateContent((prev) => ({
+                        ...prev,
+                        impacts: { ...prev.impacts, sla_label: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30">
+                <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                  Tile 4: Speed / Efficiency Chip
+                </h4>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Stat (e.g. &lt; 2 min)
+                  </label>
+                  <input
+                    type="text"
+                    value={content.impacts?.speed_stat || "< 2 min"}
+                    onChange={(e) =>
+                      updateContent((prev) => ({
+                        ...prev,
+                        impacts: { ...prev.impacts, speed_stat: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Label
+                  </label>
+                  <input
+                    type="text"
+                    value={content.impacts?.speed_label || "From setup to live custom domain"}
+                    onChange={(e) =>
+                      updateContent((prev) => ({
+                        ...prev,
+                        impacts: { ...prev.impacts, speed_label: e.target.value },
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1077,6 +1445,134 @@ export function EditorPanel({
                         </span>
                       </button>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* HOW IT WORKS SECTION */}
+        {activeSection === "how" && (
+          <div className="space-y-5 animate-in fade-in duration-150">
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                How It Works (3 Steps)
+              </h3>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+                Explain the simple 3-step sequence for your app or onboarding.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {(content.how_it_works && content.how_it_works.length > 0
+                ? content.how_it_works
+                : [
+                    {
+                      step: "Step 1",
+                      title: "Craft your identity",
+                      description:
+                        "Add your icon, screenshots, store links, and copy. Watch the live preview update instantly with zero drift.",
+                    },
+                    {
+                      step: "Step 2",
+                      title: "Showcase verified proof",
+                      description:
+                        "Highlight core capabilities, checklist milestones, and verified ratings to build immediate trust with visitors.",
+                    },
+                    {
+                      step: "Step 3",
+                      title: "Publish & track installs",
+                      description:
+                        "Publish to your subdomain or custom domain with automated TLS. Track cookieless store taps from day one.",
+                    },
+                  ]
+              ).map((stepItem, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-3 bg-white dark:bg-zinc-900"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                      {stepItem.step || `Step ${idx + 1}`}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Step Title
+                    </label>
+                    <input
+                      type="text"
+                      value={stepItem.title}
+                      onChange={(e) => {
+                        const current =
+                          content.how_it_works && content.how_it_works.length > 0
+                            ? [...content.how_it_works]
+                            : [
+                                {
+                                  step: "Step 1",
+                                  title: "Craft your identity",
+                                  description:
+                                    "Add your icon, screenshots, store links, and copy.",
+                                },
+                                {
+                                  step: "Step 2",
+                                  title: "Showcase verified proof",
+                                  description:
+                                    "Highlight core capabilities, checklist milestones, and ratings.",
+                                },
+                                {
+                                  step: "Step 3",
+                                  title: "Publish & track installs",
+                                  description:
+                                    "Publish to your custom domain with automated TLS.",
+                                },
+                              ];
+                        current[idx] = { ...current[idx]!, title: e.target.value };
+                        updateContent((prev) => ({ ...prev, how_it_works: current }));
+                      }}
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Step Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={stepItem.description}
+                      onChange={(e) => {
+                        const current =
+                          content.how_it_works && content.how_it_works.length > 0
+                            ? [...content.how_it_works]
+                            : [
+                                {
+                                  step: "Step 1",
+                                  title: "Craft your identity",
+                                  description:
+                                    "Add your icon, screenshots, store links, and copy.",
+                                },
+                                {
+                                  step: "Step 2",
+                                  title: "Showcase verified proof",
+                                  description:
+                                    "Highlight core capabilities, checklist milestones, and ratings.",
+                                },
+                                {
+                                  step: "Step 3",
+                                  title: "Publish & track installs",
+                                  description:
+                                    "Publish to your custom domain with automated TLS.",
+                                },
+                              ];
+                        current[idx] = {
+                          ...current[idx]!,
+                          description: e.target.value,
+                        };
+                        updateContent((prev) => ({ ...prev, how_it_works: current }));
+                      }}
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
+                    />
                   </div>
                 </div>
               ))}

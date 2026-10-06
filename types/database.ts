@@ -55,6 +55,12 @@ export interface FeatureItem {
   title: string;
   description: string;
   image_url?: string;
+  proof_type?: "checklist" | "chart" | "readiness" | "image";
+  proof_meta?: {
+    checklist_items?: { label: string; date?: string; status: string; urgent?: boolean }[];
+    chart_stat?: { value: string; label: string; ctr?: string; bars?: number[] };
+    readiness_items?: { key: string; value: string }[];
+  };
 }
 
 export interface LogoWallLogo {
@@ -165,11 +171,34 @@ export interface FaqItem {
   answer: string;
 }
 
+export interface BentoImpacts {
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  trust_avatars?: string[];
+  trust_headline?: string;
+  metric_stat?: string;
+  metric_label?: string;
+  rating_score?: number;
+  rating_reviews_label?: string;
+  sla_stat?: string;
+  sla_label?: string;
+  speed_stat?: string;
+  speed_label?: string;
+}
+
+export interface HowItWorksStep {
+  step: string;
+  title: string;
+  description: string;
+}
+
 export interface SiteContent {
   brand: {
     name: string;
     logo_url?: string;
     app_icon_url?: string;
+    categories?: string[];
   };
   hero: {
     app_name: string;
@@ -177,12 +206,19 @@ export interface SiteContent {
     header: string;
     short_description: string;
     device_screenshot_url?: string;
+    device_screenshot_url_secondary?: string;
+    primary_cta_label?: string;
+    secondary_cta_label?: string;
+    rating_stars?: number;
+    rating_text?: string;
     email_capture_enabled?: boolean;
     email_placeholder?: string;
     email_cta_label?: string;
     email_success_message?: string;
   };
+  impacts?: BentoImpacts;
   features: FeatureItem[];
+  how_it_works?: HowItWorksStep[];
   logo_wall?: LogoWall;
   release?: ReleaseInfo;
   store_links: StoreLinks;

@@ -173,3 +173,30 @@ describe("Vector App Store & Google Play Download Badges", () => {
   });
 });
 
+describe("ShipSprint Flagship Landing Page Generator", () => {
+  it("generates complete, valid flagship content mirroring ShipSprint landing page", async () => {
+    const { getFlagshipDefaultContent } = await import("@/lib/templates");
+    const { siteContentSchema } = await import("@/lib/validation");
+
+    const content = getFlagshipDefaultContent("DayFlow", "hello@dayflow.app");
+
+    expect(content.brand.name).toBe("DayFlow");
+    expect(content.hero.app_name).toBe("DayFlow");
+    expect(content.hero.badge_text).toBe("Built for indie app makers");
+    expect(content.hero.device_screenshot_url).toBe("/shipsprint-phone-mockup.png");
+    expect(content.hero.device_screenshot_url_secondary).toBe("/shipsprint-phone-mockup.png");
+    expect(content.impacts?.title).toBe("Real results. Real impact.");
+    expect(content.impacts?.metric_stat).toBe("1,200+");
+    expect(content.features.length).toBe(3);
+    expect(content.features[0]?.proof_type).toBe("checklist");
+    expect(content.features[1]?.proof_type).toBe("chart");
+    expect(content.features[2]?.proof_type).toBe("readiness");
+    expect(content.how_it_works?.length).toBe(3);
+    expect(content.pages?.length).toBe(4);
+
+    // Strict validation verification
+    const parsed = siteContentSchema.safeParse(content);
+    expect(parsed.success).toBe(true);
+  });
+});
+

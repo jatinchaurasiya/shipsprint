@@ -92,8 +92,67 @@ export const featureSchema = z.object({
   icon: shortText(32),
   title: shortText(120),
   description: shortText(600),
-  image_url: httpUrl.optional(),
+  image_url: httpOrRelativeUrl.optional(),
+  proof_type: z.enum(["checklist", "chart", "readiness", "image"]).optional(),
+  proof_meta: z
+    .object({
+      checklist_items: z
+        .array(
+          z.object({
+            label: shortText(120),
+            date: shortText(40).optional(),
+            status: shortText(40),
+            urgent: z.boolean().optional(),
+          })
+        )
+        .max(10)
+        .optional(),
+      chart_stat: z
+        .object({
+          value: shortText(60),
+          label: shortText(80),
+          ctr: shortText(40).optional(),
+          bars: z.array(z.number()).max(14).optional(),
+        })
+        .optional(),
+      readiness_items: z
+        .array(
+          z.object({
+            key: shortText(80),
+            value: shortText(120),
+          })
+        )
+        .max(10)
+        .optional(),
+    })
+    .optional(),
 });
+
+export const bentoImpactsSchema = z
+  .object({
+    eyebrow: shortText(80).optional(),
+    title: shortText(160).optional(),
+    description: shortText(500).optional(),
+    trust_avatars: z.array(shortText(10)).max(8).optional(),
+    trust_headline: shortText(120).optional(),
+    metric_stat: shortText(40).optional(),
+    metric_label: shortText(120).optional(),
+    rating_score: z.number().min(0).max(5).optional(),
+    rating_reviews_label: shortText(120).optional(),
+    sla_stat: shortText(40).optional(),
+    sla_label: shortText(120).optional(),
+    speed_stat: shortText(40).optional(),
+    speed_label: shortText(120).optional(),
+  })
+  .strict();
+
+export const howItWorksStepSchema = z
+  .object({
+    step: shortText(40),
+    title: shortText(120),
+    description: shortText(400),
+  })
+  .strict();
 
 const logoWallLogoSchema = z
   .object({
@@ -165,8 +224,9 @@ export const siteContentSchema = z
     brand: z
       .object({
         name: shortText(80),
-        logo_url: httpUrl.optional(),
-        app_icon_url: httpUrl.optional(),
+        logo_url: httpOrRelativeUrl.optional(),
+        app_icon_url: httpOrRelativeUrl.optional(),
+        categories: z.array(shortText(40)).max(12).optional(),
       })
       .strict(),
     hero: z
@@ -175,14 +235,21 @@ export const siteContentSchema = z
         badge_text: shortText(120),
         header: shortText(200),
         short_description: shortText(500),
-        device_screenshot_url: httpUrl.optional(),
+        device_screenshot_url: httpOrRelativeUrl.optional(),
+        device_screenshot_url_secondary: httpOrRelativeUrl.optional(),
+        primary_cta_label: shortText(60).optional(),
+        secondary_cta_label: shortText(60).optional(),
+        rating_stars: z.number().min(1).max(5).optional(),
+        rating_text: shortText(120).optional(),
         email_capture_enabled: z.boolean().optional(),
         email_placeholder: shortText(80).optional(),
         email_cta_label: shortText(40).optional(),
         email_success_message: shortText(200).optional(),
       })
       .strict(),
+    impacts: bentoImpactsSchema.optional(),
     features: z.array(featureSchema).max(24),
+    how_it_works: z.array(howItWorksStepSchema).max(12).optional(),
     logo_wall: z
       .object({
         eyebrow: shortText(80),
