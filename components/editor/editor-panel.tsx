@@ -503,7 +503,7 @@ export function EditorPanel({
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-white dark:bg-zinc-950 border-r border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden select-none">
+    <div className="w-full h-full flex flex-col bg-white dark:bg-zinc-950 border-r border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden">
       {/* Fixed Section Switcher Tabs (Zero Sticky Jitter) */}
       <nav
         ref={tabListRef}
@@ -528,7 +528,7 @@ export function EditorPanel({
                 tabIndex={isActive ? 0 : -1}
                 onClick={() => handleSelectSection(sec.id)}
                 onKeyDown={(e) => handleTabKeyDown(e, idx)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 dark:focus-visible:ring-zinc-100 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 dark:focus-visible:ring-zinc-100 cursor-pointer ${
                   isActive
                     ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
                     : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/70"
@@ -552,13 +552,14 @@ export function EditorPanel({
         </div>
       </nav>
 
-      {/* Form Content: Dedicated Scroll Container (Zero Chaining) */}
+      {/* Form Content: Dedicated Scroll Container */}
       <div
         ref={formScrollRef}
         id={`panel-${activeSection}`}
         role="tabpanel"
         aria-labelledby={`tab-${activeSection}`}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-6 scrollbar-thin select-text"
+        className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6 pb-32 sm:pb-40 scrollbar-thin touch-pan-y"
+        style={{ WebkitOverflowScrolling: "touch" }}
       >
         {/* Hidden shared picker for feature / logo-wall / release images */}
         <input

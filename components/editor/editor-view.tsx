@@ -168,7 +168,7 @@ export function EditorView({ site, plan }: EditorViewProps) {
   }, [handleSave, saving, publishing]);
 
   return (
-    <div className="fixed inset-0 h-[100dvh] w-screen z-50 flex flex-col bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 overflow-hidden overscroll-none font-sans">
+    <div className="fixed inset-0 h-[100dvh] w-screen z-50 flex flex-col bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
       {/* Top Header Navigation */}
       <header className="h-14 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl px-2.5 sm:px-4 flex items-center justify-between shrink-0 select-none">
         {/* Left: Back + Site Title + Status */}

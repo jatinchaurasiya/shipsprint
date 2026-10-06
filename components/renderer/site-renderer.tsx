@@ -269,23 +269,23 @@ export function SiteRenderer({
 
               {/* Official Store Download Buttons (Exact User Design Specification) */}
               <div
-                className={`mt-8 flex flex-col sm:flex-row items-center gap-3.5 ${
-                  isMobileView ? "justify-center" : "justify-start"
+                className={`mt-8 flex flex-wrap items-center gap-3 ${
+                  isMobileView ? "justify-center" : "justify-center sm:justify-start"
                 }`}
               >
-                {(availability === "both" || availability === "play_store_only") && (
-                  <GooglePlayBadge
-                    href={store_links.play_store_url || "#download"}
-                    isPreview={isPreview}
-                    onClick={() => handleCtaClick("hero_play_store", store_links.play_store_url)}
-                  />
-                )}
-
                 {(availability === "both" || availability === "app_store_only") && (
                   <AppStoreBadge
                     href={store_links.app_store_url || "#download"}
                     isPreview={isPreview}
                     onClick={() => handleCtaClick("hero_app_store", store_links.app_store_url)}
+                  />
+                )}
+
+                {(availability === "both" || availability === "play_store_only") && (
+                  <GooglePlayBadge
+                    href={store_links.play_store_url || "#download"}
+                    isPreview={isPreview}
+                    onClick={() => handleCtaClick("hero_play_store", store_links.play_store_url)}
                   />
                 )}
 
@@ -357,9 +357,9 @@ export function SiteRenderer({
                 isMobileView ? "mt-4" : "md:col-span-6"
               }`}
             >
-              <div className="relative flex w-full max-w-[380px] items-center justify-center py-2 sm:max-w-[430px]">
+              <div className="relative flex w-full max-w-[340px] xs:max-w-[380px] items-center justify-center py-2 sm:max-w-[430px]">
                 {/* Back iPhone Mockup (Right) */}
-                <div className="relative z-10 w-[180px] rotate-[-1.5deg] translate-x-7 translate-y-2.5 opacity-95 transition-transform duration-500 hover:translate-x-9 hover:rotate-0 sm:w-[205px] sm:translate-x-10 sm:translate-y-3 lg:w-[220px]">
+                <div className="relative z-10 w-[145px] xs:w-[170px] sm:w-[205px] lg:w-[220px] rotate-[-1.5deg] translate-x-4 xs:translate-x-6 sm:translate-x-10 translate-y-2 sm:translate-y-3 opacity-95 transition-transform duration-500 hover:translate-x-9 hover:rotate-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={
@@ -373,7 +373,7 @@ export function SiteRenderer({
                 </div>
 
                 {/* Front iPhone Mockup (Left, overlapping foreground with -6deg tilt) */}
-                <div className="absolute left-1 top-1 z-20 w-[190px] rotate-[-6deg] transition-transform duration-500 hover:scale-[1.02] hover:rotate-[-4deg] sm:left-3 sm:top-2 sm:w-[218px] lg:w-[235px]">
+                <div className="absolute left-1 top-1 z-20 w-[150px] xs:w-[180px] sm:w-[218px] lg:w-[235px] rotate-[-6deg] transition-transform duration-500 hover:scale-[1.02] hover:rotate-[-4deg] sm:left-3 sm:top-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={hero.device_screenshot_url || "/shipsprint-phone-mockup.png"}
@@ -768,19 +768,19 @@ export function SiteRenderer({
             Available natively on iOS and Android. Download now to elevate your daily routine.
           </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 leading-none">
-            {(availability === "both" || availability === "play_store_only") && (
-              <GooglePlayBadge
-                href={store_links.play_store_url || "#"}
-                isPreview={isPreview}
-                onClick={() => handleCtaClick("play_store_download", store_links.play_store_url)}
-              />
-            )}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 leading-none">
             {(availability === "both" || availability === "app_store_only") && (
               <AppStoreBadge
                 href={store_links.app_store_url || "#"}
                 isPreview={isPreview}
                 onClick={() => handleCtaClick("app_store_download", store_links.app_store_url)}
+              />
+            )}
+            {(availability === "both" || availability === "play_store_only") && (
+              <GooglePlayBadge
+                href={store_links.play_store_url || "#"}
+                isPreview={isPreview}
+                onClick={() => handleCtaClick("play_store_download", store_links.play_store_url)}
               />
             )}
             {availability === "testflight" && (

@@ -38,7 +38,7 @@ export function LivePreview({ content, plan, theme }: LivePreviewProps) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-zinc-100/70 dark:bg-zinc-950/60 overflow-hidden select-none">
+    <div className="w-full h-full flex flex-col bg-zinc-100/70 dark:bg-zinc-950/60 overflow-hidden">
       {/* Top Device & Workspace Bar */}
       <header className="h-12 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between shrink-0 z-10">
         <div className="flex items-center gap-2 min-w-0">
@@ -140,10 +140,14 @@ export function LivePreview({ content, plan, theme }: LivePreviewProps) {
             </span>
           </figcaption>
 
-          {/* Sole Scroll Container — overscroll-contain guarantees zero scroll chaining */}
+          {/* Sole Scroll Container */}
           <div
             ref={scrollContainerRef}
-            className="flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-thin bg-white dark:bg-zinc-950 select-text"
+            className="flex-1 min-h-0 overflow-y-auto scrollbar-thin bg-white dark:bg-zinc-950 select-text touch-pan-y"
+            style={{
+              WebkitOverflowScrolling: "touch",
+              overscrollBehaviorY: "contain",
+            }}
           >
             <SiteRenderer
               content={content}

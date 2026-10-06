@@ -253,20 +253,18 @@ export function StoreSelector({ value, onChange }: StoreSelectorProps) {
           </span>
         </div>
 
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-          {(currentAvailability === "both" || currentAvailability === "play_store_only") && (
-            <GooglePlayBadge
-              href={value.play_store_url || "#"}
-              isPreview={true}
-              className="w-full sm:w-auto"
-            />
-          )}
-
+        <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
           {(currentAvailability === "both" || currentAvailability === "app_store_only") && (
             <AppStoreBadge
               href={value.app_store_url || "#"}
               isPreview={true}
-              className="w-full sm:w-auto"
+            />
+          )}
+
+          {(currentAvailability === "both" || currentAvailability === "play_store_only") && (
+            <GooglePlayBadge
+              href={value.play_store_url || "#"}
+              isPreview={true}
             />
           )}
 
@@ -274,7 +272,6 @@ export function StoreSelector({ value, onChange }: StoreSelectorProps) {
             <TestFlightBadge
               href={value.testflight_url || "#"}
               isPreview={true}
-              className="w-full sm:w-auto"
             />
           )}
         </div>

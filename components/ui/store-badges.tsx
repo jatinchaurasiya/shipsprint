@@ -1,6 +1,5 @@
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
 "use client";
-
 import { safeHref } from "@/lib/validation";
 
 export interface StoreBadgeProps {
@@ -8,53 +7,17 @@ export interface StoreBadgeProps {
   onClick?: () => void;
   isPreview?: boolean;
   className?: string;
-  bgColor?: string;
 }
 
 /**
- * Google Play Store Button (Exact User Specification)
- * Uses official 4-color Google Play SVG geometry and typography.
- */
-export function GooglePlayBadge({
-  href,
-  onClick,
-  isPreview = false,
-  className = "",
-  bgColor = "bg-black hover:bg-neutral-900",
-}: StoreBadgeProps) {
-  return (
-    <a
-      href={safeHref(href)}
-      target={isPreview ? "_self" : "_blank"}
-      rel="noopener noreferrer"
-      onClick={onClick}
-      aria-label="Get it on Google Play"
-      className={`flex items-center gap-3 ${bgColor} text-white px-5 py-2.5 rounded-xl w-full sm:w-auto justify-center transition-colors shadow-sm tracking-normal border border-neutral-800 select-none ${className}`}
-    >
-      <svg className="w-7 h-7 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M3 3.5v17c0 .4.2.8.6 1l9.4-9.5L3.6 2.5c-.4.2-.6.6-.6 1z" fill="#00E5FF"/>
-        <path d="M17.4 11.5l3.2 1.8c.6.3.6.9 0 1.2l-3.2 1.8-3.9-3.9 3.9-3.9z" fill="#FFC107"/>
-        <path d="M3.6 2.5L13.5 12l3.9-3.9-9.4-5.5c-.4-.2-.8-.2-1.2 0-.2.1-.4.2-.4.4z" fill="#FF3D00"/>
-        <path d="M3.6 21.5l9.9-9.5 3.9 3.9-9.4 5.5c-.2.1-.4.1-.6.1-.2-.1-.4-.2-.4-.4z" fill="#4CAF50"/>
-      </svg>
-      <div className="text-left font-sans">
-        <p className="text-[9px] uppercase tracking-wider font-semibold text-white leading-none">GET IT ON</p>
-        <p className="text-xl font-medium text-white tracking-wide mt-0.5 leading-none">Google Play</p>
-      </div>
-    </a>
-  );
-}
-
-/**
- * Apple App Store Button (Exact User Specification)
- * Uses official Apple silhouette SVG and typography.
+ * Apple App Store Badge (Exact Official SVG Specification)
+ * 180x60 vector badge with embedded typography — 100% immune to CSS line wrapping.
  */
 export function AppStoreBadge({
   href,
   onClick,
   isPreview = false,
   className = "",
-  bgColor = "bg-black hover:bg-neutral-900",
 }: StoreBadgeProps) {
   return (
     <a
@@ -63,29 +26,157 @@ export function AppStoreBadge({
       rel="noopener noreferrer"
       onClick={onClick}
       aria-label="Download on the App Store"
-      className={`flex items-center gap-3 ${bgColor} text-white px-5 py-2.5 rounded-xl w-full sm:w-auto justify-center transition-colors shadow-sm tracking-normal border border-neutral-800 select-none ${className}`}
+      className={`inline-block transition-transform hover:scale-[1.02] active:scale-[0.98] drop-shadow-md select-none shrink-0 ${className}`}
     >
-      <svg className="w-7 h-7 shrink-0 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.93 1.49-.62.69-1.16 1.84-1.01 2.96 1.12.09 2.27-.57 2.95-1.39z"/>
+      <svg
+        width="180"
+        height="60"
+        viewBox="0 0 180 60"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="Download on the App Store"
+        className="h-[52px] sm:h-[56px] md:h-[60px] w-auto max-w-[180px] block"
+      >
+        <rect
+          x="0.5"
+          y="0.5"
+          width="179"
+          height="59"
+          rx="9"
+          fill="#000"
+          stroke="#A6A6A6"
+        />
+
+        {/* Apple Logo */}
+        <path
+          d="M37.05 30.2c-.03-3.75 3.07-5.57 3.21-5.66-1.76-2.57-4.5-2.92-5.46-2.95-2.29-.24-4.51 1.37-5.68 1.37-1.19 0-2.98-1.34-4.91-1.3-2.49.04-4.82 1.48-6.1 3.74-2.65 4.59-.67 11.33 1.87 15.04 1.27 1.82 2.75 3.85 4.68 3.78 1.89-.08 2.6-1.21 4.88-1.21 2.25 0 2.92 1.21 4.89 1.17 2.03-.03 3.31-1.82 4.54-3.66 1.47-2.09 2.06-4.12 2.08-4.22-.05-.02-3.97-1.52-4-6.1Z"
+          fill="#fff"
+        />
+
+        <path
+          d="M33.32 19.16c1.02-1.27 1.72-3.01 1.53-4.76-1.48.07-3.32 1.02-4.38 2.27-.95 1.11-1.79 2.92-1.58 4.61 1.66.13 3.37-.84 4.43-2.12Z"
+          fill="#fff"
+        />
+
+        {/* Text */}
+        <text
+          x="55"
+          y="24"
+          fill="#fff"
+          fontFamily="Arial, Helvetica, sans-serif"
+          fontSize="11"
+        >
+          Download on the
+        </text>
+
+        <text
+          x="55"
+          y="43"
+          fill="#fff"
+          fontFamily="Arial, Helvetica, sans-serif"
+          fontSize="21"
+          fontWeight="600"
+        >
+          App Store
+        </text>
       </svg>
-      <div className="text-left font-sans">
-        <p className="text-[9px] tracking-wide font-normal text-white leading-none">Download on the</p>
-        <p className="text-xl font-semibold text-white tracking-wide mt-0.5 leading-none">App Store</p>
-      </div>
     </a>
   );
 }
 
 /**
- * Apple TestFlight Public Beta Button
- * Matches the exact geometry and styling of the official App Store button.
+ * Google Play Store Badge (Exact Official SVG Specification)
+ * 180x60 vector badge with 4-color triangle and official typography.
+ */
+export function GooglePlayBadge({
+  href,
+  onClick,
+  isPreview = false,
+  className = "",
+}: StoreBadgeProps) {
+  return (
+    <a
+      href={safeHref(href)}
+      target={isPreview ? "_self" : "_blank"}
+      rel="noopener noreferrer"
+      onClick={onClick}
+      aria-label="Get it on Google Play"
+      className={`inline-block transition-transform hover:scale-[1.02] active:scale-[0.98] drop-shadow-md select-none shrink-0 ${className}`}
+    >
+      <svg
+        width="180"
+        height="60"
+        viewBox="0 0 180 60"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="Get it on Google Play"
+        className="h-[52px] sm:h-[56px] md:h-[60px] w-auto max-w-[180px] block"
+      >
+        <rect
+          x="0.5"
+          y="0.5"
+          width="179"
+          height="59"
+          rx="9"
+          fill="#000"
+          stroke="#A6A6A6"
+        />
+
+        {/* Google Play Triangle */}
+        <path
+          d="M25.2 13.4c-.5.5-.8 1.3-.8 2.3v28.6c0 1 .3 1.8.8 2.3l.1.1 16-16.5v-.4L25.2 13.4Z"
+          fill="#00D4FF"
+        />
+
+        <path
+          d="m46.6 35.5-5.3-5.3v-.4l5.3-5.3.1.1 6.3 3.6c1.8 1 1.8 2.7 0 3.7l-6.3 3.6-.1.1Z"
+          fill="#FFD500"
+        />
+
+        <path
+          d="m46.7 35.4-5.4-5.4-16.1 16.6c.6.6 1.5.6 2.5.1l19-10.8Z"
+          fill="#FF3B30"
+        />
+
+        <path
+          d="m46.7 24.6-19-10.8c-1-.6-1.9-.5-2.5.1l16.1 16.1 5.4-5.4Z"
+          fill="#34C759"
+        />
+
+        {/* Text */}
+        <text
+          x="63"
+          y="23"
+          fill="#fff"
+          fontFamily="Arial, Helvetica, sans-serif"
+          fontSize="10"
+        >
+          GET IT ON
+        </text>
+
+        <text
+          x="63"
+          y="43"
+          fill="#fff"
+          fontFamily="Arial, Helvetica, sans-serif"
+          fontSize="20"
+          fontWeight="500"
+        >
+          Google Play
+        </text>
+      </svg>
+    </a>
+  );
+}
+
+/**
+ * Apple TestFlight Public Beta Badge (Matches 180x60 geometry)
  */
 export function TestFlightBadge({
   href,
   onClick,
   isPreview = false,
   className = "",
-  bgColor = "bg-black hover:bg-neutral-900",
 }: StoreBadgeProps) {
   return (
     <a
@@ -94,39 +185,70 @@ export function TestFlightBadge({
       rel="noopener noreferrer"
       onClick={onClick}
       aria-label="Join Apple TestFlight Beta"
-      className={`flex items-center gap-3 ${bgColor} text-white px-5 py-2.5 rounded-xl w-full sm:w-auto justify-center transition-colors shadow-sm tracking-normal border border-neutral-800 select-none ${className}`}
+      className={`inline-block transition-transform hover:scale-[1.02] active:scale-[0.98] drop-shadow-md select-none shrink-0 ${className}`}
     >
       <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        aria-hidden="true"
-        className="w-7 h-7 shrink-0 text-[#0a84ff]"
+        width="180"
+        height="60"
+        viewBox="0 0 180 60"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="Join Apple TestFlight Beta"
+        className="h-[52px] sm:h-[56px] md:h-[60px] w-auto max-w-[180px] block"
       >
-        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.75" />
+        <rect
+          x="0.5"
+          y="0.5"
+          width="179"
+          height="59"
+          rx="9"
+          fill="#000"
+          stroke="#A6A6A6"
+        />
+
+        {/* TestFlight Propeller */}
+        <circle cx="34" cy="30" r="13" stroke="#00D4FF" strokeWidth="2" fill="none" />
         <path
-          d="M12 6.5v11M7.5 9.5l9 5M7.5 14.5l9-5"
-          stroke="currentColor"
-          strokeWidth="1.75"
+          d="M34 19v22M25 25l18 10M25 35l18-10"
+          stroke="#00D4FF"
+          strokeWidth="2"
           strokeLinecap="round"
         />
+
+        {/* Text */}
+        <text
+          x="57"
+          y="23"
+          fill="#60a5fa"
+          fontFamily="Arial, Helvetica, sans-serif"
+          fontSize="10"
+        >
+          Join the Beta on
+        </text>
+
+        <text
+          x="57"
+          y="43"
+          fill="#fff"
+          fontFamily="Arial, Helvetica, sans-serif"
+          fontSize="20"
+          fontWeight="600"
+        >
+          TestFlight
+        </text>
       </svg>
-      <div className="text-left font-sans">
-        <p className="text-[9px] tracking-wide font-normal text-blue-400 leading-none">Join the Beta on</p>
-        <p className="text-xl font-semibold text-white tracking-wide mt-0.5 leading-none">TestFlight</p>
-      </div>
     </a>
   );
 }
 
 /**
  * AppDownloadButtons
- * Complete production-ready download buttons group matching user specification.
+ * Configurable container rendering official vector store badges side-by-side.
  */
-export default function AppDownloadButtons({ 
-  playStoreUrl = "#", 
-  appStoreUrl = "#", 
-  bgColor = "bg-black hover:bg-neutral-900", 
-  alignment = "justify-center" 
+export default function AppDownloadButtons({
+  playStoreUrl = "#",
+  appStoreUrl = "#",
+  alignment = "justify-center",
 }: {
   playStoreUrl?: string;
   appStoreUrl?: string;
@@ -134,13 +256,9 @@ export default function AppDownloadButtons({
   alignment?: string;
 }) {
   return (
-    <div className={`flex flex-col sm:flex-row items-center ${alignment} gap-4 p-4`}>
-      {playStoreUrl && (
-        <GooglePlayBadge href={playStoreUrl} bgColor={bgColor} />
-      )}
-      {appStoreUrl && (
-        <AppStoreBadge href={appStoreUrl} bgColor={bgColor} />
-      )}
+    <div className={`flex flex-wrap items-center ${alignment} gap-3 p-2`}>
+      {appStoreUrl && <AppStoreBadge href={appStoreUrl} />}
+      {playStoreUrl && <GooglePlayBadge href={playStoreUrl} />}
     </div>
   );
 }

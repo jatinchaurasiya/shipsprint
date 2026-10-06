@@ -105,11 +105,7 @@ describe("Vector App Store & Google Play Download Badges", () => {
     // Pure vector SVG (zero <img> raster tags)
     expect(html).not.toContain("<img");
     expect(html).toContain("<svg");
-    // Google Play 4-color paths
-    expect(html).toContain('fill="#00E5FF"');
-    expect(html).toContain('fill="#FFC107"');
-    expect(html).toContain('fill="#FF3D00"');
-    expect(html).toContain('fill="#4CAF50"');
+    expect(html).toContain('viewBox="0 0 180 60"');
     // Typography
     expect(html).toContain("GET IT ON");
     expect(html).toContain("Google Play");
@@ -129,8 +125,9 @@ describe("Vector App Store & Google Play Download Badges", () => {
     // Pure vector SVG (zero <img> raster tags)
     expect(html).not.toContain("<img");
     expect(html).toContain("<svg");
+    expect(html).toContain('viewBox="0 0 180 60"');
     // Apple silhouette vector path
-    expect(html).toContain("M18.71 19.5c-.83 1.24");
+    expect(html).toContain("M37.05 30.2");
     // Typography
     expect(html).toContain("Download on the");
     expect(html).toContain("App Store");
