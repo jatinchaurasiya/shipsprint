@@ -19,9 +19,10 @@ import {
 interface LivePreviewProps {
   content: SiteContent;
   plan?: Plan | null;
+  theme?: string;
 }
 
-export function LivePreview({ content, plan }: LivePreviewProps) {
+export function LivePreview({ content, plan, theme }: LivePreviewProps) {
   const [deviceMode, setDeviceMode] = useState<ViewportMode>("desktop");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrolledToTop, setScrolledToTop] = useState(false);
@@ -144,7 +145,13 @@ export function LivePreview({ content, plan }: LivePreviewProps) {
             ref={scrollContainerRef}
             className="flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-thin bg-white dark:bg-zinc-950 select-text"
           >
-            <SiteRenderer content={content} plan={plan} isPreview={true} />
+            <SiteRenderer
+              content={content}
+              plan={plan}
+              isPreview={true}
+              theme={theme}
+              viewport={deviceMode}
+            />
           </div>
         </figure>
       </main>

@@ -103,8 +103,10 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
+    const subpath = pathname === "/" ? "" : pathname;
+    const sitePrefix = host.kind === "custom" ? `custom:${host.value}` : host.value;
     const url = request.nextUrl.clone();
-    url.pathname = `/site/${host.kind === "custom" ? `custom:${host.value}` : host.value}`;
+    url.pathname = `/site/${sitePrefix}${subpath}`;
     return NextResponse.rewrite(url);
   }
 

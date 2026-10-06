@@ -206,6 +206,7 @@ export default async function PublicSitePage({ params }: SitePageProps) {
         // self-traffic inflates the numbers shown on the billing page.
         isPreview={!isPublished}
         siteId={isPublished ? site.id : undefined}
+        theme={site.theme}
       />
     </div>
   );

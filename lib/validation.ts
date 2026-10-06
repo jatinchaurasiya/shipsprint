@@ -119,6 +119,40 @@ const footerColumnSchema = z
   })
   .strict();
 
+export const sitePageSchema = z
+  .object({
+    id: shortText(64),
+    slug: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .max(64)
+      .regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)?$/, "Invalid page slug"),
+    title: shortText(120),
+    nav_label: shortText(60).optional(),
+    show_in_nav: z.boolean().optional(),
+    show_in_footer: z.boolean().optional(),
+    page_type: z.enum(["home", "privacy", "terms", "support", "custom"]),
+    is_system: z.boolean().optional(),
+    is_published: z.boolean().optional(),
+    content_markdown: z.string().max(65536),
+    meta_title: shortText(160).optional(),
+    meta_description: shortText(320).optional(),
+    updated_at: z.string().optional(),
+  })
+  .strict();
+
+export const storeLinksSchema = z
+  .object({
+    availability: z
+      .enum(["both", "app_store_only", "play_store_only", "testflight"])
+      .optional(),
+    app_store_url: httpUrl.optional(),
+    play_store_url: httpUrl.optional(),
+    testflight_url: httpUrl.optional(),
+  })
+  .strict();
+
 /**
  * The full editor payload.
  *
@@ -131,7 +165,8 @@ export const siteContentSchema = z
     brand: z
       .object({
         name: shortText(80),
-        logo_url: httpUrl,
+        logo_url: httpUrl.optional(),
+        app_icon_url: httpUrl.optional(),
       })
       .strict(),
     hero: z
@@ -140,6 +175,7 @@ export const siteContentSchema = z
         badge_text: shortText(120),
         header: shortText(200),
         short_description: shortText(500),
+        device_screenshot_url: httpUrl.optional(),
         email_capture_enabled: z.boolean().optional(),
         email_placeholder: shortText(80).optional(),
         email_cta_label: shortText(40).optional(),
@@ -165,17 +201,93 @@ export const siteContentSchema = z
         age_rating: shortText(20),
         chart_rank: shortText(60),
         release_notes: z.array(shortText(200)).max(8),
-        image_url: httpUrl,
+        image_url: httpUrl.optional(),
       })
       .strict()
       .optional(),
-    store_links: z
-      .object({
-        app_store_url: httpUrl,
-        play_store_url: httpUrl,
-      })
-      .strict(),
+    store_links: storeLinksSchema,
     screenshots: z.array(httpUrl).max(20),
+    pages: z.array(sitePageSchema).max(30).optional(),
+    trust: z
+      .object({
+        rating: shortText(20),
+        review_count_text: shortText(60),
+        featured_quote: shortText(300),
+        author: shortText(80).optional(),
+      })
+      .strict()
+      .optional(),
+    showcase: z
+      .array(
+        z
+          .object({
+            id: shortText(64),
+            title: shortText(120),
+            description: shortText(500),
+            align: z.enum(["left", "right"]),
+            image_url: httpUrl.optional(),
+          })
+          .strict()
+      )
+      .max(6)
+      .optional(),
+    stats: z
+      .array(
+        z
+          .object({
+            id: shortText(64),
+            value: shortText(40),
+            label: shortText(60),
+          })
+          .strict()
+      )
+      .max(8)
+      .optional(),
+    testimonials: z
+      .array(
+        z
+          .object({
+            id: shortText(64),
+            name: shortText(80),
+            role: shortText(80),
+            quote: shortText(400),
+            avatar_url: httpUrl.optional(),
+            rating: z.number().min(1).max(5).optional(),
+            is_main: z.boolean().optional(),
+          })
+          .strict()
+      )
+      .max(8)
+      .optional(),
+    pricing: z
+      .array(
+        z
+          .object({
+            id: shortText(64),
+            name: shortText(60),
+            price: shortText(40),
+            period: shortText(40),
+            description: shortText(200).optional(),
+            is_popular: z.boolean().optional(),
+            features: z.array(shortText(120)).max(12),
+            cta_label: shortText(60),
+          })
+          .strict()
+      )
+      .max(6)
+      .optional(),
+    faq: z
+      .array(
+        z
+          .object({
+            id: shortText(64),
+            question: shortText(200),
+            answer: shortText(1000),
+          })
+          .strict()
+      )
+      .max(12)
+      .optional(),
     footer: z
       .object({
         brand_name: shortText(80),
@@ -196,6 +308,7 @@ export const siteContentSchema = z
       .strict(),
   })
   .strict();
+
 
 /** Hard ceiling on the serialized document, enforced before the DB write. */
 export const MAX_CONTENT_BYTES = 256 * 1024;
@@ -221,10 +334,17 @@ export const updateSiteSchema = z
   .object({
     content: siteContentSchema.optional(),
     status: siteStatusSchema.optional(),
+    theme: z.string().trim().max(64).optional(),
   })
-  .refine((value) => value.content !== undefined || value.status !== undefined, {
-    message: "Provide at least one of content or status",
-  });
+  .refine(
+    (value) =>
+      value.content !== undefined ||
+      value.status !== undefined ||
+      value.theme !== undefined,
+    {
+      message: "Provide at least one of content, status, or theme",
+    }
+  );
 
 /**
  * A purchasable SKU, not a plan id.

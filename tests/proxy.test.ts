@@ -277,38 +277,38 @@ describe("proxy()", () => {
       }
     );
 
-    it("redirects an unauthenticated /dashboard/templates to login, preserving next", async () => {
+    it("redirects an unauthenticated /dashboard/analytics to login, preserving next", async () => {
       updateSessionMock.mockResolvedValue({
         supabaseResponse: NextResponse.next(),
         user: null,
       });
       const { proxy } = await loadProxy(env);
       const res = await proxy(
-        brokenRequest("/dashboard/templates", "shipsprint.site")
+        brokenRequest("/dashboard/analytics", "shipsprint.site")
       );
 
       expect(res.status).toBe(307);
       expect(res.headers.get("location")).toBe(
-        "https://shipsprint.site/login?next=%2Fdashboard%2Ftemplates"
+        "https://shipsprint.site/login?next=%2Fdashboard%2Fanalytics"
       );
     });
 
-    it("lets a signed-in visitor through to /dashboard/templates", async () => {
+    it("lets a signed-in visitor through to /dashboard/analytics", async () => {
       updateSessionMock.mockResolvedValue({
         supabaseResponse: NextResponse.next(),
         user: { id: "user-1" },
       });
       const { proxy } = await loadProxy(env);
       const res = await proxy(
-        brokenRequest("/dashboard/templates", "shipsprint.site")
+        brokenRequest("/dashboard/analytics", "shipsprint.site")
       );
       expect(noRedirect(res)).toBe(true);
     });
 
-    it("does not gate the public /templates gallery", async () => {
+    it("does not gate public marketing pages (e.g. /terms)", async () => {
       const { proxy } = await loadProxy(env);
       const res = await proxy(
-        publicRequest("https://shipsprint.site/templates", "shipsprint.site")
+        publicRequest("https://shipsprint.site/terms", "shipsprint.site")
       );
       expect(noRedirect(res)).toBe(true);
       expect(updateSessionMock).not.toHaveBeenCalled();

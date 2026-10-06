@@ -348,7 +348,7 @@ export function EditorView({ site, plan }: EditorViewProps) {
               : "hidden md:flex md:flex-col"
           }`}
         >
-          <LivePreview content={content} plan={plan} />
+          <LivePreview content={content} plan={plan} theme={site.theme} />
         </section>
       </div>
     </div>

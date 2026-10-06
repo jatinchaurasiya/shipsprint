@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Menu,
   X,
-  LayoutTemplate,
 } from "lucide-react";
 
 interface DashboardNavProps {
@@ -26,7 +25,6 @@ const NAV_ITEMS = [
   { label: "My Apps", href: "/dashboard", icon: LayoutGrid },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { label: "Plans & Billing", href: "/dashboard/billing", icon: CreditCard },
-  { label: "Templates", href: "/dashboard/templates", icon: LayoutTemplate },
 ];
 
 export function DashboardNav({ userEmail, plan }: DashboardNavProps) {

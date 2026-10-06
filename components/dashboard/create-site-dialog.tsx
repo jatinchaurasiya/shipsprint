@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, Loader2, ArrowRight, Sparkles, Lock, Smartphone, Terminal, Cpu, Users, Briefcase, Landmark } from "lucide-react";
+import { Plus, X, Loader2, ArrowRight, Lock, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { BUILTIN_TEMPLATES } from "@/lib/templates";
 
 interface CreateSiteDialogProps {
   canCreate: boolean;
@@ -17,12 +16,8 @@ export function CreateSiteDialog({
   canCreate,
   currentCount,
   maxLimit,
-  initialTemplateId,
 }: CreateSiteDialogProps) {
-  const [isOpen, setIsOpen] = useState(Boolean(initialTemplateId));
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
-    initialTemplateId || (BUILTIN_TEMPLATES[0]?.id ?? "")
-  );
+  const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [isSlugCustomized, setIsSlugCustomized] = useState(false);
@@ -65,7 +60,6 @@ export function CreateSiteDialog({
         body: JSON.stringify({
           name: name.trim(),
           slug: slug.trim(),
-          template_id: selectedTemplateId || undefined,
         }),
       });
 
@@ -83,23 +77,6 @@ export function CreateSiteDialog({
     } catch (err) {
       setError((err instanceof Error ? err.message : undefined) || "An unexpected error occurred");
       setLoading(false);
-    }
-  };
-
-  const getTemplateIcon = (category: string) => {
-    switch (category) {
-      case "productivity":
-        return <Smartphone className="w-3.5 h-3.5 text-blue-500" />;
-      case "developer":
-        return <Terminal className="w-3.5 h-3.5 text-emerald-500" />;
-      case "saas":
-        return <Cpu className="w-3.5 h-3.5 text-purple-500" />;
-      case "social":
-        return <Users className="w-3.5 h-3.5 text-amber-500" />;
-      case "finance":
-        return <Landmark className="w-3.5 h-3.5 text-teal-500" />;
-      default:
-        return <Briefcase className="w-3.5 h-3.5 text-indigo-500" />;
     }
   };
 
@@ -161,7 +138,7 @@ export function CreateSiteDialog({
                   </h2>
                 </div>
                 <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-5">
-                  Pick a starting template and customize your subdomain.
+                  Configure your app name and custom subdomain to launch.
                 </p>
 
                 {error && (
@@ -171,55 +148,6 @@ export function CreateSiteDialog({
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Template Picker (rendered when templates are defined) */}
-                  {BUILTIN_TEMPLATES.length > 0 ? (
-                    <div>
-                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                        Choose Starting Template
-                      </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto pr-1">
-                        {BUILTIN_TEMPLATES.map((tmpl) => {
-                          const isSelected = selectedTemplateId === tmpl.id;
-                          return (
-                            <button
-                              key={tmpl.id}
-                              type="button"
-                              onClick={() => setSelectedTemplateId(tmpl.id)}
-                              className={`flex flex-col text-left p-3 rounded-xl border text-xs transition-colors ${
-                                isSelected
-                                  ? "border-zinc-900 dark:border-zinc-100 bg-zinc-100/70 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100 ring-2 ring-zinc-900/10 dark:ring-zinc-100/10"
-                                  : "border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between w-full mb-1">
-                                <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                                  {getTemplateIcon(tmpl.category)}
-                                  {tmpl.name}
-                                </span>
-                                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                                  {tmpl.category}
-                                </span>
-                              </div>
-                              <span className="text-[11px] line-clamp-1 text-zinc-600 dark:text-zinc-400">
-                                {tmpl.tagline}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 text-xs">
-                      <div className="flex items-center gap-2 font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
-                        <Smartphone className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-                        <span>Standard Mobile App Launch Setup</span>
-                      </div>
-                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                        Pre-configured for Apple &amp; Android app launches: hero headline, iPhone screenshot showcase, feature grid, and download attribution.
-                      </p>
-                    </div>
-                  )}
-
                   <div>
                     <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                       App / Product Name

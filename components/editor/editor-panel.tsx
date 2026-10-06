@@ -30,6 +30,11 @@ import {
   parseReleaseNotes,
   BLANK_RELEASE,
 } from "@/lib/editor";
+import { StoreSelector } from "./store-selector";
+import { PageManager } from "./page-manager";
+import { LogoManager } from "./logo-manager";
+import { getDefaultSitePages } from "@/lib/legal-pages";
+import type { SitePage } from "@/types/database";
 
 interface EditorPanelProps {
   content: SiteContent;
@@ -47,6 +52,7 @@ export function EditorPanel({
   initialDomain,
 }: EditorPanelProps) {
   const [activeSection, setActiveSection] = useState<EditorSectionId>("hero");
+  const [activePageId, setActivePageId] = useState<string>("page-home");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -339,34 +345,7 @@ export function EditorPanel({
     );
   };
 
-  const addLogoEntry = () => {
-    updateContent((prev) => ({
-      ...prev,
-      logo_wall: {
-        eyebrow: prev.logo_wall?.eyebrow ?? "Featured in",
-        logos: [
-          ...(prev.logo_wall?.logos ?? []),
-          {
-            id: `logo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-            name: "Press name",
-            image_url: "",
-          },
-        ],
-      },
-    }));
-  };
 
-  const removeLogoEntry = (indexToRemove: number) => {
-    updateContent((prev) => ({
-      ...prev,
-      logo_wall: {
-        eyebrow: prev.logo_wall?.eyebrow ?? "",
-        logos: (prev.logo_wall?.logos ?? []).filter(
-          (_, idx) => idx !== indexToRemove
-        ),
-      },
-    }));
-  };
 
   const addFooterColumn = () => {
     updateContent((prev) => ({
@@ -416,6 +395,62 @@ export function EditorPanel({
     }));
   };
 
+  const appPages =
+    content.pages && content.pages.length > 0
+      ? content.pages
+      : getDefaultSitePages(
+          content.brand?.name || content.hero?.app_name || "App",
+          content.footer?.contact_email
+        );
+
+  const handleUpdatePage = (updatedPage: SitePage) => {
+    updateContent((prev) => {
+      const currentPages =
+        prev.pages && prev.pages.length > 0 ? prev.pages : appPages;
+      const index = currentPages.findIndex((p) => p.id === updatedPage.id);
+      if (index === -1) {
+        return { ...prev, pages: [...currentPages, updatedPage] };
+      }
+      const updated = [...currentPages];
+      updated[index] = updatedPage;
+      return { ...prev, pages: updated };
+    });
+  };
+
+  const handleAddCustomPage = (title: string, slug: string) => {
+    const newPage: SitePage = {
+      id: `page-${Date.now()}`,
+      slug,
+      title,
+      nav_label: title,
+      show_in_nav: true,
+      show_in_footer: true,
+      page_type: "custom",
+      is_system: false,
+      is_published: true,
+      content_markdown: `# ${title}\n\nAdd your content here...`,
+      updated_at: new Date().toISOString(),
+    };
+    updateContent((prev) => ({
+      ...prev,
+      pages: [
+        ...(prev.pages && prev.pages.length > 0 ? prev.pages : appPages),
+        newPage,
+      ],
+    }));
+    setActivePageId(newPage.id);
+  };
+
+  const handleDeleteCustomPage = (pageId: string) => {
+    updateContent((prev) => ({
+      ...prev,
+      pages: (prev.pages && prev.pages.length > 0 ? prev.pages : appPages).filter(
+        (p) => p.id !== pageId
+      ),
+    }));
+    setActivePageId("page-home");
+  };
+
   const sections: { id: EditorSectionId; label: string; badge?: number | string }[] = [
     { id: "hero", label: "App & Hero" },
     { id: "store", label: "Store Links" },
@@ -423,6 +458,7 @@ export function EditorPanel({
     { id: "screenshots", label: "Screenshots", badge: content.screenshots?.length || 0 },
     { id: "logos", label: "Logo Wall", badge: content.logo_wall?.logos?.length || 0 },
     { id: "release", label: "Release" },
+    { id: "pages", label: "Legal & Pages", badge: appPages.length },
     { id: "footer", label: "Footer" },
     { id: "domain", label: "Domain" },
   ];
@@ -686,6 +722,84 @@ export function EditorPanel({
               />
             </div>
 
+            {/* Device Mockup Screenshot */}
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                iPhone Mockup Screen Image
+              </label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={screenshotInputRef}
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      handleFileUpload(
+                        file,
+                        (url) => {
+                          updateContent((prev) => ({
+                            ...prev,
+                            hero: { ...prev.hero, device_screenshot_url: url },
+                          }));
+                        },
+                        setUploadingScreenshot
+                      );
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => screenshotInputRef.current?.click()}
+                    disabled={uploadingScreenshot}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-colors shadow-xs disabled:cursor-not-allowed disabled:opacity-55"
+                  >
+                    {uploadingScreenshot ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="w-3.5 h-3.5" />
+                    )}
+                    <span>
+                      {content.hero?.device_screenshot_url
+                        ? "Replace Screenshot"
+                        : "Upload Screenshot"}
+                    </span>
+                  </button>
+                  {content.hero?.device_screenshot_url && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateContent((prev) => ({
+                          ...prev,
+                          hero: { ...prev.hero, device_screenshot_url: "" },
+                        }))
+                      }
+                      className="px-2.5 py-1.5 text-xs text-red-500 hover:underline"
+                    >
+                      Clear (Use Theme UI)
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="url"
+                  value={content.hero?.device_screenshot_url || ""}
+                  onChange={(e) =>
+                    updateContent((prev) => ({
+                      ...prev,
+                      hero: { ...prev.hero, device_screenshot_url: e.target.value },
+                    }))
+                  }
+                  placeholder="or paste image URL for iPhone frame (leave blank for handcrafted theme UI)"
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all font-mono"
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-zinc-500">
+                Shown inside the hardware frame in the hero. Leave empty to use handcrafted domain UI.
+              </p>
+            </div>
+
             {/* Email Capture Form Toggle & Settings */}
             <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 p-4 space-y-3">
               <div className="flex items-center justify-between">
@@ -805,63 +919,20 @@ export function EditorPanel({
           <div className="space-y-5 animate-in fade-in duration-150">
             <div>
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                App Store & Google Play Links
+                Store Availability & Download Links
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                Download buttons automatically activate on the landing page when
-                URLs are provided.
+                Select your release platform (iOS, Android, Both, or TestFlight Beta).
+                Buttons automatically configure on the live landing page.
               </p>
             </div>
 
-            <div>
-              <label
-                htmlFor="input-app-store-url"
-                className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5"
-              >
-                Apple App Store URL
-              </label>
-              <input
-                id="input-app-store-url"
-                type="url"
-                value={content.store_links?.app_store_url || ""}
-                onChange={(e) =>
-                  updateContent((prev) => ({
-                    ...prev,
-                    store_links: {
-                      ...prev.store_links,
-                      app_store_url: e.target.value,
-                    },
-                  }))
-                }
-                placeholder="https://apps.apple.com/app/id..."
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all font-mono"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="input-play-store-url"
-                className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5"
-              >
-                Google Play Store URL
-              </label>
-              <input
-                id="input-play-store-url"
-                type="url"
-                value={content.store_links?.play_store_url || ""}
-                onChange={(e) =>
-                  updateContent((prev) => ({
-                    ...prev,
-                    store_links: {
-                      ...prev.store_links,
-                      play_store_url: e.target.value,
-                    },
-                  }))
-                }
-                placeholder="https://play.google.com/store/apps/details?id=..."
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all font-mono"
-              />
-            </div>
+            <StoreSelector
+              value={content.store_links || {}}
+              onChange={(store_links) =>
+                updateContent((prev) => ({ ...prev, store_links }))
+              }
+            />
           </div>
         )}
 
@@ -1088,167 +1159,46 @@ export function EditorPanel({
           </div>
         )}
 
-        {/* 5. LOGO WALL SECTION */}
+        {/* 5. LOGO WALL & APP IDENTITY SECTION */}
         {activeSection === "logos" && (
           <div className="space-y-5 animate-in fade-in duration-150">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                  Press & Trust Logos
-                </h3>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                  Only add logos you have the right to display. Each entry needs
-                  a name and a monochrome logo image.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={addLogoEntry}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-medium hover:bg-zinc-800 dark:hover:bg-white transition-colors shadow-xs"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Logo</span>
-              </button>
-            </div>
-
             <div>
-              <label
-                htmlFor="input-logo-wall-eyebrow"
-                className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5"
-              >
-                Strip Eyebrow
-              </label>
-              <input
-                id="input-logo-wall-eyebrow"
-                type="text"
-                value={content.logo_wall?.eyebrow || ""}
-                onChange={(e) =>
-                  updateContent((prev) => ({
-                    ...prev,
-                    logo_wall: {
-                      eyebrow: e.target.value,
-                      logos: prev.logo_wall?.logos ?? [],
-                    },
-                  }))
-                }
-                placeholder="Featured in"
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all"
-              />
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                Brand &amp; Press Proof Assets
+              </h3>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+                Customize your App Store icon, navbar brand logo, and featured press/partner mentions.
+              </p>
             </div>
 
-            <div className="space-y-4">
-              {(content.logo_wall?.logos ?? []).map((logo, idx) => (
-                <div
-                  key={logo.id || idx}
-                  className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
-                      Logo #{idx + 1}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeLogoEntry(idx)}
-                      className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
-                      title="Delete Logo"
-                      aria-label={`Delete Logo ${idx + 1}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                      Publication / Brand Name
-                    </label>
-                    <input
-                      type="text"
-                      value={logo.name}
-                      onChange={(e) =>
-                        updateContent((prev) => {
-                          const logos = [...(prev.logo_wall?.logos ?? [])];
-                          const existing = logos[idx];
-                          if (!existing) return prev;
-                          logos[idx] = { ...existing, name: e.target.value };
-                          return {
-                            ...prev,
-                            logo_wall: {
-                              eyebrow: prev.logo_wall?.eyebrow ?? "",
-                              logos,
-                            },
-                          };
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                      Logo Image
-                    </label>
-                    {logo.image_url ? (
-                      <div className="flex items-center gap-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={logo.image_url}
-                          alt=""
-                          aria-hidden="true"
-                          className="h-8 w-auto max-w-[120px] rounded-md border border-zinc-200 dark:border-zinc-800 bg-white object-contain p-1"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => pickImageFor("logo", idx)}
-                            disabled={uploadingImage}
-                            className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[11px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-55"
-                          >
-                            {uploadingImage ? "Uploading…" : "Replace"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateContent((prev) => {
-                                const logos = [...(prev.logo_wall?.logos ?? [])];
-                                const existing = logos[idx];
-                                if (!existing) return prev;
-                                logos[idx] = { ...existing, image_url: "" };
-                                return {
-                                  ...prev,
-                                  logo_wall: {
-                                    eyebrow: prev.logo_wall?.eyebrow ?? "",
-                                    logos,
-                                  },
-                                };
-                              })
-                            }
-                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => pickImageFor("logo", idx)}
-                        disabled={uploadingImage}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 hover:border-zinc-900 dark:hover:border-zinc-100 transition-colors disabled:cursor-not-allowed disabled:opacity-55"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>
-                          {uploadingImage ? "Uploading…" : "Upload logo image"}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {(content.logo_wall?.logos ?? []).length === 0 && (
-                <p className="text-xs text-zinc-500 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 p-4 text-center">
-                  No logos added yet. The logo section remains hidden until you
-                  add at least one entry.
-                </p>
-              )}
-            </div>
+            <LogoManager
+              appIconUrl={content.brand?.app_icon_url || content.brand?.logo_url}
+              brandLogoUrl={content.brand?.logo_url}
+              appName={content.hero?.app_name || content.brand?.name || "App"}
+              logoWall={content.logo_wall}
+              onAppIconChange={(url) =>
+                updateContent((prev) => ({
+                  ...prev,
+                  brand: {
+                    ...prev.brand,
+                    app_icon_url: url,
+                    logo_url: prev.brand.logo_url || url,
+                  },
+                }))
+              }
+              onBrandLogoChange={(url) =>
+                updateContent((prev) => ({
+                  ...prev,
+                  brand: { ...prev.brand, logo_url: url },
+                }))
+              }
+              onLogoWallChange={(logoWall) =>
+                updateContent((prev) => ({
+                  ...prev,
+                  logo_wall: logoWall,
+                }))
+              }
+            />
           </div>
         )}
 
@@ -1379,6 +1329,31 @@ export function EditorPanel({
                 </button>
               )}
             </div>
+          </div>
+        )}
+
+        {/* 6.5 LEGAL & PAGES SECTION */}
+        {activeSection === "pages" && (
+          <div className="space-y-5 animate-in fade-in duration-150">
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                App Pages & Regulatory Compliance
+              </h3>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+                Apple App Store Guideline 1.5 & 5.1.1 require active Privacy and Support URLs.
+                Free accounts include the 4 core compliance pages; Pro unlocks custom subpages.
+              </p>
+            </div>
+
+            <PageManager
+              pages={appPages}
+              activePageId={activePageId}
+              planId={plan?.id}
+              onSelectPage={setActivePageId}
+              onUpdatePage={handleUpdatePage}
+              onAddCustomPage={handleAddCustomPage}
+              onDeleteCustomPage={handleDeleteCustomPage}
+            />
           </div>
         )}
 

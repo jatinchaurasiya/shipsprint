@@ -122,10 +122,10 @@ export default async function HomePage() {
                   </span>
                 </Link>
                 <Link
-                  href="/templates"
+                  href="#features"
                   className="inline-flex items-center whitespace-nowrap rounded-full bg-black/25 px-6 py-3.5 text-[13px] font-semibold tracking-wider text-white uppercase backdrop-blur-md border border-white/20 transition-all hover:bg-black/35 active:scale-[0.98]"
                 >
-                  <span>Browse templates</span>
+                  <span>See How It Works</span>
                 </Link>
               </div>
               <p className="mt-8 flex flex-wrap items-center gap-2.5 leading-tight sm:flex-nowrap" role="img" aria-label="Starred by indie makers">
@@ -382,7 +382,7 @@ export default async function HomePage() {
               <ul className="mt-3 space-y-2.5 text-[13px]">
                 {[
                   ["Launch checklist", "12 / 12 items verified"],
-                  ["Category templates", `${metrics.activeTemplates} templates ready`],
+                  ["Mobile Launch Suite", "Apple & Android ready"],
                   ["Automatic SSL/TLS", "Active (Let's Encrypt)"],
                 ].map(([k, v]) => (
                   <li key={k} className="flex items-center justify-between gap-3 border-b border-zinc-100 pb-2.5 last:border-0 last:pb-0 dark:border-zinc-800">

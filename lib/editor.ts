@@ -30,6 +30,7 @@ export type EditorSectionId =
   | "screenshots"
   | "logos"
   | "release"
+  | "pages"
   | "footer"
   | "domain";
 

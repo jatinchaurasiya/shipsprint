@@ -59,9 +59,6 @@ function requireDatabaseUrl() {
   return url;
 }
 
-// Built-in templates catalogue cleared of legacy inconsistent templates.
-const BUILTIN_TEMPLATES = [];
-
 async function seed() {
   const client = new Client({
     connectionString: requireDatabaseUrl(),
@@ -72,43 +69,16 @@ async function seed() {
     await client.connect();
     console.log('Connected to Supabase DB for template seeding.');
 
-    if (BUILTIN_TEMPLATES.length === 0) {
-      console.log('No builtin templates queued for seeding. Legacy templates cleared.');
-      const res = await client.query('SELECT id, name, category, sort_order FROM public.templates ORDER BY sort_order ASC;');
-      console.log('Current templates in DB:');
-      console.table(res.rows);
-      return;
+    const sqlPath = join(ROOT, 'supabase/migrations/009_seed_20_hallmark_templates.sql');
+    if (existsSync(sqlPath)) {
+      console.log('Executing 009_seed_20_hallmark_templates.sql...');
+      const sql = readFileSync(sqlPath, 'utf8');
+      await client.query(sql);
+      console.log('Successfully cleared all templates from DB.');
     }
 
-    for (const t of BUILTIN_TEMPLATES) {
-      const query = `
-        INSERT INTO public.templates (id, name, tagline, category, preview_image_url, is_active, sort_order, content, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-        ON CONFLICT (id) DO UPDATE SET
-          name = EXCLUDED.name,
-          tagline = EXCLUDED.tagline,
-          category = EXCLUDED.category,
-          preview_image_url = EXCLUDED.preview_image_url,
-          is_active = EXCLUDED.is_active,
-          sort_order = EXCLUDED.sort_order,
-          content = EXCLUDED.content,
-          updated_at = NOW();
-      `;
-      await client.query(query, [
-        t.id,
-        t.name,
-        t.tagline,
-        t.category,
-        t.preview_image_url,
-        t.is_active,
-        t.sort_order,
-        JSON.stringify(t.content)
-      ]);
-      console.log(`Seeded template: ${t.id} (${t.name})`);
-    }
-
-    const res = await client.query('SELECT id, name, category, sort_order FROM public.templates ORDER BY sort_order ASC;');
-    console.log('Successfully seeded! Current templates in DB:');
+    const res = await client.query('SELECT id, name, category, theme, sort_order FROM public.templates ORDER BY sort_order ASC;');
+    console.log('Current templates in DB:');
     console.table(res.rows);
   } catch (err) {
     console.error('Error seeding templates:', err);

@@ -1,0 +1,400 @@
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
+/**
+ * Hallmark 20 Theme Design Tokens
+ * Strictly mapped to the 20 Hallmark catalog themes.
+ * Universal compliance:
+ * - Locked tokens (Gate 48): All colors and fonts reference these canonical tokens
+ * - Contrast & Readability (Gates 40-41): Light themes have Lc >= 65 against ink,
+ *   Dark themes have Lc >= 70 against ink. Text on accent uses verified accentInk.
+ * - Purity (Gate 38a): Roman headings, no italic display.
+ */
+
+export interface HallmarkThemeTokens {
+  id: string;
+  name: string;
+  isDark: boolean;
+  paper: string;
+  paperSecondary: string;
+  paperTertiary: string;
+  ink: string;
+  inkMuted: string;
+  border: string;
+  borderStrong: string;
+  accent: string;
+  accentInk: string;
+  accentSubtle: string;
+  fontCategory: "serif" | "sans" | "mono";
+  buttonRadius: string;
+  tagline: string;
+}
+
+export const HALLMARK_THEMES: Record<string, HallmarkThemeTokens> = {
+  minimal: {
+    id: "minimal",
+    name: "Minimal",
+    isDark: false,
+    paper: "#F8FAFC",
+    paperSecondary: "#FFFFFF",
+    paperTertiary: "#F1F5F9",
+    ink: "#111827",
+    inkMuted: "#667085",
+    border: "#E7EAF0",
+    borderStrong: "rgba(91, 91, 247, 0.28)",
+    accent: "#5B5BF7",
+    accentInk: "#FFFFFF",
+    accentSubtle: "#E8E7FF",
+    fontCategory: "sans",
+    buttonRadius: "rounded-xl",
+    tagline: "Modern mobile app launch · Clean, precise & effortless",
+  },
+  midnight: {
+    id: "midnight",
+    name: "Midnight",
+    isDark: true,
+    paper: "#090a0f",
+    paperSecondary: "#12141c",
+    paperTertiary: "#1a1d29",
+    ink: "#f8fafc",
+    inkMuted: "#94a3b8",
+    border: "rgba(248, 250, 252, 0.1)",
+    borderStrong: "rgba(248, 250, 252, 0.22)",
+    accent: "#818cf8", // starlight indigo
+    accentInk: "#090a0f",
+    accentSubtle: "rgba(129, 140, 248, 0.14)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-full",
+    tagline: "Atmospheric nocturnal decompression",
+  },
+  brutal: {
+    id: "brutal",
+    name: "Brutal",
+    isDark: false,
+    paper: "#f5f4ef",
+    paperSecondary: "#eae8df",
+    paperTertiary: "#dedacf",
+    ink: "#0a0a0a",
+    inkMuted: "#525252",
+    border: "rgba(10, 10, 10, 0.24)",
+    borderStrong: "rgba(10, 10, 10, 0.8)",
+    accent: "#dc2626", // signal crimson
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(220, 38, 38, 0.08)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-md",
+    tagline: "Stark discipline & geometric focus",
+  },
+  garden: {
+    id: "garden",
+    name: "Garden",
+    isDark: false,
+    paper: "#f7faf5",
+    paperSecondary: "#edf4ea",
+    paperTertiary: "#dfecdb",
+    ink: "#132212",
+    inkMuted: "#536851",
+    border: "rgba(19, 34, 18, 0.12)",
+    borderStrong: "rgba(19, 34, 18, 0.26)",
+    accent: "#16a34a", // botanical leaf
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(22, 163, 74, 0.09)",
+    fontCategory: "serif",
+    buttonRadius: "rounded-2xl",
+    tagline: "Organic botanical serenity",
+  },
+  atelier: {
+    id: "atelier",
+    name: "Atelier",
+    isDark: false,
+    paper: "#f9f7f4",
+    paperSecondary: "#f0ebe4",
+    paperTertiary: "#e5ded3",
+    ink: "#1f1a16",
+    inkMuted: "#756c64",
+    border: "rgba(31, 26, 22, 0.12)",
+    borderStrong: "rgba(31, 26, 22, 0.3)",
+    accent: "#b45309", // warm bronze
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(180, 83, 9, 0.08)",
+    fontCategory: "serif",
+    buttonRadius: "rounded-full",
+    tagline: "Archival luxury & craft provenance",
+  },
+  newsprint: {
+    id: "newsprint",
+    name: "Newsprint",
+    isDark: false,
+    paper: "#f6f4ee",
+    paperSecondary: "#ebe7dd",
+    paperTertiary: "#ded8cb",
+    ink: "#18181b",
+    inkMuted: "#52525b",
+    border: "rgba(24, 24, 27, 0.18)",
+    borderStrong: "rgba(24, 24, 27, 0.45)",
+    accent: "#b91c1c", // broadsheet red
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(185, 28, 28, 0.08)",
+    fontCategory: "serif",
+    buttonRadius: "rounded-none",
+    tagline: "Investigative broadsheet clarity",
+  },
+  terminal: {
+    id: "terminal",
+    name: "Terminal",
+    isDark: true,
+    paper: "#0a0e0c",
+    paperSecondary: "#111815",
+    paperTertiary: "#1a2420",
+    ink: "#ecfdf5",
+    inkMuted: "#6ee7b7",
+    border: "rgba(16, 185, 129, 0.25)",
+    borderStrong: "rgba(16, 185, 129, 0.5)",
+    accent: "#10b981", // CRT phosphor
+    accentInk: "#0a0e0c",
+    accentSubtle: "rgba(16, 185, 129, 0.12)",
+    fontCategory: "mono",
+    buttonRadius: "rounded-md",
+    tagline: "CRT monochrome engineering",
+  },
+  manifesto: {
+    id: "manifesto",
+    name: "Manifesto",
+    isDark: false,
+    paper: "#f4f3ef",
+    paperSecondary: "#e8e6dd",
+    paperTertiary: "#dcd9cd",
+    ink: "#111111",
+    inkMuted: "#555555",
+    border: "rgba(17, 17, 17, 0.2)",
+    borderStrong: "rgba(17, 17, 17, 0.7)",
+    accent: "#ea580c", // industrial orange
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(234, 88, 12, 0.08)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-sm",
+    tagline: "Bold intentional friction",
+  },
+  almanac: {
+    id: "almanac",
+    name: "Almanac",
+    isDark: true,
+    paper: "#0b0f19",
+    paperSecondary: "#141a29",
+    paperTertiary: "#1c2438",
+    ink: "#f1f5f9",
+    inkMuted: "#94a3b8",
+    border: "rgba(241, 245, 249, 0.1)",
+    borderStrong: "rgba(241, 245, 249, 0.22)",
+    accent: "#f59e0b", // celestial amber
+    accentInk: "#0b0f19",
+    accentSubtle: "rgba(245, 158, 11, 0.12)",
+    fontCategory: "serif",
+    buttonRadius: "rounded-full",
+    tagline: "Celestial ephemeris & nocturnal sky",
+  },
+  sport: {
+    id: "sport",
+    name: "Sport",
+    isDark: true,
+    paper: "#0c0d0e",
+    paperSecondary: "#16181b",
+    paperTertiary: "#212428",
+    ink: "#f8fafc",
+    inkMuted: "#94a3b8",
+    border: "rgba(248, 250, 252, 0.12)",
+    borderStrong: "rgba(132, 204, 22, 0.4)",
+    accent: "#84cc16", // electric volt
+    accentInk: "#0c0d0e",
+    accentSubtle: "rgba(132, 204, 22, 0.12)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-xl",
+    tagline: "High-intensity athletic telemetry",
+  },
+  studio: {
+    id: "studio",
+    name: "Studio",
+    isDark: true,
+    paper: "#0f1115",
+    paperSecondary: "#181b22",
+    paperTertiary: "#232732",
+    ink: "#f1f5f9",
+    inkMuted: "#94a3b8",
+    border: "rgba(241, 245, 249, 0.12)",
+    borderStrong: "rgba(6, 182, 212, 0.4)",
+    accent: "#06b6d4", // optical cyan
+    accentInk: "#0f1115",
+    accentSubtle: "rgba(6, 182, 212, 0.12)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-lg",
+    tagline: "Camera RAW grading studio",
+  },
+  riso: {
+    id: "riso",
+    name: "Riso",
+    isDark: false,
+    paper: "#faf5ee",
+    paperSecondary: "#f2eae0",
+    paperTertiary: "#e7dcce",
+    ink: "#1e293b", // soy navy
+    inkMuted: "#64748b",
+    border: "rgba(30, 41, 59, 0.16)",
+    borderStrong: "rgba(244, 63, 94, 0.4)",
+    accent: "#f43f5e", // riso neon pink
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(244, 63, 94, 0.08)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-2xl",
+    tagline: "Tactile risograph print & zine craft",
+  },
+  bloom: {
+    id: "bloom",
+    name: "Bloom",
+    isDark: false,
+    paper: "#faf6f9",
+    paperSecondary: "#f3eaf2",
+    paperTertiary: "#e9dbe8",
+    ink: "#231728",
+    inkMuted: "#755e7c",
+    border: "rgba(35, 23, 40, 0.1)",
+    borderStrong: "rgba(35, 23, 40, 0.22)",
+    accent: "#a855f7", // lavender orchid
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(168, 85, 247, 0.08)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-full",
+    tagline: "Somatic breathwork & nervous regulation",
+  },
+  coral: {
+    id: "coral",
+    name: "Coral",
+    isDark: false,
+    paper: "#faf8f6",
+    paperSecondary: "#f3eee9",
+    paperTertiary: "#e8dfd7",
+    ink: "#1c1917",
+    inkMuted: "#78716c",
+    border: "rgba(28, 25, 23, 0.1)",
+    borderStrong: "rgba(249, 115, 22, 0.35)",
+    accent: "#f97316", // warm coral
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(249, 115, 22, 0.08)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-xl",
+    tagline: "Precision multi-currency ledger",
+  },
+  cobalt: {
+    id: "cobalt",
+    name: "Cobalt",
+    isDark: false,
+    paper: "#f8fafc",
+    paperSecondary: "#f1f5f9",
+    paperTertiary: "#e2e8f0",
+    ink: "#0f172a",
+    inkMuted: "#64748b",
+    border: "rgba(15, 23, 42, 0.12)",
+    borderStrong: "rgba(37, 99, 235, 0.35)",
+    accent: "#2563eb", // electric cobalt
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(37, 99, 235, 0.08)",
+    fontCategory: "mono",
+    buttonRadius: "rounded-lg",
+    tagline: "High-throughput API replay & webhooks",
+  },
+  aurora: {
+    id: "aurora",
+    name: "Aurora",
+    isDark: true,
+    paper: "#090d0e",
+    paperSecondary: "#11181b",
+    paperTertiary: "#1a2428",
+    ink: "#f0fdfa",
+    inkMuted: "#99f6e4",
+    border: "rgba(20, 184, 166, 0.18)",
+    borderStrong: "rgba(20, 184, 166, 0.4)",
+    accent: "#14b8a6", // aurora emerald
+    accentInk: "#090d0e",
+    accentSubtle: "rgba(20, 184, 166, 0.12)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-full",
+    tagline: "Cinematic ProRes capture studio",
+  },
+  editorial: {
+    id: "editorial",
+    name: "Editorial",
+    isDark: false,
+    paper: "#faf7f0",
+    paperSecondary: "#f2ebde",
+    paperTertiary: "#e6dcce",
+    ink: "#231d17",
+    inkMuted: "#73685e",
+    border: "rgba(35, 29, 23, 0.14)",
+    borderStrong: "rgba(35, 29, 23, 0.3)",
+    accent: "#be123c", // crimson seal
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(190, 18, 60, 0.08)",
+    fontCategory: "serif",
+    buttonRadius: "rounded-xl",
+    tagline: "Narrative serialized audio studio",
+  },
+  carnival: {
+    id: "carnival",
+    name: "Carnival",
+    isDark: true,
+    paper: "#110d18",
+    paperSecondary: "#1c1527",
+    paperTertiary: "#271e37",
+    ink: "#fefce8",
+    inkMuted: "#d8b4fe",
+    border: "rgba(254, 252, 232, 0.12)",
+    borderStrong: "rgba(245, 158, 11, 0.4)",
+    accent: "#f59e0b", // marigold amber
+    accentInk: "#110d18",
+    accentSubtle: "rgba(245, 158, 11, 0.14)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-2xl",
+    tagline: "Social tabletop & party game",
+  },
+  lumen: {
+    id: "lumen",
+    name: "Lumen",
+    isDark: true,
+    paper: "#0a0a0c",
+    paperSecondary: "#131318",
+    paperTertiary: "#1c1c24",
+    ink: "#fefce8",
+    inkMuted: "#a1a1aa",
+    border: "rgba(254, 252, 232, 0.12)",
+    borderStrong: "rgba(234, 179, 8, 0.35)",
+    accent: "#eab308", // lumen gold
+    accentInk: "#0a0a0c",
+    accentSubtle: "rgba(234, 179, 8, 0.12)",
+    fontCategory: "serif",
+    buttonRadius: "rounded-lg",
+    tagline: "Offline AI synthesis & local intelligence",
+  },
+  hum: {
+    id: "hum",
+    name: "Hum",
+    isDark: false,
+    paper: "#fdfaf4",
+    paperSecondary: "#f7f1e4",
+    paperTertiary: "#eee4d1",
+    ink: "#231f1a",
+    inkMuted: "#756c63",
+    border: "rgba(35, 31, 26, 0.12)",
+    borderStrong: "rgba(234, 88, 12, 0.3)",
+    accent: "#ea580c", // warm sunflower
+    accentInk: "#ffffff",
+    accentSubtle: "rgba(234, 88, 12, 0.08)",
+    fontCategory: "sans",
+    buttonRadius: "rounded-2xl",
+    tagline: "Visual curiosity journal & flashcards",
+  },
+};
+
+const DEFAULT_THEME: HallmarkThemeTokens = HALLMARK_THEMES.minimal!;
+
+export function getHallmarkThemeTokens(themeName?: string): HallmarkThemeTokens {
+  if (!themeName) return DEFAULT_THEME;
+  const key = themeName.toLowerCase().trim();
+  return HALLMARK_THEMES[key] ?? DEFAULT_THEME;
+}

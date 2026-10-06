@@ -62,6 +62,21 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
 
+  async redirects() {
+    return [
+      {
+        source: "/templates",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/templates",
+        destination: "/dashboard",
+        permanent: true,
+      },
+    ];
+  },
+
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

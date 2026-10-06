@@ -93,12 +93,13 @@ export async function PUT(
       return NextResponse.json({ error: firstIssue(parsed.error) }, { status: 400 });
     }
 
-    const { content, status } = parsed.data;
+    const { content, status, theme } = parsed.data;
     const updatePayload: {
       updated_at: string;
       content?: ValidatedSiteContent;
       status?: SiteStatus;
       published_at?: string | null;
+      theme?: string;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -121,6 +122,10 @@ export async function PUT(
       updatePayload.status = status;
       updatePayload.published_at =
         status === "published" ? new Date().toISOString() : null;
+    }
+
+    if (theme !== undefined) {
+      updatePayload.theme = theme;
     }
 
     const { data: updatedSite, error: updateError } = await supabase

@@ -12,6 +12,8 @@ import "@fontsource/inter/700.css";
 import "@fontsource/inter-tight/500.css";
 import "@fontsource/inter-tight/600.css";
 import "@fontsource/inter-tight/700.css";
+import "@fontsource/plus-jakarta-sans/700.css";
+import "@fontsource/plus-jakarta-sans/800.css";
 import "@fontsource/geist-mono/400.css";
 import "@fontsource/geist-mono/500.css";
 import "./globals.css";

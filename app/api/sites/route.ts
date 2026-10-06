@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/logger";
 import { createSiteSchema, firstIssue } from "@/lib/validation";
 import { getTemplateById, customizeTemplateContent } from "@/lib/templates";
+import { getDefaultSitePages } from "@/lib/legal-pages";
 import type { SiteContent } from "@/types/database";
 
 export async function POST(request: NextRequest) {
@@ -118,14 +119,13 @@ export async function POST(request: NextRequest) {
         },
       ],
       store_links: {
-        // Intentionally empty. These previously defaulted to
-        // https://apps.apple.com and https://play.google.com, so a site
-        // published without editing rendered a working "Download on the App
-        // Store" button pointing at Apple's homepage.
+        availability: "both",
         app_store_url: "",
         play_store_url: "",
+        testflight_url: "",
       },
       screenshots: [],
+      pages: getDefaultSitePages(name, user.email || "support@shipsprint.site"),
       footer: {
         brand_name: name,
         legal_links: [],
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
         slug: cleanSlug,
         content: initialContent,
         status: "draft",
-        theme: "v1",
+        theme: selectedTemplate?.theme || "minimal",
         template_id: selectedTemplate ? selectedTemplate.id : null,
       })
       .select()

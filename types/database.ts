@@ -86,21 +86,97 @@ export interface FooterColumn {
   links: { label: string; url: string }[];
 }
 
+export type StoreAvailability =
+  | "both"
+  | "app_store_only"
+  | "play_store_only"
+  | "testflight";
+
 export interface StoreLinks {
+  availability?: StoreAvailability;
   app_store_url?: string;
   play_store_url?: string;
+  testflight_url?: string;
+}
+
+export type PageType = "home" | "privacy" | "terms" | "support" | "custom";
+
+export interface SitePage {
+  id: string;
+  slug: string;
+  title: string;
+  nav_label?: string;
+  show_in_nav?: boolean;
+  show_in_footer?: boolean;
+  page_type: PageType;
+  is_system?: boolean;
+  is_published?: boolean;
+  content_markdown: string;
+  meta_title?: string;
+  meta_description?: string;
+  updated_at?: string;
+}
+
+export interface TrustSection {
+  rating: string;
+  review_count_text: string;
+  featured_quote: string;
+  author?: string;
+}
+
+export interface ShowcaseItem {
+  id: string;
+  title: string;
+  description: string;
+  align: "left" | "right";
+  image_url?: string;
+}
+
+export interface StatItem {
+  id: string;
+  value: string;
+  label: string;
+}
+
+export interface TestimonialItem {
+  id: string;
+  name: string;
+  role: string;
+  quote: string;
+  avatar_url?: string;
+  rating?: number;
+  is_main?: boolean;
+}
+
+export interface PricingTier {
+  id: string;
+  name: string;
+  price: string;
+  period: string;
+  description?: string;
+  is_popular?: boolean;
+  features: string[];
+  cta_label: string;
+}
+
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
 }
 
 export interface SiteContent {
   brand: {
     name: string;
     logo_url?: string;
+    app_icon_url?: string;
   };
   hero: {
     app_name: string;
     badge_text: string;
     header: string;
     short_description: string;
+    device_screenshot_url?: string;
     email_capture_enabled?: boolean;
     email_placeholder?: string;
     email_cta_label?: string;
@@ -111,6 +187,13 @@ export interface SiteContent {
   release?: ReleaseInfo;
   store_links: StoreLinks;
   screenshots: string[];
+  pages?: SitePage[];
+  trust?: TrustSection;
+  showcase?: ShowcaseItem[];
+  stats?: StatItem[];
+  testimonials?: TestimonialItem[];
+  pricing?: PricingTier[];
+  faq?: FaqItem[];
   footer: {
     brand_name: string;
     tagline?: string;
@@ -119,6 +202,7 @@ export interface SiteContent {
     columns?: FooterColumn[];
   };
 }
+
 
 export type SiteStatus = "draft" | "published";
 
@@ -207,12 +291,16 @@ export interface DomainVerification {
 export interface Template {
   id: string;
   name: string;
-  tagline: string;
+  slug?: string;
+  tagline?: string;
+  description?: string;
   category: string;
+  theme: string;
   content: SiteContent;
-  preview_image_url: string | null;
-  is_active: boolean;
-  sort_order: number;
+  preview_image_url?: string | null;
+  thumbnail_url?: string;
+  is_active?: boolean;
+  sort_order?: number;
 }
 
 /** Row shape returned by `site_analytics_summary`. */

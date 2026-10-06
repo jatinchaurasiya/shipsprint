@@ -59,8 +59,8 @@ export function SiteFooter() {
               </li>
             </ul>
             <nav aria-label="Footer" className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-[13px] leading-none text-zinc-300">
-              <Link href="/templates" className="whitespace-nowrap transition-colors hover:text-white active:text-white">
-                Templates
+              <Link href="/#pricing" className="whitespace-nowrap transition-colors hover:text-white active:text-white">
+                Pricing
               </Link>
               <Link href="/terms" className="whitespace-nowrap transition-colors hover:text-white active:text-white">
                 Terms
