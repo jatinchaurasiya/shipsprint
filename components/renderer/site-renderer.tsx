@@ -80,15 +80,6 @@ export function SiteRenderer({
   };
 
   const availability = store_links.availability || "both";
-  const hasAppStore =
-    (availability === "both" || availability === "app_store_only") &&
-    Boolean(store_links.app_store_url);
-  const hasPlayStore =
-    (availability === "both" || availability === "play_store_only") &&
-    Boolean(store_links.play_store_url);
-  const hasTestFlight =
-    availability === "testflight" && Boolean(store_links.testflight_url);
-  const hasAnyStore = hasAppStore || hasPlayStore || hasTestFlight;
 
   const handleCtaClick = (ctaType: string, targetUrl?: string) => {
     if (isPreview || !siteId) return;
@@ -109,11 +100,11 @@ export function SiteRenderer({
   };
 
   const navPages = (pages || []).filter(
-    (p) => p.is_published !== false && p.show_in_nav !== false && p.slug !== "home"
+    (p) =>
+      p.is_published !== false &&
+      p.show_in_nav === true &&
+      !["home", "privacy", "terms", "support", "imprint"].includes(p.slug)
   );
-
-  const primaryCtaLabel = hero.primary_cta_label || (hasAnyStore ? "Get the app" : "Start building");
-  const secondaryCtaLabel = hero.secondary_cta_label || "See How It Works";
 
   // Impacts fallbacks
   const impactsData: BentoImpacts = {
@@ -229,25 +220,15 @@ export function SiteRenderer({
           </nav>
 
           {/* Action Button */}
-          <div className="flex items-center gap-2 leading-none">
-            {hasAnyStore ? (
-              <a
-                href="#download"
-                onClick={() => handleCtaClick("nav_download")}
-                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#131313] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-black active:scale-[0.98] dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-white"
-              >
-                <span>{primaryCtaLabel}</span>
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </a>
-            ) : (
-              <a
-                href="#features"
-                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#131313] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-black active:scale-[0.98] dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-white"
-              >
-                <span>{secondaryCtaLabel}</span>
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </a>
-            )}
+          <div className="flex items-center gap-2 leading-none shrink-0">
+            <a
+              href="#download"
+              onClick={() => handleCtaClick("nav_download")}
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#131313] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-black active:scale-[0.98] dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-white"
+            >
+              <span>Get App</span>
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
           </div>
         </header>
       </div>
@@ -286,32 +267,35 @@ export function SiteRenderer({
                 </p>
               )}
 
-              {/* Action Buttons */}
+              {/* Official Store Download Buttons (Exact User Design Specification) */}
               <div
-                className={`mt-8 flex flex-wrap items-center gap-3.5 leading-none ${
+                className={`mt-8 flex flex-col sm:flex-row items-center gap-3.5 ${
                   isMobileView ? "justify-center" : "justify-start"
                 }`}
               >
-                <a
-                  href="#download"
-                  onClick={() => handleCtaClick("hero_primary")}
-                  className="inline-flex items-center gap-2.5 rounded-full bg-white py-2 pr-2 pl-6 text-[13px] font-semibold tracking-wider whitespace-nowrap text-[#131313] uppercase transition-all hover:bg-zinc-100 active:bg-zinc-200 active:scale-[0.98] shadow-lg shadow-black/10"
-                >
-                  <span>{primaryCtaLabel}</span>
-                  <span
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-[#131313] text-white"
-                    aria-hidden="true"
-                  >
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                </a>
+                {(availability === "both" || availability === "play_store_only") && (
+                  <GooglePlayBadge
+                    href={store_links.play_store_url || "#download"}
+                    isPreview={isPreview}
+                    onClick={() => handleCtaClick("hero_play_store", store_links.play_store_url)}
+                  />
+                )}
 
-                <a
-                  href="#features"
-                  className="inline-flex items-center whitespace-nowrap rounded-full bg-black/25 px-6 py-3.5 text-[13px] font-semibold tracking-wider text-white uppercase backdrop-blur-md border border-white/20 transition-all hover:bg-black/35 active:scale-[0.98]"
-                >
-                  <span>{secondaryCtaLabel}</span>
-                </a>
+                {(availability === "both" || availability === "app_store_only") && (
+                  <AppStoreBadge
+                    href={store_links.app_store_url || "#download"}
+                    isPreview={isPreview}
+                    onClick={() => handleCtaClick("hero_app_store", store_links.app_store_url)}
+                  />
+                )}
+
+                {availability === "testflight" && (
+                  <TestFlightBadge
+                    href={store_links.testflight_url || "#download"}
+                    isPreview={isPreview}
+                    onClick={() => handleCtaClick("hero_testflight", store_links.testflight_url)}
+                  />
+                )}
               </div>
 
               {/* Star Rating Proof */}
@@ -784,32 +768,27 @@ export function SiteRenderer({
             Available natively on iOS and Android. Download now to elevate your daily routine.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5 leading-none">
-            {hasAppStore && store_links.app_store_url && (
-              <AppStoreBadge
-                href={store_links.app_store_url}
-                isPreview={isPreview}
-                onClick={() => handleCtaClick("app_store_download", store_links.app_store_url)}
-              />
-            )}
-            {hasPlayStore && store_links.play_store_url && (
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 leading-none">
+            {(availability === "both" || availability === "play_store_only") && (
               <GooglePlayBadge
-                href={store_links.play_store_url}
+                href={store_links.play_store_url || "#"}
                 isPreview={isPreview}
                 onClick={() => handleCtaClick("play_store_download", store_links.play_store_url)}
               />
             )}
-            {hasTestFlight && store_links.testflight_url && (
+            {(availability === "both" || availability === "app_store_only") && (
+              <AppStoreBadge
+                href={store_links.app_store_url || "#"}
+                isPreview={isPreview}
+                onClick={() => handleCtaClick("app_store_download", store_links.app_store_url)}
+              />
+            )}
+            {availability === "testflight" && (
               <TestFlightBadge
-                href={store_links.testflight_url}
+                href={store_links.testflight_url || "#"}
                 isPreview={isPreview}
                 onClick={() => handleCtaClick("testflight_download", store_links.testflight_url)}
               />
-            )}
-            {!hasAnyStore && (
-              <p className="text-xs text-zinc-400 italic">
-                Store links not yet connected. Add your App Store or Google Play URL in the editor.
-              </p>
             )}
           </div>
         </div>

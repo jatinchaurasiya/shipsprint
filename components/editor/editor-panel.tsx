@@ -824,42 +824,24 @@ export function EditorPanel({
               </p>
             </div>
 
-            {/* Action CTA Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  Primary Action Button Label
-                </label>
-                <input
-                  type="text"
-                  value={content.hero?.primary_cta_label || ""}
-                  onChange={(e) =>
-                    updateContent((prev) => ({
-                      ...prev,
-                      hero: { ...prev.hero, primary_cta_label: e.target.value },
-                    }))
-                  }
-                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 transition-all"
-                  placeholder="Start building"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  Secondary Action Button Label
-                </label>
-                <input
-                  type="text"
-                  value={content.hero?.secondary_cta_label || ""}
-                  onChange={(e) =>
-                    updateContent((prev) => ({
-                      ...prev,
-                      hero: { ...prev.hero, secondary_cta_label: e.target.value },
-                    }))
-                  }
-                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 transition-all"
-                  placeholder="See How It Works"
-                />
+            {/* Official App Download Buttons (Hero CTA) */}
+            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                    Official App Download Buttons
+                  </h4>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    Your Hero displays crisp, vector Google Play and App Store buttons. Configure URLs and availability in the Store Links tab.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSelectSection("store")}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors shadow-xs shrink-0 cursor-pointer"
+                >
+                  Configure Links <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
 
