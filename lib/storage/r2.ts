@@ -63,11 +63,11 @@ export async function uploadToR2(
   );
 
   const publicDomain = optionalEnv().R2_PUBLIC_DOMAIN;
-  if (publicDomain) {
+  if (publicDomain && process.env.NODE_ENV === "production") {
     return `https://${publicDomain.replace(/\/$/, "")}/${key}`;
   }
 
-  return `https://${R2_BUCKET_NAME}.r2.dev/${key}`;
+  return `/${key}`;
 }
 
 /**

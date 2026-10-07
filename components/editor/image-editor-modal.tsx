@@ -17,6 +17,7 @@ import {
   Smartphone,
   Image as ImageIcon,
 } from "lucide-react";
+import { normalizeImageUrl } from "@/lib/storage/image-url";
 
 export interface CroppedImageResult {
   dataUrl: string;
@@ -106,7 +107,7 @@ function createImage(url: string): Promise<HTMLImageElement> {
     image.addEventListener("load", () => resolve(image));
     image.addEventListener("error", (e) => reject(e));
     image.setAttribute("crossOrigin", "anonymous");
-    image.src = url;
+    image.src = normalizeImageUrl(url);
   });
 }
 
@@ -204,9 +205,10 @@ export function ImageEditorModal({
   const handleApply = async () => {
     if (!croppedAreaPixels) return;
     setApplying(true);
+    const normalizedSrc = normalizeImageUrl(imageSrc);
     try {
       const result = await getCroppedImg(
-        imageSrc,
+        normalizedSrc,
         croppedAreaPixels,
         rotation,
         flipH,
@@ -261,7 +263,7 @@ export function ImageEditorModal({
         {/* Crop Canvas */}
         <div className="relative flex-1 min-h-0 bg-zinc-900">
           <Cropper
-            image={imageSrc}
+            image={normalizeImageUrl(imageSrc)}
             crop={crop}
             zoom={zoom}
             rotation={rotation}

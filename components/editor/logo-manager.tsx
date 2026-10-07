@@ -4,6 +4,7 @@
 import React, { useState, useRef } from "react";
 import type { LogoWall, LogoWallLogo } from "@/types/database";
 import { Upload, Plus, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { normalizeImageUrl } from "@/lib/storage/image-url";
 
 interface LogoManagerProps {
   appIconUrl?: string;
@@ -166,7 +167,7 @@ export function LogoManager({
             {appIconUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={appIconUrl}
+                src={normalizeImageUrl(appIconUrl)}
                 alt={`${appName} Icon`}
                 className="h-full w-full object-cover"
               />

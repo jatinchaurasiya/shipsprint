@@ -30,6 +30,12 @@ const rootDomain = (
   .toLowerCase()
   .split(":")[0]!;
 
+const r2Domain = (
+  process.env.R2_PUBLIC_DOMAIN || ""
+)
+  .toLowerCase()
+  .split(":")[0]!;
+
 /**
  * Hosts that serve the application itself. `APP_HOSTS` exists so preview and
  * staging deployments do not get rewritten as customer custom domains.
@@ -37,6 +43,9 @@ const rootDomain = (
 const appHosts = new Set<string>([
   rootDomain,
   `www.${rootDomain}`,
+  `assets.${rootDomain}`,
+  "assets.localhost",
+  ...(r2Domain ? [r2Domain] : []),
   "localhost",
   "127.0.0.1",
   ...(process.env.APP_HOSTS ?? "")
@@ -83,7 +92,7 @@ export async function proxy(request: NextRequest) {
   // If customer subdomain or custom domain, rewrite to /site/[lookup].
   //
   // Two kinds of paths pass through unrewritten on a customer host:
-  //   - assets the rendered site legitimately needs (_next, favicon, robots,
+  //   - assets the rendered site legitimately needs (_next, /uploads, favicon, robots,
   //     sitemap) and the analytics beacon (/api/track);
   //   - infrastructure endpoints addressed by host rather than by the public
   //     path. /api/caddy/ask is called by Caddy itself (Host: the app service
@@ -93,6 +102,7 @@ export async function proxy(request: NextRequest) {
   if (host.kind !== "app" && host.value) {
     if (
       pathname.startsWith("/_next") ||
+      pathname.startsWith("/uploads") ||
       pathname.startsWith("/api/track") ||
       pathname === "/api/caddy/ask" ||
       pathname === "/api/health" ||

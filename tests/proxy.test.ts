@@ -101,6 +101,7 @@ describe("proxy()", () => {
   describe("customer-host pass-through (never rewritten)", () => {
     const passthroughPaths = [
       "/_next/static/chunks/app.js",
+      "/uploads/2026-10-07/test.png",
       "/api/track",
       "/api/caddy/ask",
       "/api/health",

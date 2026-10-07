@@ -10,6 +10,7 @@ import {
   Play,
   Wind,
 } from "lucide-react";
+import { normalizeImageUrl } from "@/lib/storage/image-url";
 
 export type MockupFallbackKind =
   | "writing"
@@ -121,7 +122,7 @@ export function IphoneMockup({
             {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={imageUrl}
+                src={normalizeImageUrl(imageUrl)}
                 alt={`${appName} screen`}
                 className="h-full w-full object-cover object-top"
                 loading="lazy"

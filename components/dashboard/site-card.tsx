@@ -14,6 +14,7 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
+import { normalizeImageUrl } from "@/lib/storage/image-url";
 
 interface SiteCardProps {
   site: Site;
@@ -78,7 +79,7 @@ export function SiteCard({ site, rootDomain }: SiteCardProps) {
               {site.content?.brand?.logo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={site.content.brand.logo_url}
+                  src={normalizeImageUrl(site.content.brand.logo_url)}
                   alt={appName}
                   className="w-full h-full object-cover rounded-xl"
                 />

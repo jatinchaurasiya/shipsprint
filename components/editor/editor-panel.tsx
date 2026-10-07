@@ -34,6 +34,7 @@ import { StoreSelector } from "./store-selector";
 import { PageManager } from "./page-manager";
 import { LogoManager } from "./logo-manager";
 import { ImageEditorModal, type CroppedImageResult } from "./image-editor-modal";
+import { normalizeImageUrl } from "@/lib/storage/image-url";
 import { getDefaultSitePages } from "@/lib/legal-pages";
 import type { SitePage } from "@/types/database";
 
@@ -700,7 +701,7 @@ export function EditorPanel({
                   {content.brand?.logo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={content.brand.logo_url}
+                      src={normalizeImageUrl(content.brand.logo_url)}
                       alt="Logo preview"
                       className="w-full h-full object-cover"
                     />
@@ -739,7 +740,7 @@ export function EditorPanel({
                         type="button"
                         onClick={() =>
                           setImageEditorState({
-                            src: content.brand?.logo_url || "",
+                            src: normalizeImageUrl(content.brand?.logo_url || ""),
                             target: { kind: "logo" },
                             defaultAspect: 1,
                           })
@@ -895,7 +896,7 @@ export function EditorPanel({
                         type="button"
                         onClick={() =>
                           setImageEditorState({
-                            src: content.hero?.device_screenshot_url || "",
+                            src: normalizeImageUrl(content.hero?.device_screenshot_url || ""),
                             target: { kind: "primary_screenshot" },
                             defaultAspect: 9 / 19.5,
                           })
@@ -988,7 +989,7 @@ export function EditorPanel({
                         type="button"
                         onClick={() =>
                           setImageEditorState({
-                            src: content.hero?.device_screenshot_url_secondary || "",
+                            src: normalizeImageUrl(content.hero?.device_screenshot_url_secondary || ""),
                             target: { kind: "secondary_screenshot" },
                             defaultAspect: 9 / 19.5,
                           })
@@ -1601,7 +1602,7 @@ export function EditorPanel({
                       <div className="flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={feature.image_url}
+                          src={normalizeImageUrl(feature.image_url)}
                           alt=""
                           aria-hidden="true"
                           className="h-16 w-10 rounded-lg border border-zinc-200 dark:border-zinc-800 object-cover"
@@ -1611,7 +1612,7 @@ export function EditorPanel({
                             type="button"
                             onClick={() =>
                               setImageEditorState({
-                                src: feature.image_url!,
+                                src: normalizeImageUrl(feature.image_url!),
                                 target: { kind: "feature", index: idx },
                                 defaultAspect: 9 / 19.5,
                               })
@@ -1838,7 +1839,7 @@ export function EditorPanel({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={url}
+                      src={normalizeImageUrl(url)}
                       alt={`Screenshot ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -1850,7 +1851,7 @@ export function EditorPanel({
                         type="button"
                         onClick={() =>
                           setImageEditorState({
-                            src: url,
+                            src: normalizeImageUrl(url),
                             target: { kind: "screenshot_gallery", index: idx },
                             defaultAspect: 9 / 19.5,
                           })
@@ -2011,7 +2012,7 @@ export function EditorPanel({
                 <div className="flex items-center gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={content.release.image_url}
+                    src={normalizeImageUrl(content.release.image_url)}
                     alt=""
                     aria-hidden="true"
                     className="h-20 w-16 rounded-lg border border-zinc-200 dark:border-zinc-800 object-cover"

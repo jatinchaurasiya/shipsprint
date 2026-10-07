@@ -7,6 +7,7 @@ import { trackEvent } from "@/lib/track-client";
 import { ArrowRight, Check, Star } from "lucide-react";
 import { getFeatureIcon } from "@/lib/icons";
 import { AppStoreBadge, GooglePlayBadge, TestFlightBadge } from "@/components/ui/store-badges";
+import { normalizeImageUrl } from "@/lib/storage/image-url";
 
 interface SiteRendererProps {
   content: SiteContent;
@@ -164,14 +165,14 @@ export function SiteRenderer({
             {brand.logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={brand.logo_url}
+                src={normalizeImageUrl(brand.logo_url)}
                 alt={appName}
                 className="h-7 w-auto object-contain max-w-[120px]"
               />
             ) : brand.app_icon_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={brand.app_icon_url}
+                src={normalizeImageUrl(brand.app_icon_url)}
                 alt={appName}
                 className="h-7 w-7 rounded-lg object-cover shadow-xs"
               />
@@ -363,7 +364,7 @@ export function SiteRenderer({
                   {(hero.device_screenshot_url_secondary || hero.device_screenshot_url) ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={hero.device_screenshot_url_secondary || hero.device_screenshot_url || ""}
+                      src={normalizeImageUrl(hero.device_screenshot_url_secondary || hero.device_screenshot_url || "")}
                       alt={`${appName} preview`}
                       className="h-auto w-full rounded-[22px] drop-shadow-[0_20px_40px_rgba(0,0,0,0.32)]"
                     />
@@ -391,7 +392,7 @@ export function SiteRenderer({
                   {hero.device_screenshot_url ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={hero.device_screenshot_url}
+                      src={normalizeImageUrl(hero.device_screenshot_url)}
                       alt={`${appName} showcase`}
                       className="h-auto w-full rounded-[22px] drop-shadow-[0_28px_56px_rgba(0,0,0,0.48)]"
                     />
@@ -711,7 +712,7 @@ export function SiteRenderer({
                       <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={feature.image_url}
+                          src={normalizeImageUrl(feature.image_url)}
                           alt={feature.title}
                           className="h-full w-full object-cover"
                         />

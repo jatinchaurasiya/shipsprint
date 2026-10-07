@@ -59,8 +59,15 @@ export async function GET(request: NextRequest) {
       .toLowerCase()
       .split(":")[0]!;
 
-    // The root domain and www are always authorized.
-    if (domain === rootDomain || domain === `www.${rootDomain}`) {
+    const r2PublicDomain = (process.env.R2_PUBLIC_DOMAIN || "").toLowerCase().trim();
+
+    // The root domain, www, and assets storage domains are always authorized.
+    if (
+      domain === rootDomain ||
+      domain === `www.${rootDomain}` ||
+      domain === `assets.${rootDomain}` ||
+      (r2PublicDomain && domain === r2PublicDomain)
+    ) {
       return new NextResponse(null, { status: 200 });
     }
 
