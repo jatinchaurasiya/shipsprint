@@ -33,8 +33,18 @@ import {
 import { StoreSelector } from "./store-selector";
 import { PageManager } from "./page-manager";
 import { LogoManager } from "./logo-manager";
+import { ImageEditorModal, type CroppedImageResult } from "./image-editor-modal";
 import { getDefaultSitePages } from "@/lib/legal-pages";
 import type { SitePage } from "@/types/database";
+
+export type ImageEditorTarget =
+  | { kind: "primary_screenshot" }
+  | { kind: "secondary_screenshot" }
+  | { kind: "logo" }
+  | { kind: "screenshot_gallery"; index?: number }
+  | { kind: "feature"; index: number }
+  | { kind: "logo_wall"; index: number }
+  | { kind: "release" };
 
 interface EditorPanelProps {
   content: SiteContent;
@@ -53,8 +63,9 @@ export function EditorPanel({
 }: EditorPanelProps) {
   const [activeSection, setActiveSection] = useState<EditorSectionId>("hero");
   const [activePageId, setActivePageId] = useState<string>("page-home");
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const [uploadingLogo] = useState(false);
+  const [uploadingScreenshot] = useState(false);
+  const [uploadingImage] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,10 +76,16 @@ export function EditorPanel({
 
   // Generic image picker serving feature / logo-wall / release targets
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [imageTarget, setImageTarget] = useState<{
     kind: "feature" | "logo" | "release";
     index: number;
+  } | null>(null);
+
+  // Image editor modal state
+  const [imageEditorState, setImageEditorState] = useState<{
+    src: string;
+    target: ImageEditorTarget;
+    defaultAspect?: number;
   } | null>(null);
 
   // Custom domain state
@@ -210,13 +227,10 @@ export function EditorPanel({
     onChange(updated);
   };
 
-  // Upload handler helper
-  const handleFileUpload = async (
-    file: File,
-    onSuccess: (url: string) => void,
-    setLoading: (loading: boolean) => void
-  ) => {
-    setLoading(true);
+  // Upload handler helper for cropped files
+  const uploadImageFile = async (
+    file: File
+  ): Promise<{ url?: string; error?: string }> => {
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -228,19 +242,15 @@ export function EditorPanel({
 
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || "Upload failed");
-        setLoading(false);
-        return;
+        return { error: data.error || "Upload failed" };
       }
-
-      onSuccess(data.url);
+      return { url: data.url };
     } catch (err) {
-      alert(
-        (err instanceof Error ? err.message : undefined) ||
-          "Failed to upload file"
-      );
-    } finally {
-      setLoading(false);
+      return {
+        error:
+          (err instanceof Error ? err.message : undefined) ||
+          "Upload failed to reach server",
+      };
     }
   };
 
@@ -249,16 +259,17 @@ export function EditorPanel({
     e.target.value = "";
     if (!file) return;
 
-    handleFileUpload(
-      file,
-      (url) => {
-        updateContent((prev) => ({
-          ...prev,
-          brand: { ...prev.brand, logo_url: url },
-        }));
-      },
-      setUploadingLogo
-    );
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === "string") {
+        setImageEditorState({
+          src: event.target.result,
+          target: { kind: "logo" },
+          defaultAspect: 1,
+        });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleScreenshotSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,16 +277,17 @@ export function EditorPanel({
     e.target.value = "";
     if (!file) return;
 
-    handleFileUpload(
-      file,
-      (url) => {
-        updateContent((prev) => ({
-          ...prev,
-          screenshots: [...(prev.screenshots || []), url],
-        }));
-      },
-      setUploadingScreenshot
-    );
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === "string") {
+        setImageEditorState({
+          src: event.target.result,
+          target: { kind: "screenshot_gallery" },
+          defaultAspect: 9 / 19.5,
+        });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const removeScreenshot = (indexToRemove: number) => {
@@ -311,38 +323,22 @@ export function EditorPanel({
     const target = imageTarget;
     if (!file || !target) return;
 
-    handleFileUpload(
-      file,
-      (url) => {
-        updateContent((prev) => {
-          if (target.kind === "feature") {
-            const updated = [...prev.features];
-            const existing = updated[target.index];
-            if (!existing) return prev;
-            updated[target.index] = { ...existing, image_url: url };
-            return { ...prev, features: updated };
-          }
-          if (target.kind === "logo") {
-            const logos = [...(prev.logo_wall?.logos ?? [])];
-            const existing = logos[target.index];
-            if (!existing) return prev;
-            logos[target.index] = { ...existing, image_url: url };
-            return {
-              ...prev,
-              logo_wall: {
-                eyebrow: prev.logo_wall?.eyebrow ?? "",
-                logos,
-              },
-            };
-          }
-          return {
-            ...prev,
-            release: { ...BLANK_RELEASE, ...prev.release, image_url: url },
-          };
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === "string") {
+        setImageEditorState({
+          src: event.target.result,
+          target:
+            target.kind === "feature"
+              ? { kind: "feature", index: target.index }
+              : target.kind === "release"
+              ? { kind: "release" }
+              : { kind: "logo_wall", index: target.index },
+          defaultAspect: target.kind === "feature" ? 9 / 19.5 : undefined,
         });
-      },
-      setUploadingImage
-    );
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
 
@@ -552,14 +548,125 @@ export function EditorPanel({
         </div>
       </nav>
 
+      {/* Image Editor Modal */}
+      {imageEditorState && (
+        <ImageEditorModal
+          imageSrc={imageEditorState.src}
+          defaultAspect={imageEditorState.defaultAspect}
+          title={
+            imageEditorState.target.kind === "primary_screenshot"
+              ? "Edit iPhone Mockup Screenshot"
+              : imageEditorState.target.kind === "secondary_screenshot"
+              ? "Edit Secondary iPhone Screenshot"
+              : imageEditorState.target.kind === "logo"
+              ? "Edit App Icon / Logo"
+              : imageEditorState.target.kind === "screenshot_gallery"
+              ? "Edit App Screenshot"
+              : imageEditorState.target.kind === "feature"
+              ? "Edit Feature Image"
+              : "Edit Image"
+          }
+          onClose={() => setImageEditorState(null)}
+          onApply={async (result: CroppedImageResult) => {
+            const target = imageEditorState.target;
+            let finalUrl = result.dataUrl;
+
+            // In production, upload the cropped image to Cloudflare R2 via /api/upload
+            const uploadRes = await uploadImageFile(result.file);
+            if (uploadRes.url) {
+              finalUrl = uploadRes.url;
+            } else if (
+              uploadRes.error &&
+              !uploadRes.error.includes("Object storage is not configured")
+            ) {
+              alert(uploadRes.error);
+              return;
+            }
+
+            if (target.kind === "primary_screenshot") {
+              updateContent((prev) => ({
+                ...prev,
+                hero: { ...prev.hero, device_screenshot_url: finalUrl },
+              }));
+            } else if (target.kind === "secondary_screenshot") {
+              updateContent((prev) => ({
+                ...prev,
+                hero: {
+                  ...prev.hero,
+                  device_screenshot_url_secondary: finalUrl,
+                },
+              }));
+            } else if (target.kind === "logo") {
+              updateContent((prev) => ({
+                ...prev,
+                brand: {
+                  ...prev.brand,
+                  logo_url: finalUrl,
+                  app_icon_url: prev.brand.app_icon_url || finalUrl,
+                },
+              }));
+            } else if (target.kind === "screenshot_gallery") {
+              updateContent((prev) => {
+                if (target.index !== undefined) {
+                  const updated = [...(prev.screenshots || [])];
+                  updated[target.index] = finalUrl;
+                  return { ...prev, screenshots: updated };
+                }
+                return {
+                  ...prev,
+                  screenshots: [...(prev.screenshots || []), finalUrl],
+                };
+              });
+            } else if (target.kind === "feature") {
+              updateContent((prev) => {
+                const updated = [...prev.features];
+                const existing = updated[target.index];
+                if (!existing) return prev;
+                updated[target.index] = { ...existing, image_url: finalUrl };
+                return { ...prev, features: updated };
+              });
+            } else if (target.kind === "logo_wall") {
+              updateContent((prev) => {
+                const logos = [...(prev.logo_wall?.logos ?? [])];
+                const existing = logos[target.index];
+                if (!existing) return prev;
+                logos[target.index] = { ...existing, image_url: finalUrl };
+                return {
+                  ...prev,
+                  logo_wall: {
+                    eyebrow: prev.logo_wall?.eyebrow ?? "",
+                    logos,
+                  },
+                };
+              });
+            } else if (target.kind === "release") {
+              updateContent((prev) => ({
+                ...prev,
+                release: {
+                  ...BLANK_RELEASE,
+                  ...prev.release,
+                  image_url: finalUrl,
+                },
+              }));
+            }
+            setImageEditorState(null);
+          }}
+        />
+      )}
+
       {/* Form Content: Dedicated Scroll Container */}
       <div
         ref={formScrollRef}
         id={`panel-${activeSection}`}
         role="tabpanel"
         aria-labelledby={`tab-${activeSection}`}
-        className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6 pb-32 sm:pb-40 scrollbar-thin touch-pan-y"
-        style={{ WebkitOverflowScrolling: "touch" }}
+        data-lenis-prevent
+        className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6 pb-32 sm:pb-40 scrollbar-thin"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
+          isolation: "isolate",
+        }}
       >
         {/* Hidden shared picker for feature / logo-wall / release images */}
         <input
@@ -611,23 +718,41 @@ export function EditorPanel({
                     className="hidden"
                     aria-hidden="true"
                   />
-                  <button
-                    type="button"
-                    onClick={() => logoInputRef.current?.click()}
-                    disabled={uploadingLogo}
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-colors shadow-xs disabled:cursor-not-allowed disabled:opacity-55"
-                  >
-                    {uploadingLogo ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Upload className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-colors shadow-xs disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      {uploadingLogo ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Upload className="w-3.5 h-3.5" />
+                      )}
+                      <span>
+                        {content.brand?.logo_url ? "Change Icon" : "Upload Icon"}
+                      </span>
+                    </button>
+                    {content.brand?.logo_url && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageEditorState({
+                            src: content.brand?.logo_url || "",
+                            target: { kind: "logo" },
+                            defaultAspect: 1,
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-950/30 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors shadow-xs"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        Edit Icon
+                      </button>
                     )}
-                    <span>
-                      {content.brand?.logo_url ? "Change Icon" : "Upload Icon"}
-                    </span>
-                  </button>
+                  </div>
                   <span className="text-[11px] text-zinc-500">
-                    PNG, JPG, or SVG (max 10MB)
+                    PNG, JPG, or WebP (square 1:1 recommended)
                   </span>
                 </div>
               </div>
@@ -728,7 +853,7 @@ export function EditorPanel({
                 iPhone Mockup Screen Image
               </label>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <input
                     type="file"
                     ref={screenshotInputRef}
@@ -737,30 +862,27 @@ export function EditorPanel({
                       const file = e.target.files?.[0];
                       e.target.value = "";
                       if (!file) return;
-                      handleFileUpload(
-                        file,
-                        (url) => {
-                          updateContent((prev) => ({
-                            ...prev,
-                            hero: { ...prev.hero, device_screenshot_url: url },
-                          }));
-                        },
-                        setUploadingScreenshot
-                      );
+                      // Read as data URL and open image editor
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        if (typeof event.target?.result === "string") {
+                          setImageEditorState({
+                            src: event.target.result,
+                            target: { kind: "primary_screenshot" },
+                            defaultAspect: 9 / 19.5,
+                          });
+                        }
+                      };
+                      reader.readAsDataURL(file);
                     }}
                     className="hidden"
                   />
                   <button
                     type="button"
                     onClick={() => screenshotInputRef.current?.click()}
-                    disabled={uploadingScreenshot}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-colors shadow-xs disabled:cursor-not-allowed disabled:opacity-55"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-colors shadow-xs"
                   >
-                    {uploadingScreenshot ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Upload className="w-3.5 h-3.5" />
-                    )}
+                    <Upload className="w-3.5 h-3.5" />
                     <span>
                       {content.hero?.device_screenshot_url
                         ? "Replace Screenshot"
@@ -768,18 +890,34 @@ export function EditorPanel({
                     </span>
                   </button>
                   {content.hero?.device_screenshot_url && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateContent((prev) => ({
-                          ...prev,
-                          hero: { ...prev.hero, device_screenshot_url: "" },
-                        }))
-                      }
-                      className="px-2.5 py-1.5 text-xs text-red-500 hover:underline"
-                    >
-                      Clear (Use Theme UI)
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageEditorState({
+                            src: content.hero?.device_screenshot_url || "",
+                            target: { kind: "primary_screenshot" },
+                            defaultAspect: 9 / 19.5,
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-950/30 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors shadow-xs"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        Edit Image
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateContent((prev) => ({
+                            ...prev,
+                            hero: { ...prev.hero, device_screenshot_url: "" },
+                          }))
+                        }
+                        className="px-2.5 py-1.5 text-xs text-red-500 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </>
                   )}
                 </div>
                 <input
@@ -791,12 +929,12 @@ export function EditorPanel({
                       hero: { ...prev.hero, device_screenshot_url: e.target.value },
                     }))
                   }
-                  placeholder="or paste image URL for iPhone frame (leave blank for handcrafted theme UI)"
+                  placeholder="or paste image URL for iPhone frame (leave blank for blank mockup)"
                   className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all font-mono"
                 />
               </div>
               <p className="mt-1 text-[11px] text-zinc-500">
-                Shown inside the hardware frame in the hero. Leave empty to use handcrafted domain UI.
+                Shown inside the hardware frame in the hero. Leave empty for a blank placeholder.
               </p>
             </div>
 
@@ -805,21 +943,92 @@ export function EditorPanel({
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                 Secondary iPhone Screen Image (Background Phone)
               </label>
-              <input
-                type="url"
-                value={content.hero?.device_screenshot_url_secondary || ""}
-                onChange={(e) =>
-                  updateContent((prev) => ({
-                    ...prev,
-                    hero: {
-                      ...prev.hero,
-                      device_screenshot_url_secondary: e.target.value,
-                    },
-                  }))
-                }
-                placeholder="Paste image URL for the tilted back iPhone frame"
-                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all font-mono"
-              />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        if (typeof event.target?.result === "string") {
+                          setImageEditorState({
+                            src: event.target.result,
+                            target: { kind: "secondary_screenshot" },
+                            defaultAspect: 9 / 19.5,
+                          });
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                    className="hidden"
+                    id="secondary-screenshot-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById("secondary-screenshot-input") as HTMLInputElement | null;
+                      input?.click();
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-colors shadow-xs"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>
+                      {content.hero?.device_screenshot_url_secondary
+                        ? "Replace Secondary"
+                        : "Upload Secondary"}
+                    </span>
+                  </button>
+                  {content.hero?.device_screenshot_url_secondary && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageEditorState({
+                            src: content.hero?.device_screenshot_url_secondary || "",
+                            target: { kind: "secondary_screenshot" },
+                            defaultAspect: 9 / 19.5,
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-950/30 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors shadow-xs"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        Edit Image
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateContent((prev) => ({
+                            ...prev,
+                            hero: { ...prev.hero, device_screenshot_url_secondary: "" },
+                          }))
+                        }
+                        className="px-2.5 py-1.5 text-xs text-red-500 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="url"
+                  value={content.hero?.device_screenshot_url_secondary || ""}
+                  onChange={(e) =>
+                    updateContent((prev) => ({
+                      ...prev,
+                      hero: {
+                        ...prev.hero,
+                        device_screenshot_url_secondary: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Paste image URL for the tilted back iPhone frame"
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all font-mono"
+                />
+              </div>
               <p className="mt-1 text-[11px] text-zinc-500">
                 Shown inside the cascading back iPhone (-1.5° tilt). If empty, mirrors the primary screenshot.
               </p>
@@ -1400,6 +1609,20 @@ export function EditorPanel({
                         <div className="flex gap-2">
                           <button
                             type="button"
+                            onClick={() =>
+                              setImageEditorState({
+                                src: feature.image_url!,
+                                target: { kind: "feature", index: idx },
+                                defaultAspect: 9 / 19.5,
+                              })
+                            }
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-950/30 text-[11px] font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors shadow-xs"
+                          >
+                            <ImageIcon className="w-3 h-3" />
+                            Edit Crop
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => pickImageFor("feature", idx)}
                             disabled={uploadingImage}
                             className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[11px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-55"
@@ -1622,15 +1845,32 @@ export function EditorPanel({
                     <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-white text-[10px] font-mono">
                       #{idx + 1} {idx === 0 && "(Hero)"}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeScreenshot(idx)}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                      title="Delete screenshot"
-                      aria-label={`Delete screenshot ${idx + 1}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageEditorState({
+                            src: url,
+                            target: { kind: "screenshot_gallery", index: idx },
+                            defaultAspect: 9 / 19.5,
+                          })
+                        }
+                        className="p-1.5 rounded-lg bg-zinc-900/85 hover:bg-zinc-950 text-white transition-colors shadow-sm"
+                        title="Crop / Edit screenshot"
+                        aria-label={`Edit screenshot ${idx + 1}`}
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeScreenshot(idx)}
+                        className="p-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors shadow-sm"
+                        title="Delete screenshot"
+                        aria-label={`Delete screenshot ${idx + 1}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

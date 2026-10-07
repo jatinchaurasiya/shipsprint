@@ -135,3 +135,10 @@ select {
     scroll-behavior: auto !important;
   }
 }
+
+/* Editor scroll isolation — the fixed editor overlay needs its own scroll
+   context that isn't blocked by the html/body overflow-x: clip containment. */
+[role="tabpanel"] {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}

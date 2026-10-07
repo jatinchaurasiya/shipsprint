@@ -32,8 +32,8 @@ export function getFlagshipDefaultContent(
       header: "Launch your app page. Without the code.",
       short_description:
         "Plan, prioritize, and publish your App Store landing page in one simple workspace. Stay on-brand, track every install, and never touch frontend code again.",
-      device_screenshot_url: "/shipsprint-phone-mockup.png",
-      device_screenshot_url_secondary: "/shipsprint-phone-mockup.png",
+      device_screenshot_url: "",
+      device_screenshot_url_secondary: "",
       primary_cta_label: "Start building",
       secondary_cta_label: "See How It Works",
       rating_stars: 5,

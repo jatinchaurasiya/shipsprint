@@ -66,12 +66,24 @@ export function EditorView({ site, plan }: EditorViewProps) {
   useEffect(() => {
     const origHtmlOverflow = document.documentElement.style.overflow;
     const origBodyOverflow = document.body.style.overflow;
+    const origBodyPosition = document.body.style.position;
+    const origBodyTop = document.body.style.top;
+    const origBodyWidth = document.body.style.width;
+    const scrollY = window.scrollY;
+
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
 
     return () => {
       document.documentElement.style.overflow = origHtmlOverflow;
       document.body.style.overflow = origBodyOverflow;
+      document.body.style.position = origBodyPosition;
+      document.body.style.top = origBodyTop;
+      document.body.style.width = origBodyWidth;
+      window.scrollTo(0, scrollY);
     };
   }, []);
 
@@ -168,7 +180,10 @@ export function EditorView({ site, plan }: EditorViewProps) {
   }, [handleSave, saving, publishing]);
 
   return (
-    <div className="fixed inset-0 h-[100dvh] w-screen z-50 flex flex-col bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
+    <div
+      data-lenis-prevent
+      className="fixed inset-0 h-[100dvh] w-screen z-50 flex flex-col bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans"
+    >
       {/* Top Header Navigation */}
       <header className="h-14 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl px-2.5 sm:px-4 flex items-center justify-between shrink-0 select-none">
         {/* Left: Back + Site Title + Status */}

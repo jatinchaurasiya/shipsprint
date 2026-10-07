@@ -1,7 +1,7 @@
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Upload,
   Wifi,
@@ -47,7 +47,7 @@ interface IphoneMockupProps {
 export function IphoneMockup({
   imageUrl,
   appName = "App",
-  fallbackKind = "generic",
+  fallbackKind: _fallbackKind = "generic",
   onImageChange,
   isEditable = false,
   className = "",
@@ -116,7 +116,7 @@ export function IphoneMockup({
             </div>
           </div>
 
-          {/* Screen Content: User Image OR Handcrafted Domain UI */}
+          {/* Screen Content: User Image OR Blank Placeholder */}
           <div className="relative h-full w-full overflow-hidden bg-black text-white">
             {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -127,7 +127,18 @@ export function IphoneMockup({
                 loading="lazy"
               />
             ) : (
-              <DomainScreenFallback kind={fallbackKind} appName={appName} />
+              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-b from-zinc-900 via-zinc-950 to-black px-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.06] ring-1 ring-white/10 mb-3">
+                  <svg className="w-5 h-5 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="3"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <path d="m21 15-5-5L5 21"/>
+                  </svg>
+                </div>
+                <p className="text-[10px] font-medium text-white/25 text-center">
+                  {isEditable ? "Upload Screenshot" : appName}
+                </p>
+              </div>
             )}
           </div>
 
@@ -179,7 +190,7 @@ export function IphoneMockup({
  * Handcrafted domain UI screens for each Hallmark theme archetype.
  * Every screen is pixel-perfect, tailored to native iOS design conventions.
  */
-function DomainScreenFallback({
+export function DomainScreenFallback({
   kind,
   appName,
 }: {

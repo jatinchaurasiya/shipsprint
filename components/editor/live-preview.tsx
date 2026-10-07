@@ -143,10 +143,12 @@ export function LivePreview({ content, plan, theme }: LivePreviewProps) {
           {/* Sole Scroll Container */}
           <div
             ref={scrollContainerRef}
-            className="flex-1 min-h-0 overflow-y-auto scrollbar-thin bg-white dark:bg-zinc-950 select-text touch-pan-y"
+            data-lenis-prevent
+            className="flex-1 min-h-0 overflow-y-auto scrollbar-thin bg-white dark:bg-zinc-950 select-text"
             style={{
               WebkitOverflowScrolling: "touch",
-              overscrollBehaviorY: "contain",
+              overscrollBehavior: "contain",
+              isolation: "isolate",
             }}
           >
             <SiteRenderer

@@ -180,8 +180,8 @@ describe("ShipSprint Flagship Landing Page Generator", () => {
     expect(content.brand.name).toBe("DayFlow");
     expect(content.hero.app_name).toBe("DayFlow");
     expect(content.hero.badge_text).toBe("Built for indie app makers");
-    expect(content.hero.device_screenshot_url).toBe("/shipsprint-phone-mockup.png");
-    expect(content.hero.device_screenshot_url_secondary).toBe("/shipsprint-phone-mockup.png");
+    expect(content.hero.device_screenshot_url).toBe("");
+    expect(content.hero.device_screenshot_url_secondary).toBe("");
     expect(content.impacts?.title).toBe("Real results. Real impact.");
     expect(content.impacts?.metric_stat).toBe("1,200+");
     expect(content.features.length).toBe(3);

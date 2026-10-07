@@ -360,26 +360,58 @@ export function SiteRenderer({
               <div className="relative flex w-full max-w-[340px] xs:max-w-[380px] items-center justify-center py-2 sm:max-w-[430px]">
                 {/* Back iPhone Mockup (Right) */}
                 <div className="relative z-10 w-[145px] xs:w-[170px] sm:w-[205px] lg:w-[220px] rotate-[-1.5deg] translate-x-4 xs:translate-x-6 sm:translate-x-10 translate-y-2 sm:translate-y-3 opacity-95 transition-transform duration-500 hover:translate-x-9 hover:rotate-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={
-                      hero.device_screenshot_url_secondary ||
-                      hero.device_screenshot_url ||
-                      "/shipsprint-phone-mockup.png"
-                    }
-                    alt={`${appName} preview`}
-                    className="h-auto w-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.32)]"
-                  />
+                  {(hero.device_screenshot_url_secondary || hero.device_screenshot_url) ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={hero.device_screenshot_url_secondary || hero.device_screenshot_url || ""}
+                      alt={`${appName} preview`}
+                      className="h-auto w-full rounded-[22px] drop-shadow-[0_20px_40px_rgba(0,0,0,0.32)]"
+                    />
+                  ) : (
+                    <div
+                      className="relative aspect-[9/19.5] w-full rounded-[22px] border border-zinc-700/30 drop-shadow-[0_20px_40px_rgba(0,0,0,0.32)] overflow-hidden"
+                      style={{
+                        background: "linear-gradient(160deg, #1a1b20 0%, #0d0e11 60%, #060709 100%)",
+                      }}
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center opacity-40">
+                          <div className="mx-auto w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center mb-2">
+                            <svg className="w-4 h-4 text-white/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                          </div>
+                          <p className="text-[8px] text-white/40 font-medium">Screenshot</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Front iPhone Mockup (Left, overlapping foreground with -6deg tilt) */}
                 <div className="absolute left-1 top-1 z-20 w-[150px] xs:w-[180px] sm:w-[218px] lg:w-[235px] rotate-[-6deg] transition-transform duration-500 hover:scale-[1.02] hover:rotate-[-4deg] sm:left-3 sm:top-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={hero.device_screenshot_url || "/shipsprint-phone-mockup.png"}
-                    alt={`${appName} showcase`}
-                    className="h-auto w-full drop-shadow-[0_28px_56px_rgba(0,0,0,0.48)]"
-                  />
+                  {hero.device_screenshot_url ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={hero.device_screenshot_url}
+                      alt={`${appName} showcase`}
+                      className="h-auto w-full rounded-[22px] drop-shadow-[0_28px_56px_rgba(0,0,0,0.48)]"
+                    />
+                  ) : (
+                    <div
+                      className="relative aspect-[9/19.5] w-full rounded-[22px] border border-zinc-600/30 drop-shadow-[0_28px_56px_rgba(0,0,0,0.48)] overflow-hidden"
+                      style={{
+                        background: "linear-gradient(160deg, #1e1f25 0%, #111215 60%, #080910 100%)",
+                      }}
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center opacity-40">
+                          <div className="mx-auto w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-2">
+                            <svg className="w-5 h-5 text-white/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                          </div>
+                          <p className="text-[9px] text-white/40 font-medium">Upload Screenshot</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
