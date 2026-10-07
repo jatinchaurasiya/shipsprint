@@ -81,16 +81,25 @@ export async function GET(
     headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
 
     // Convert AWS SDK stream to Web ReadableStream for high-performance streaming
-    const webStream = typeof (s3Response.Body as any).transformToWebStream === "function"
-      ? (s3Response.Body as any).transformToWebStream()
-      : (s3Response.Body as unknown as ReadableStream);
+    const body = s3Response.Body;
+    const webStream =
+      body &&
+      typeof (body as { transformToWebStream?: () => ReadableStream }).transformToWebStream === "function"
+        ? (body as { transformToWebStream: () => ReadableStream }).transformToWebStream()
+        : (body as unknown as ReadableStream);
 
     return new Response(webStream, {
       status: 200,
       headers,
     });
-  } catch (error: any) {
-    if (error?.name === "NoSuchKey" || error?.$metadata?.httpStatusCode === 404) {
+  } catch (error) {
+    const errorName = error instanceof Error ? error.name : "";
+    const httpStatus =
+      typeof error === "object" && error !== null && "$metadata" in error
+        ? (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+        : undefined;
+
+    if (errorName === "NoSuchKey" || httpStatus === 404) {
       return new NextResponse("Asset Not Found", { status: 404 });
     }
 
