@@ -86,15 +86,15 @@ export function LivePreview({
     return Math.min(1, Math.max(0.35, Number(Math.min(scaleW, scaleH).toFixed(3))));
   }, [canvasSize.width, canvasSize.height, scaleMode]);
 
-  // Proportional scale factor for Mobile iPhone 16 (391px × 828px outer frame)
+  // Proportional scale factor for Mobile Apple iPhone 17 Pro (422px × 894px outer frame, 402px × 874px screen)
   const mobileScale = useMemo(() => {
     if (scaleMode === "actual") return 1;
     if (!canvasSize.width || !canvasSize.height) return 0.85;
     const availWidth = Math.max(280, canvasSize.width - 32);
     const availHeight = Math.max(300, canvasSize.height - 32);
-    const scaleW = availWidth / 391;
-    const scaleH = availHeight / 828;
-    return Math.min(1, Math.max(0.45, Number(Math.min(scaleW, scaleH).toFixed(3))));
+    const scaleW = availWidth / 422;
+    const scaleH = availHeight / 894;
+    return Math.min(1, Math.max(0.4, Number(Math.min(scaleW, scaleH).toFixed(3))));
   }, [canvasSize.width, canvasSize.height, scaleMode]);
 
   const activeScale = useMemo(() => {
@@ -196,7 +196,7 @@ export function LivePreview({
             type="button"
             onClick={() => setDeviceMode("mobile")}
             aria-pressed={deviceMode === "mobile"}
-            title="Mobile (Apple iPhone 16 / 375px)"
+            title="Mobile (Apple iPhone 17 Pro · 402px)"
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
               deviceMode === "mobile"
                 ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-xs"
@@ -440,7 +440,7 @@ export function LivePreview({
         )}
 
         {/* ======================================================== */}
-        {/* MOBILE VIEWPORT: Authentic Apple iPhone 16 Device Frame   */}
+        {/* MOBILE VIEWPORT: Authentic Apple iPhone 17 Pro Frame      */}
         {/* ======================================================== */}
         {deviceMode === "mobile" && (
           <div
@@ -451,35 +451,43 @@ export function LivePreview({
           >
             <div
               style={{
-                width: 391,
-                height: 828,
+                width: 422,
+                height: 894,
                 transform: `scale(${mobileScale})`,
                 transformOrigin: "center center",
               }}
-              className="relative shrink-0 rounded-[48px] bg-gradient-to-b from-[#56575e] via-[#2d2e34] to-[#121316] p-[4px] shadow-[0_32px_80px_-20px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.22),inset_0_1px_1.5px_rgba(255,255,255,0.5)] ring-1 ring-black/80 flex flex-col transition-transform duration-150"
+              className="relative shrink-0 rounded-[55px] bg-gradient-to-b from-[#56575e] via-[#2f3036] to-[#121316] p-[3.5px] shadow-[0_36px_90px_-20px_rgba(0,0,0,0.75),0_0_0_1px_rgba(255,255,255,0.25),inset_0_1px_1.5px_rgba(255,255,255,0.5)] ring-1 ring-black/80 flex flex-col transition-transform duration-150"
             >
-              {/* iPhone Hardware Side Buttons */}
-              <div className="pointer-events-none absolute -left-[2.5px] top-[18%] h-[5%] w-[2.5px] rounded-l-xs bg-[#6a6b72] shadow-xs" />
-              <div className="pointer-events-none absolute -left-[2.5px] top-[26%] h-[8%] w-[2.5px] rounded-l-xs bg-[#6a6b72] shadow-xs" />
-              <div className="pointer-events-none absolute -left-[2.5px] top-[36%] h-[8%] w-[2.5px] rounded-l-xs bg-[#6a6b72] shadow-xs" />
-              <div className="pointer-events-none absolute -right-[2.5px] top-[25%] h-[12%] w-[2.5px] rounded-r-xs bg-[#6a6b72] shadow-xs" />
+              {/* iPhone 17 Pro Hardware Side Buttons */}
+              {/* Left: Action Button */}
+              <div className="pointer-events-none absolute -left-[2.5px] top-[16%] h-[5%] w-[2.5px] rounded-l-xs bg-[#6a6b72] shadow-xs" />
+              {/* Left: Volume Up */}
+              <div className="pointer-events-none absolute -left-[2.5px] top-[24%] h-[7.5%] w-[2.5px] rounded-l-xs bg-[#6a6b72] shadow-xs" />
+              {/* Left: Volume Down */}
+              <div className="pointer-events-none absolute -left-[2.5px] top-[33%] h-[7.5%] w-[2.5px] rounded-l-xs bg-[#6a6b72] shadow-xs" />
+              {/* Right: Side / Power Button */}
+              <div className="pointer-events-none absolute -right-[2.5px] top-[23%] h-[11%] w-[2.5px] rounded-r-xs bg-[#6a6b72] shadow-xs" />
+              {/* Right: Camera Control Touch Sensor (iPhone 16/17 Pro signature hardware) */}
+              <div className="pointer-events-none absolute -right-[2.5px] top-[72%] h-[8%] w-[2.5px] rounded-r-xs bg-[#404147] ring-1 ring-black/40 shadow-inner" />
 
-              {/* OLED True Black Display Bezel */}
-              <div className="relative h-full w-full rounded-[44px] bg-black p-[3.5px] ring-1 ring-black/90 flex flex-col overflow-hidden">
-                {/* Active Screen Display Area */}
-                <div className="relative flex-1 min-h-0 w-full rounded-[40px] overflow-hidden bg-white dark:bg-zinc-950 flex flex-col ring-1 ring-white/10">
-                  {/* iOS Status Bar with Dynamic Island */}
-                  <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex h-10 items-center justify-between px-6 pt-1 text-[11px] font-semibold text-zinc-900 dark:text-white select-none">
+              {/* OLED True Black Display Bezel: Ultra-thin 1.2mm Apple display border */}
+              <div className="relative h-full w-full rounded-[51px] bg-black p-[3.5px] ring-1 ring-black/90 flex flex-col overflow-hidden">
+                {/* Active Screen Display Area: Exact Apple 402 × 874 pt display surface */}
+                <div className="relative flex-1 min-h-0 w-full rounded-[48px] overflow-hidden bg-white dark:bg-zinc-950 flex flex-col ring-1 ring-white/10">
+                  
+                  {/* Frosted iOS Status Bar with Dynamic Island */}
+                  {/* Fixed frosted header so scrolling content glides underneath without colliding */}
+                  <div className="sticky top-0 z-40 h-11 shrink-0 px-6 pt-1 flex items-center justify-between bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-zinc-200/40 dark:border-zinc-800/40 text-[11px] font-semibold text-zinc-900 dark:text-white select-none">
                     <span className="tracking-tight font-medium">9:41</span>
 
-                    {/* Dynamic Island Pill */}
-                    <div className="absolute left-1/2 top-2 h-[22px] w-[90px] -translate-x-1/2 rounded-full bg-black ring-1 ring-white/10 flex items-center justify-between px-2.5 shadow-inner">
+                    {/* Apple iPhone 17 Pro Dynamic Island Pill */}
+                    <div className="absolute left-1/2 top-2 h-[26px] w-[110px] -translate-x-1/2 rounded-full bg-black ring-1 ring-white/10 flex items-center justify-between px-3 shadow-inner">
                       <div className="flex items-center gap-1">
-                        <div className="h-2 w-2 rounded-full bg-[#0c1220] ring-1 ring-white/20 flex items-center justify-center">
-                          <div className="h-0.5 w-0.5 rounded-full bg-blue-500/60" />
+                        <div className="h-2.5 w-2.5 rounded-full bg-[#0c1220] ring-1 ring-white/20 flex items-center justify-center">
+                          <div className="h-1 w-1 rounded-full bg-blue-500/60" />
                         </div>
                       </div>
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#0b0c10] ring-1 ring-white/10" />
+                      <div className="h-2 w-2 rounded-full bg-[#0b0c10] ring-1 ring-white/10" />
                     </div>
 
                     {/* Hardware Status Icons */}
@@ -494,7 +502,7 @@ export function LivePreview({
                   <div
                     ref={scrollContainerRef}
                     data-lenis-prevent
-                    className="flex-1 min-h-0 pt-10 pb-6 overflow-y-auto scrollbar-none bg-white dark:bg-zinc-950 select-text"
+                    className="flex-1 min-h-0 pb-8 overflow-y-auto scrollbar-none bg-white dark:bg-zinc-950 select-text"
                     style={{
                       WebkitOverflowScrolling: "touch",
                       overscrollBehavior: "contain",
@@ -511,7 +519,7 @@ export function LivePreview({
                   </div>
 
                   {/* Apple Home Indicator Bar */}
-                  <div className="pointer-events-none absolute bottom-1.5 left-1/2 -translate-x-1/2 z-30 h-[3.5px] w-[34%] rounded-full bg-zinc-900/40 dark:bg-white/40 shadow-xs" />
+                  <div className="pointer-events-none absolute bottom-1.5 left-1/2 -translate-x-1/2 z-40 h-[4px] w-[134px] rounded-full bg-zinc-900/40 dark:bg-white/40 shadow-xs" />
                 </div>
               </div>
             </div>

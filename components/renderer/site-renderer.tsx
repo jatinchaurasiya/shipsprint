@@ -379,7 +379,7 @@ export function SiteRenderer({
                 </p>
               )}
 
-              <h1 className="hero__display mt-6 font-display text-[clamp(2.5rem,5vw+0.5rem,4.25rem)] leading-[1.02] font-semibold tracking-[-0.03em] text-balance">
+              <h1 className={`hero__display mt-6 font-display ${isMobileView ? "text-3xl sm:text-4xl" : "text-[clamp(2.5rem,5vw+0.5rem,4.25rem)]"} leading-[1.06] font-semibold tracking-[-0.03em] text-balance`}>
                 {hero.header}
               </h1>
 
@@ -534,11 +534,11 @@ export function SiteRenderer({
             {impactsData.eyebrow}
           </p>
         </div>
-        <div className="mt-4 grid grid-cols-1 gap-8 md:grid-cols-7">
-          <h2 className="section__title font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl md:col-span-4">
+        <div className={`mt-4 grid grid-cols-1 ${isMobileView ? "gap-4" : "gap-8 md:grid-cols-7"}`}>
+          <h2 className={`section__title font-display ${isMobileView ? "text-3xl" : "text-4xl sm:text-5xl md:col-span-4"} font-semibold tracking-tight text-balance`}>
             {impactsData.title}
           </h2>
-          <p className="max-w-[52ch] self-end text-sm leading-relaxed text-[#505050] md:col-span-3 dark:text-zinc-300">
+          <p className={`max-w-[52ch] text-sm leading-relaxed text-[#505050] dark:text-zinc-300 ${isMobileView ? "mt-2" : "self-end md:col-span-3"}`}>
             {impactsData.description}
           </p>
         </div>
@@ -781,10 +781,10 @@ export function SiteRenderer({
                           ).map((item, i) => (
                             <li
                               key={i}
-                              className="flex items-center justify-between gap-3 border-b border-zinc-100 pb-2.5 last:border-0 last:pb-0 dark:border-zinc-800"
+                              className="flex items-center justify-between gap-2 border-b border-zinc-100 pb-2.5 last:border-0 last:pb-0 dark:border-zinc-800"
                             >
-                              <span className="font-medium">{item.key}</span>
-                              <span className="font-mono text-xs font-semibold whitespace-nowrap text-blue-600 dark:text-blue-400">
+                              <span className="font-medium truncate text-xs sm:text-[13px]">{item.key}</span>
+                              <span className="font-mono text-[11px] sm:text-xs font-semibold whitespace-nowrap text-blue-600 dark:text-blue-400 shrink-0">
                                 {item.value}
                               </span>
                             </li>
@@ -879,7 +879,7 @@ export function SiteRenderer({
           <p className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
             Get the app
           </p>
-          <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+          <h2 className={`mt-4 font-display ${isMobileView ? "text-3xl" : "text-4xl sm:text-5xl"} font-semibold tracking-tight text-balance`}>
             Start using {appName} today.
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-[#505050] sm:text-base dark:text-zinc-300">
@@ -914,11 +914,11 @@ export function SiteRenderer({
 
       {/* Statement Footer */}
       <footer className="bg-[#131313] text-white">
-        <div className="mx-auto w-full max-w-6xl px-4 pt-14 pb-8 sm:px-6 md:pt-20 lg:px-8">
-          <div className="grid grid-cols-1 gap-10 md:grid-cols-7">
+        <div className={`mx-auto w-full max-w-6xl px-4 ${isMobileView ? "pt-10 pb-8" : "pt-14 pb-8 sm:px-6 md:pt-20 lg:px-8"}`}>
+          <div className={`grid grid-cols-1 ${isMobileView ? "gap-8" : "gap-10 md:grid-cols-7"}`}>
             {/* Giant Wordmark & Tagline */}
-            <div className="min-w-0 md:col-span-4">
-              <span className="font-display text-[clamp(2.5rem,8vw,5.5rem)] leading-none font-bold tracking-tight text-white block">
+            <div className={`min-w-0 ${isMobileView ? "w-full" : "md:col-span-4"}`}>
+              <span className={`font-display ${isMobileView ? "text-4xl sm:text-5xl" : "text-[clamp(2.5rem,8vw,5.5rem)]"} leading-none font-bold tracking-tight text-white block`}>
                 {appName}
               </span>
               <p className="mt-5 max-w-[52ch] text-[15px] leading-relaxed text-zinc-300">
@@ -927,7 +927,7 @@ export function SiteRenderer({
             </div>
 
             {/* Office / Contact */}
-            <div className="min-w-0 md:col-span-3">
+            <div className={`min-w-0 ${isMobileView ? "w-full pt-4 border-t border-zinc-800" : "md:col-span-3"}`}>
               <p className="text-[11px] font-semibold tracking-widest text-zinc-400 uppercase">
                 Contact &amp; Support
               </p>
@@ -955,11 +955,11 @@ export function SiteRenderer({
           </div>
 
           {/* Legal Bar */}
-          <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-zinc-800 pt-6 sm:flex-row sm:items-center">
+          <div className={`mt-10 flex flex-col items-start gap-4 border-t border-zinc-800 pt-6 ${isMobileView ? "" : "sm:flex-row sm:items-center sm:justify-between"}`}>
             <p className="text-xs text-zinc-400">
               © {new Date().getFullYear()} {footer.brand_name || appName}. All rights reserved.
             </p>
-            <nav aria-label="Legal" className="flex flex-wrap items-center gap-6 text-xs text-zinc-400">
+            <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-zinc-400">
               {pages.map((page) => (
                 <a
                   key={page.id}

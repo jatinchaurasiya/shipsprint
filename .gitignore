@@ -48,4 +48,6 @@ supabase/.temp/
 
 # ide local agent customizations
 .agents/
+.claude/
+agent/
 skills-lock.json
