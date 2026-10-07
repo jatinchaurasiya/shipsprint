@@ -35,6 +35,7 @@ export function EditorView({ site, plan }: EditorViewProps) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "shipsprint.site";
   const isLocal = rootDomain.includes("localhost");
@@ -342,7 +343,11 @@ export function EditorView({ site, plan }: EditorViewProps) {
         <section
           aria-label="Configuration Panel"
           className={`w-full md:w-[460px] lg:w-[500px] shrink-0 h-full min-h-0 overflow-hidden ${
-            mobileTab === "edit" ? "flex flex-col" : "hidden md:flex md:flex-col"
+            sidebarCollapsed
+              ? "hidden"
+              : mobileTab === "edit"
+              ? "flex flex-col"
+              : "hidden md:flex md:flex-col"
           }`}
         >
           <EditorPanel
@@ -358,12 +363,20 @@ export function EditorView({ site, plan }: EditorViewProps) {
         <section
           aria-label="Live Preview Canvas"
           className={`flex-1 min-w-0 h-full min-h-0 overflow-hidden ${
-            mobileTab === "preview"
+            sidebarCollapsed
+              ? "flex flex-col"
+              : mobileTab === "preview"
               ? "flex flex-col"
               : "hidden md:flex md:flex-col"
           }`}
         >
-          <LivePreview content={content} plan={plan} theme={site.theme} />
+          <LivePreview
+            content={content}
+            plan={plan}
+            theme={site.theme}
+            isSidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
+          />
         </section>
       </div>
     </div>

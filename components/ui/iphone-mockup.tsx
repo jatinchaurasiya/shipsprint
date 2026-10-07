@@ -89,97 +89,100 @@ export function IphoneMockup({
       <div className="pointer-events-none absolute -right-[2.5px] top-32 h-16 w-[2.5px] rounded-r-xs bg-zinc-600/80 shadow-xs" />
 
       {/* Outer Titanium Chassis Frame: Precision 9:19.5 aspect ratio & natural titanium bezel */}
-      <div className="relative aspect-[9/19.5] w-full rounded-[50px] bg-gradient-to-b from-[#3a3b40] via-[#1a1b1e] to-[#0d0e11] p-[9.5px] shadow-[0_30px_70px_-15px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.14),inset_0_1px_1.5px_rgba(255,255,255,0.35)]">
-        {/* Inner Screen Bezel with OLED Black base */}
-        <div className="relative h-full w-full overflow-hidden rounded-[41px] bg-black ring-1 ring-black/90">
+      <div className="relative aspect-[9/19.5] w-full rounded-[50px] bg-gradient-to-b from-[#56575e] via-[#2f3036] to-[#121316] p-[4px] shadow-[0_32px_70px_-15px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.2),inset_0_1px_1.5px_rgba(255,255,255,0.4)] ring-1 ring-black/70">
+        {/* OLED True Black Display Bezel */}
+        <div className="relative h-full w-full rounded-[46px] bg-black p-[4px] ring-1 ring-black/90">
+          {/* Active Screen Viewport */}
+          <div className="relative h-full w-full overflow-hidden rounded-[42px] bg-black">
           
-          {/* iOS Status Bar with Dynamic Island */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex h-11 items-center justify-between px-6 pt-1 text-[12px] font-semibold text-white">
-            <span className="tracking-tight text-white/95 font-medium">9:41</span>
-            
-            {/* Dynamic Island Pill with Camera & Sensor Elements */}
-            <div className="absolute left-1/2 top-2.5 h-[22px] w-[98px] -translate-x-1/2 rounded-full bg-black ring-1 ring-white/10 flex items-center justify-between px-3 shadow-inner">
-              <div className="flex items-center gap-1.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-[#0c1220] ring-1 ring-white/20 flex items-center justify-center">
-                  <div className="h-1 w-1 rounded-full bg-blue-500/50" />
+            {/* iOS Status Bar with Dynamic Island */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex h-11 items-center justify-between px-6 pt-1 text-[12px] font-semibold text-white">
+              <span className="tracking-tight text-white/95 font-medium">9:41</span>
+              
+              {/* Dynamic Island Pill with Camera & Sensor Elements */}
+              <div className="absolute left-1/2 top-2.5 h-[22px] w-[98px] -translate-x-1/2 rounded-full bg-black ring-1 ring-white/10 flex items-center justify-between px-3 shadow-inner">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2.5 w-2.5 rounded-full bg-[#0c1220] ring-1 ring-white/20 flex items-center justify-center">
+                    <div className="h-1 w-1 rounded-full bg-blue-500/50" />
+                  </div>
+                </div>
+                <div className="h-2 w-2 rounded-full bg-[#0b0c10] ring-1 ring-white/10" />
+              </div>
+
+              {/* Hardware Status Icons */}
+              <div className="flex items-center gap-1.5 text-white/90">
+                <Signal className="h-3 w-3 stroke-[2.5]" />
+                <Wifi className="h-3 w-3 stroke-[2.5]" />
+                <div className="flex items-center">
+                  <Battery className="h-3.5 w-3.5 stroke-[2.5]" />
                 </div>
               </div>
-              <div className="h-2 w-2 rounded-full bg-[#0b0c10] ring-1 ring-white/10" />
             </div>
 
-            {/* Hardware Status Icons */}
-            <div className="flex items-center gap-1.5 text-white/90">
-              <Signal className="h-3 w-3 stroke-[2.5]" />
-              <Wifi className="h-3 w-3 stroke-[2.5]" />
-              <div className="flex items-center">
-                <Battery className="h-3.5 w-3.5 stroke-[2.5]" />
-              </div>
-            </div>
-          </div>
-
-          {/* Screen Content: User Image OR Blank Placeholder */}
-          <div className="relative h-full w-full overflow-hidden bg-black text-white">
-            {imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={normalizeImageUrl(imageUrl)}
-                alt={`${appName} screen`}
-                className="h-full w-full object-cover object-top"
-                loading="lazy"
-              />
-            ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-b from-zinc-900 via-zinc-950 to-black px-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.06] ring-1 ring-white/10 mb-3">
-                  <svg className="w-5 h-5 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="3" y="3" width="18" height="18" rx="3"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <path d="m21 15-5-5L5 21"/>
-                  </svg>
-                </div>
-                <p className="text-[10px] font-medium text-white/25 text-center">
-                  {isEditable ? "Upload Screenshot" : appName}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Interactive Screenshot Upload Overlay (Editor Mode) */}
-          {isEditable && onImageChange && (
-            <div
-              className={`absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/70 p-6 text-center backdrop-blur-sm transition-opacity duration-200 ${
-                isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
-            >
-              <label className="flex cursor-pointer flex-col items-center gap-2.5 rounded-2xl bg-white/15 p-4 text-white ring-1 ring-white/20 transition-transform hover:scale-105 active:scale-95">
-                <Upload className="h-5 w-5 text-white" />
-                <span className="text-xs font-semibold tracking-wide">
-                  {isUploading ? "Uploading..." : "Replace Mockup Image"}
-                </span>
-                <span className="text-[10px] text-zinc-300">
-                  PNG or JPG (9:19.5 recommended)
-                </span>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={handleFileUpload}
-                  className="hidden"
+            {/* Screen Content: User Image OR Blank Placeholder */}
+            <div className="relative h-full w-full overflow-hidden bg-black text-white">
+              {imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={normalizeImageUrl(imageUrl)}
+                  alt={`${appName} screen`}
+                  className="h-full w-full object-cover object-top"
+                  loading="lazy"
                 />
-              </label>
-              {imageUrl && (
-                <button
-                  type="button"
-                  onClick={() => onImageChange("")}
-                  className="mt-2.5 text-xs text-red-400 underline-offset-4 hover:underline"
-                >
-                  Reset to theme default
-                </button>
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-b from-zinc-900 via-zinc-950 to-black px-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.06] ring-1 ring-white/10 mb-3">
+                    <svg className="w-5 h-5 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <rect x="3" y="3" width="18" height="18" rx="3"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <path d="m21 15-5-5L5 21"/>
+                    </svg>
+                  </div>
+                  <p className="text-[10px] font-medium text-white/25 text-center">
+                    {isEditable ? "Upload Screenshot" : appName}
+                  </p>
+                </div>
               )}
             </div>
-          )}
 
-          {/* Bottom Home Indicator Bar */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-2 z-30 flex justify-center">
-            <div className="h-1 w-32 rounded-full bg-white/45 backdrop-blur-md" />
+            {/* Interactive Screenshot Upload Overlay (Editor Mode) */}
+            {isEditable && onImageChange && (
+              <div
+                className={`absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/70 p-6 text-center backdrop-blur-sm transition-opacity duration-200 ${
+                  isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
+              >
+                <label className="flex cursor-pointer flex-col items-center gap-2.5 rounded-2xl bg-white/15 p-4 text-white ring-1 ring-white/20 transition-transform hover:scale-105 active:scale-95">
+                  <Upload className="h-5 w-5 text-white" />
+                  <span className="text-xs font-semibold tracking-wide">
+                    {isUploading ? "Uploading..." : "Replace Mockup Image"}
+                  </span>
+                  <span className="text-[10px] text-zinc-300">
+                    PNG or JPG (9:19.5 recommended)
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onImageChange("")}
+                    className="mt-2.5 text-xs text-red-400 underline-offset-4 hover:underline"
+                  >
+                    Reset to theme default
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Bottom Home Indicator Bar */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-2 z-30 flex justify-center">
+              <div className="h-1 w-32 rounded-full bg-white/45 backdrop-blur-md" />
+            </div>
           </div>
         </div>
       </div>

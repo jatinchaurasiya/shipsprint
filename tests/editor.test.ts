@@ -109,15 +109,18 @@ describe("Viewport Configuration", () => {
   it("desktop uses fluid width", () => {
     expect(VIEWPORT_CONFIGS.desktop.widthClass).toContain("w-full");
     expect(VIEWPORT_CONFIGS.desktop.dimensions).toBe("Fluid");
+    expect(VIEWPORT_CONFIGS.desktop.name).toBe("Desktop");
   });
 
   it("tablet uses 768px width", () => {
     expect(VIEWPORT_CONFIGS.tablet.widthClass).toContain("768px");
     expect(VIEWPORT_CONFIGS.tablet.dimensions).toContain("768");
+    expect(VIEWPORT_CONFIGS.tablet.name).toBe("Tablet");
   });
 
   it("mobile uses 375px width", () => {
     expect(VIEWPORT_CONFIGS.mobile.widthClass).toContain("375px");
     expect(VIEWPORT_CONFIGS.mobile.dimensions).toContain("375");
+    expect(VIEWPORT_CONFIGS.mobile.name).toBe("Mobile");
   });
 });
