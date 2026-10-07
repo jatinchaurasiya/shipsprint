@@ -72,6 +72,7 @@ alter table public.plans add column if not exists site_limit              intege
 alter table public.plans add column if not exists has_branding            boolean     not null default true;
 alter table public.plans add column if not exists has_custom_domain       boolean     not null default false;
 alter table public.plans add column if not exists has_analytics_dashboard boolean     not null default false;
+alter table public.plans add column if not exists has_ai_discovery       boolean     not null default false;
 alter table public.plans add column if not exists created_at              timestamptz not null default now();
 alter table public.plans add column if not exists updated_at              timestamptz not null default now();
 
@@ -84,14 +85,14 @@ update public.plans set name = 'Pro'   where id = 'pro'   and (name is null or n
 
 insert into public.plans
   (id, name, tagline, site_limit, has_branding, has_custom_domain,
-   has_analytics_dashboard, has_email_capture, sort_order)
+   has_analytics_dashboard, has_email_capture, has_ai_discovery, sort_order)
 values
   ('free',  'Free',  'One landing page to get started.',
-   1,  true,  false, false, false, 10),
+   1,  true,  false, false, false, false, 10),
   ('basic', 'Basic', 'For a solo launch with a real domain.',
-   3,  false, true,  false, true,  20),
+   3,  false, true,  false, true,  false, 20),
   ('pro',   'Pro',   'Multiple apps with analytics.',
-   10, false, true,  true,  true,  30)
+   10, false, true,  true,  true,  true,  30)
 on conflict (id) do update
   set name                    = excluded.name,
       tagline                 = excluded.tagline,
@@ -100,6 +101,7 @@ on conflict (id) do update
       has_custom_domain       = excluded.has_custom_domain,
       has_analytics_dashboard = excluded.has_analytics_dashboard,
       has_email_capture       = excluded.has_email_capture,
+      has_ai_discovery       = excluded.has_ai_discovery,
       sort_order              = excluded.sort_order;
 
 -- ===========================================================================
@@ -210,10 +212,21 @@ alter table public.sites add column if not exists template_id   text;
 alter table public.sites add column if not exists created_at    timestamptz not null default now();
 alter table public.sites add column if not exists updated_at    timestamptz not null default now();
 alter table public.sites add column if not exists published_at  timestamptz;
+alter table public.sites add column if not exists ai_discovery_enabled         boolean not null default false;
+alter table public.sites add column if not exists ai_search_crawling_enabled   boolean not null default true;
+alter table public.sites add column if not exists ai_training_crawling_enabled boolean not null default false;
+alter table public.sites add column if not exists llms_txt_enabled             boolean not null default false;
+alter table public.sites add column if not exists ai_category                  text;
+alter table public.sites add column if not exists ai_target_audience           text;
+alter table public.sites add column if not exists ai_summary                   text;
+alter table public.sites add column if not exists ai_score                     integer default null;
+alter table public.sites add column if not exists ai_last_scan                 timestamptz default null;
+alter table public.sites add column if not exists ai_check_results             jsonb not null default '{}'::jsonb;
 
 create index if not exists idx_sites_user_id     on public.sites (user_id);
 create index if not exists idx_sites_user_created on public.sites (user_id, created_at desc);
 create index if not exists idx_sites_published   on public.sites (status) where status = 'published';
+create index if not exists idx_sites_ai_discovery on public.sites (ai_discovery_enabled) where ai_discovery_enabled = true;
 
 -- ===========================================================================
 -- 6. SUBSCRIPTIONS

@@ -471,7 +471,11 @@ export default async function HomePage() {
                         </span>
                       )}
                       <span className={value ? "" : "text-[#505050] dark:text-zinc-400"}>
-                        {typeof value === "number" ? `${feature.label} (${value})` : feature.label}
+                        {typeof value === "number"
+                          ? `${feature.label} (${value})`
+                          : typeof value === "string"
+                          ? value
+                          : feature.label}
                       </span>
                     </li>
                   );
@@ -534,7 +538,11 @@ export default async function HomePage() {
                             </span>
                           )}
                           <span className={value ? "" : "text-zinc-500 dark:text-zinc-400"}>
-                            {typeof value === "number" ? `${feature.label} (${value})` : feature.label}
+                            {typeof value === "number"
+                              ? `${feature.label} (${value})`
+                              : typeof value === "string"
+                              ? value
+                              : feature.label}
                           </span>
                         </li>
                       );

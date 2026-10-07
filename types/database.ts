@@ -26,6 +26,7 @@ export interface Plan {
   has_custom_domain: boolean;
   has_analytics_dashboard: boolean;
   has_email_capture: boolean;
+  has_ai_discovery?: boolean;
   sort_order: number;
   is_active: boolean;
 }
@@ -254,6 +255,16 @@ export interface Site {
   created_at: string;
   updated_at: string;
   published_at: string | null;
+  ai_discovery_enabled?: boolean;
+  ai_search_crawling_enabled?: boolean;
+  ai_training_crawling_enabled?: boolean;
+  llms_txt_enabled?: boolean;
+  ai_category?: string | null;
+  ai_target_audience?: string | null;
+  ai_summary?: string | null;
+  ai_score?: number | null;
+  ai_last_scan?: string | null;
+  ai_check_results?: Record<string, unknown>;
 }
 
 export type SubscriptionStatus =

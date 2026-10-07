@@ -34,7 +34,8 @@ export type EditorSectionId =
   | "release"
   | "pages"
   | "footer"
-  | "domain";
+  | "domain"
+  | "ai_discovery";
 
 export interface EditorSection {
   id: EditorSectionId;

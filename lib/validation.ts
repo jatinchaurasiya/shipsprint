@@ -473,7 +473,22 @@ export const trackEventSchema = z.object({
 
 export type ValidatedSiteContent = z.infer<typeof siteContentSchema>;
 
+export const updateAiDiscoverySchema = z
+  .object({
+    ai_discovery_enabled: z.boolean().optional(),
+    ai_search_crawling_enabled: z.boolean().optional(),
+    ai_training_crawling_enabled: z.boolean().optional(),
+    llms_txt_enabled: z.boolean().optional(),
+    ai_category: shortText(60).optional().nullable(),
+    ai_target_audience: shortText(120).optional().nullable(),
+    ai_summary: z.string().trim().max(4000).optional().nullable(),
+  })
+  .strict();
+
+export type ValidatedAiDiscoveryConfig = z.infer<typeof updateAiDiscoverySchema>;
+
 /** Flattens Zod issues into a single client-safe message. */
 export function firstIssue(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Invalid request body";
 }
+

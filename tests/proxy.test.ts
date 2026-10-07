@@ -107,6 +107,7 @@ describe("proxy()", () => {
       "/api/health",
       "/robots.txt",
       "/sitemap.xml",
+      "/llms.txt",
       "/favicon.ico",
     ];
 

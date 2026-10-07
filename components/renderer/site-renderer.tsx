@@ -355,8 +355,10 @@ export function SiteRenderer({
         </header>
       </div>
 
-      {/* Hero — Full-Bleed Royal Blue Radial Chamber */}
-      <section className="px-3 pt-4 sm:px-4">
+      {/* Main Semantic Page Content */}
+      <main id="main-content">
+        {/* Hero — Full-Bleed Royal Blue Radial Chamber */}
+        <section aria-label="Hero" className="px-3 pt-4 sm:px-4">
         <div
           className="relative overflow-hidden rounded-[2rem] text-white sm:rounded-[2.5rem]"
           style={{
@@ -668,8 +670,9 @@ export function SiteRenderer({
               const proofType = feature.proof_type || (idx === 0 ? "checklist" : idx === 1 ? "chart" : "readiness");
 
               return (
-                <div
+                <article
                   key={feature.id || idx}
+                  aria-labelledby={`feature-title-${idx}`}
                   className={`grid grid-cols-1 items-center gap-8 rounded-3xl border border-zinc-200 p-6 sm:p-10 ${
                     isEven ? "bg-[#f7f7f7] dark:bg-zinc-900/30" : "bg-white dark:bg-zinc-950"
                   } ${isMobileView ? "" : "md:grid-cols-2"} dark:border-zinc-800`}
@@ -817,14 +820,17 @@ export function SiteRenderer({
                     >
                       <IconComponent className="h-5 w-5" />
                     </p>
-                    <h3 className="mt-4 text-2xl font-semibold tracking-tight">
+                    <h3
+                      id={`feature-title-${idx}`}
+                      className="mt-4 text-2xl font-semibold tracking-tight"
+                    >
                       {feature.title}
                     </h3>
                     <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-[#505050] sm:text-[15px] dark:text-zinc-300">
                       {feature.description}
                     </p>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
@@ -911,9 +917,10 @@ export function SiteRenderer({
           </div>
         </div>
       </section>
+      </main>
 
       {/* Statement Footer */}
-      <footer className="bg-[#131313] text-white">
+      <footer role="contentinfo" className="bg-[#131313] text-white">
         <div className={`mx-auto w-full max-w-6xl px-4 ${isMobileView ? "pt-10 pb-8" : "pt-14 pb-8 sm:px-6 md:pt-20 lg:px-8"}`}>
           <div className={`grid grid-cols-1 ${isMobileView ? "gap-8" : "gap-10 md:grid-cols-7"}`}>
             {/* Giant Wordmark & Tagline */}

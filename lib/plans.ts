@@ -17,6 +17,7 @@ export const FREE_PLAN: Plan = {
   has_custom_domain: false,
   has_analytics_dashboard: false,
   has_email_capture: false,
+  has_ai_discovery: false,
   sort_order: 10,
   is_active: true,
 };
@@ -24,15 +25,26 @@ export const FREE_PLAN: Plan = {
 /** Feature list rendered on the pricing table, driven by the plan row. */
 export interface PlanFeature {
   label: string;
-  get: (plan: Plan) => boolean | number;
+  get: (plan: Plan) => boolean | number | string;
 }
 
 export const PLAN_FEATURES: PlanFeature[] = [
   { label: "Landing pages", get: (p) => p.site_limit },
   { label: "Remove ShipSprint branding", get: (p) => !p.has_branding },
   { label: "Custom domain + automatic SSL", get: (p) => p.has_custom_domain },
-  { label: "Analytics dashboard", get: (p) => p.has_analytics_dashboard },
-  { label: "Email capture", get: (p) => p.has_email_capture },
+  { label: "Privacy Policy generator", get: () => true },
+  { label: "Terms & Conditions generator", get: () => true },
+  { label: "Email capture", get: () => true },
+  {
+    label: "Analytics dashboard",
+    get: (p) => (p.id === "pro" ? "Full Analytics dashboard" : p.id === "basic" ? "Analytics dashboard" : false),
+  },
+  { label: "AI Search & LLM Discoverability", get: (p) => Boolean(p.has_ai_discovery) },
+  { label: "SEO Optimized", get: (p) => p.id === "pro" },
+  {
+    label: "Blog pages",
+    get: (p) => (p.id === "pro" ? "Unlimited Blog pages" : p.id === "basic" ? "10 Blog pages" : false),
+  },
 ];
 
 /**
@@ -56,6 +68,7 @@ const PLAN_CAPABILITIES: Record<Exclude<PlanId, "free">, Plan> = {
     has_custom_domain: true,
     has_analytics_dashboard: false,
     has_email_capture: true,
+    has_ai_discovery: false,
     sort_order: 20,
     is_active: true,
   },
@@ -68,6 +81,7 @@ const PLAN_CAPABILITIES: Record<Exclude<PlanId, "free">, Plan> = {
     has_custom_domain: true,
     has_analytics_dashboard: true,
     has_email_capture: true,
+    has_ai_discovery: true,
     sort_order: 30,
     is_active: true,
   },
@@ -90,3 +104,13 @@ export function formatPrice(cents: number, period?: "month" | "year"): string {
   if (!period) return formatted;
   return period === "month" ? `${formatted}/mo` : `${formatted}/yr`;
 }
+
+export function isProPlan(planId?: PlanId | null): boolean {
+  return planId === "pro";
+}
+
+export function canUseAiDiscovery(plan?: Plan | null): boolean {
+  if (!plan) return false;
+  return Boolean(plan.has_ai_discovery || plan.id === "pro");
+}
+

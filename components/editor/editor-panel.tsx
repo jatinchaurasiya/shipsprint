@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
+  Site,
   SiteContent,
   FeatureItem,
   ReleaseInfo,
@@ -34,6 +35,7 @@ import { StoreSelector } from "./store-selector";
 import { PageManager } from "./page-manager";
 import { LogoManager } from "./logo-manager";
 import { ImageEditorModal, type CroppedImageResult } from "./image-editor-modal";
+import { AiDiscoveryPanel } from "./ai-discovery-panel";
 import { normalizeImageUrl } from "@/lib/storage/image-url";
 import { getDefaultSitePages } from "@/lib/legal-pages";
 import type { SitePage } from "@/types/database";
@@ -457,6 +459,7 @@ export function EditorPanel({
     { id: "pages", label: "Legal & Pages", badge: appPages.length },
     { id: "footer", label: "Footer" },
     { id: "domain", label: "Domain" },
+    { id: "ai_discovery", label: "AI & Search" },
   ];
 
   // Select section with smooth scroll reset & tab auto-visibility
@@ -2568,6 +2571,30 @@ export function EditorPanel({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* AI Search & LLM Discoverability Section Panel */}
+        {activeSection === "ai_discovery" && (
+          <div
+            id="panel-ai_discovery"
+            role="tabpanel"
+            aria-labelledby="tab-ai_discovery"
+            className="p-4 sm:p-6"
+          >
+            <AiDiscoveryPanel
+              site={
+                {
+                  id: siteId || "",
+                  content,
+                  custom_domain: connectedDomain,
+                  slug: content.brand?.name?.toLowerCase().replace(/[^a-z0-9]/g, "") || "app",
+                  status: "published",
+                } as Site
+              }
+              plan={plan}
+              siteId={siteId}
+            />
           </div>
         )}
       </div>

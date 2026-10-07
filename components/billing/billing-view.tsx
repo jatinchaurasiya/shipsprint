@@ -439,6 +439,8 @@ export function BillingView({
                             <span className={enabled ? "" : "text-zinc-600"}>
                               {typeof enabled === "number"
                                 ? `${feature.label} (${enabled})`
+                                : typeof enabled === "string"
+                                ? enabled
                                 : feature.label}
                             </span>
                           </li>

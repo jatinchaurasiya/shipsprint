@@ -7,6 +7,7 @@ import { resolvePublicSite } from "@/lib/site-lookup";
 import { appOrigin } from "@/lib/redirect";
 import { SiteRenderer } from "@/components/renderer/site-renderer";
 import type { Site } from "@/types/database";
+import { generateSchemaOrgJsonLd, safeJsonLdStringify } from "@/lib/ai-discovery";
 import Link from "next/link";
 import { Eye, ArrowLeft, Globe } from "lucide-react";
 
@@ -67,13 +68,22 @@ export async function generateMetadata({
   const heroScreenshot = site.content?.screenshots?.[0];
   const ogImage = heroScreenshot || logoUrl;
 
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "shipsprint.site";
+  const canonicalUrl = site.custom_domain
+    ? `https://${site.custom_domain}`
+    : `https://${site.slug}.${rootDomain}`;
+
   return {
     metadataBase: new URL(appOrigin()),
     title,
     description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description,
+      url: canonicalUrl,
       type: "website",
       images: ogImage ? [{ url: ogImage, alt: appName }] : [],
     },
@@ -87,6 +97,8 @@ export async function generateMetadata({
     robots: {
       index: site.status === "published",
       follow: site.status === "published",
+      "max-snippet": site.status === "published" ? -1 : undefined,
+      "max-image-preview": site.status === "published" ? "large" : undefined,
     },
   };
 }
@@ -150,32 +162,16 @@ export default async function PublicSitePage({ params }: SitePageProps) {
     ? `https://${site.custom_domain}`
     : `https://${site.slug}.${rootDomain}`;
 
-  // JSON-LD structured data for rich search engine results
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type":
-      site.content.store_links?.app_store_url || site.content.store_links?.play_store_url
-        ? "SoftwareApplication"
-        : "WebSite",
-    name: site.content?.hero?.app_name || site.slug,
-    description: site.content?.hero?.short_description || site.content?.hero?.header,
-    applicationCategory: "MobileApplication",
-    operatingSystem: "iOS, Android",
-    url: liveUrl,
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
-  };
+  // Valid Schema.org structured data for rich search engine results
+  const jsonLdData = generateSchemaOrgJsonLd(site, liveUrl);
 
   return (
     <div className="relative min-h-screen">
-      {/* JSON-LD Script for SEO */}
+      {/* JSON-LD Script for SEO & AI Discoverability */}
       {isPublished && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLdData) }}
         />
       )}
 
