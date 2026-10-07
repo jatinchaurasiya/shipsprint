@@ -30,7 +30,9 @@ export async function GET(
     (segment) =>
       segment === ".." ||
       segment === "." ||
-      !/^[a-zA-Z0-9_\-\.]+$/.test(segment)
+      segment.includes("/") ||
+      segment.includes("\\") ||
+      segment.trim().length === 0
   );
 
   if (hasInvalidSegment) {
@@ -40,11 +42,11 @@ export async function GET(
   const key = `uploads/${path.join("/")}`;
 
   try {
-    const { R2_BUCKET_NAME } = serverEnv();
+    const bucketName = process.env.R2_BUCKET_NAME || serverEnv().R2_BUCKET_NAME;
     const r2 = getR2Client();
 
     const command = new GetObjectCommand({
-      Bucket: R2_BUCKET_NAME,
+      Bucket: bucketName,
       Key: key,
     });
 
@@ -96,6 +98,8 @@ export async function GET(
     return new NextResponse("Error fetching asset", { status: 500 });
   }
 }
+
+export const HEAD = GET;
 
 export async function OPTIONS() {
   return new NextResponse(null, {

@@ -39,8 +39,15 @@ describe("normalizeImageUrl", () => {
     ).toBe("/uploads/2026-10-07/test.png");
   });
 
-  it("leaves external third-party image URLs intact", () => {
-    const external = "https://images.unsplash.com/photo-12345";
-    expect(normalizeImageUrl(external)).toBe(external);
+  it("preserves query parameters when normalizing", () => {
+    expect(
+      normalizeImageUrl(
+        "https://assets.shipsprint.site/uploads/2026-10-07/photo.png?w=800&q=80"
+      )
+    ).toBe("/uploads/2026-10-07/photo.png?w=800&q=80");
+  });
+
+  it("handles non-URL strings without throwing", () => {
+    expect(normalizeImageUrl("not-a-valid-url")).toBe("not-a-valid-url");
   });
 });

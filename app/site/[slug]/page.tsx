@@ -68,6 +68,7 @@ export async function generateMetadata({
   const ogImage = heroScreenshot || logoUrl;
 
   return {
+    metadataBase: new URL(appOrigin()),
     title,
     description,
     openGraph: {

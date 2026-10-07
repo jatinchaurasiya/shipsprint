@@ -44,7 +44,7 @@ export default function RootLayout({
       lang="en"
       className="h-full antialiased"
     >
-      <body className="min-h-full flexhttps://nexbit-temlis.webflow.io/ flex-col bg-white text-zinc-900 dark:bg-black dark:text-zinc-50">
+      <body className="min-h-full flex flex-col bg-white text-zinc-900 dark:bg-black dark:text-zinc-50">
         <SmoothScrollProvider>{children}</SmoothScrollProvider>
       </body>
     </html>
