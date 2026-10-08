@@ -76,6 +76,54 @@ export function classifyHost(rawHost: string): { kind: HostKind; value: string |
   return { kind: "custom", value: hostname };
 }
 
+/**
+ * Normalizes redundant `/site` or `/site/<slug>` prefixes requested on customer
+ * subdomains or custom domains.
+ *
+ * For instance, when a visitor on `botch.shipsprint.site` clicks a link that
+ * resolved to `/site/botch` or `/site/botch/privacy`, this redirects them to `/`
+ * or `/privacy` respectively, preventing 404 errors.
+ */
+export function stripCustomerSitePrefix(pathname: string, hostValue: string): string | null {
+  if (pathname !== "/site" && !pathname.startsWith("/site/")) {
+    return null;
+  }
+
+  let rest = pathname.slice("/site".length);
+  if (rest.startsWith("/")) {
+    rest = rest.slice(1);
+  }
+
+  if (!rest) {
+    return "/";
+  }
+
+  const segments = rest.split("/").filter(Boolean);
+  if (segments.length === 0) {
+    return "/";
+  }
+
+  const first = segments[0]!.toLowerCase();
+  const hostVal = hostValue.toLowerCase();
+
+  // If the first segment is the host slug, custom prefix, or subdomain label:
+  // e.g. "botch", "custom:botch", "custom:myapp.com", or "myapp" for "myapp.com"
+  if (
+    first === hostVal ||
+    first === `custom:${hostVal}` ||
+    (hostVal.includes(".") && first === hostVal.split(".")[0])
+  ) {
+    segments.shift();
+  } else if (segments.length === 1 && !["privacy", "terms", "support", "imprint"].includes(first)) {
+    return "/";
+  } else if (segments.length > 1) {
+    segments.shift();
+  }
+
+  const remaining = segments.join("/");
+  return remaining ? `/${remaining}` : "/";
+}
+
 /** Paths that need a refreshed session and an auth redirect. */
 function needsAuth(pathname: string) {
   return (
@@ -112,6 +160,17 @@ export async function proxy(request: NextRequest) {
       pathname === "/favicon.ico"
     ) {
       return NextResponse.next();
+    }
+
+    // Defensive normalization: customer domains/subdomains should never expose the
+    // internal /site or /site/<slug> prefix in their public URLs. If a visitor lands
+    // on /site/botch or /site/botch/privacy on a customer host, redirect them cleanly
+    // to / or /privacy instead of rewriting to an invalid nested path that 404s.
+    const normalizedPath = stripCustomerSitePrefix(pathname, host.value);
+    if (normalizedPath !== null) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = normalizedPath;
+      return NextResponse.redirect(redirectUrl, 308);
     }
 
     const subpath = pathname === "/" ? "" : pathname;

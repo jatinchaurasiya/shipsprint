@@ -342,4 +342,77 @@ describe("proxy()", () => {
       expect(updateSessionMock).not.toHaveBeenCalled();
     });
   });
+
+  describe("defensive customer-host /site prefix normalization & redirects", () => {
+    it("redirects /site/<slug> to / on customer subdomain (prevents 404 on 'Back to app')", async () => {
+      const { proxy } = await loadProxy({ ROOT_DOMAIN: "shipsprint.site" });
+      const res = await proxy(
+        publicRequest("https://botch.shipsprint.site/site/botch", "botch.shipsprint.site")
+      );
+      expect(res.status).toBe(308);
+      expect(res.headers.get("location")).toBe("https://botch.shipsprint.site/");
+    });
+
+    it("redirects /site/<slug>/<pageSlug> to /<pageSlug> on customer subdomain", async () => {
+      const { proxy } = await loadProxy({ ROOT_DOMAIN: "shipsprint.site" });
+      const res = await proxy(
+        publicRequest(
+          "https://botch.shipsprint.site/site/botch/privacy?ref=legal",
+          "botch.shipsprint.site"
+        )
+      );
+      expect(res.status).toBe(308);
+      expect(res.headers.get("location")).toBe("https://botch.shipsprint.site/privacy?ref=legal");
+    });
+
+    it("redirects bare /site on customer subdomain to /", async () => {
+      const { proxy } = await loadProxy({ ROOT_DOMAIN: "shipsprint.site" });
+      const res = await proxy(
+        publicRequest("https://botch.shipsprint.site/site", "botch.shipsprint.site")
+      );
+      expect(res.status).toBe(308);
+      expect(res.headers.get("location")).toBe("https://botch.shipsprint.site/");
+    });
+
+    it("redirects /site/<slug>/<pageSlug> on custom domain to /<pageSlug>", async () => {
+      const { proxy } = await loadProxy({ ROOT_DOMAIN: "shipsprint.site" });
+      const res = await proxy(
+        publicRequest("https://mybrand.com/site/mybrand/terms", "mybrand.com")
+      );
+      expect(res.status).toBe(308);
+      expect(res.headers.get("location")).toBe("https://mybrand.com/terms");
+    });
+
+    it("does not redirect /site/<slug> on the platform app host", async () => {
+      const { proxy } = await loadProxy({ ROOT_DOMAIN: "shipsprint.site" });
+      const res = await proxy(
+        publicRequest("https://shipsprint.site/site/botch", "shipsprint.site")
+      );
+      expect(res.headers.get("location")).toBeNull();
+    });
+  });
+
+  describe("stripCustomerSitePrefix() unit tests", () => {
+    it("handles various customer-host path inputs correctly", async () => {
+      const { stripCustomerSitePrefix } = await loadProxy({ ROOT_DOMAIN: "shipsprint.site" });
+      expect(stripCustomerSitePrefix("/site/botch", "botch")).toBe("/");
+      expect(stripCustomerSitePrefix("/site/botch/", "botch")).toBe("/");
+      expect(stripCustomerSitePrefix("/site/botch/privacy", "botch")).toBe("/privacy");
+      expect(stripCustomerSitePrefix("/site/botch/terms", "botch")).toBe("/terms");
+      expect(stripCustomerSitePrefix("/site/privacy", "botch")).toBe("/privacy");
+      expect(stripCustomerSitePrefix("/site", "botch")).toBe("/");
+      expect(stripCustomerSitePrefix("/site/", "botch")).toBe("/");
+      expect(stripCustomerSitePrefix("/site/custom:mybrand.com", "mybrand.com")).toBe("/");
+      expect(stripCustomerSitePrefix("/site/custom:mybrand.com/privacy", "mybrand.com")).toBe("/privacy");
+      expect(stripCustomerSitePrefix("/site/mybrand/privacy", "mybrand.com")).toBe("/privacy");
+      expect(stripCustomerSitePrefix("/site/other/terms", "mybrand.com")).toBe("/terms");
+      expect(stripCustomerSitePrefix("/site/other", "mybrand.com")).toBe("/");
+
+      // Non-site paths return null (handled by standard rewrite)
+      expect(stripCustomerSitePrefix("/privacy", "botch")).toBeNull();
+      expect(stripCustomerSitePrefix("/terms", "botch")).toBeNull();
+      expect(stripCustomerSitePrefix("/", "botch")).toBeNull();
+      expect(stripCustomerSitePrefix("/features", "botch")).toBeNull();
+    });
+  });
 });

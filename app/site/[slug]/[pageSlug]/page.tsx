@@ -1,7 +1,8 @@
-/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { classifyHost } from "@/proxy";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolvePublicSite } from "@/lib/site-lookup";
@@ -20,6 +21,23 @@ interface SubpageProps {
 const getSiteBySlugOrDomain = cache(async (slugParam: string) => {
   return resolvePublicSite(slugParam, createAdminClient());
 });
+
+/**
+ * Determines whether the subpage is being accessed through a customer's
+ * subdomain (e.g. `botch.shipsprint.site`) or custom domain (`example.com`),
+ * versus the platform app host (`shipsprint.site/site/botch`).
+ */
+async function isCustomerHostRequest(slug: string): Promise<boolean> {
+  if (slug.startsWith("custom:")) return true;
+  try {
+    const reqHeaders = await headers();
+    const rawHost = reqHeaders.get("x-forwarded-host") || reqHeaders.get("host") || "";
+    const classified = classifyHost(rawHost);
+    return classified.kind !== "app";
+  } catch {
+    return false;
+  }
+}
 
 function resolvePage(site: Site, pageSlug: string): SitePage | null {
   const pages = site.content?.pages || [];
@@ -81,11 +99,20 @@ export async function generateMetadata({
   }
   const appName = resolved.site.content?.brand?.name || resolved.site.slug;
 
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "shipsprint.site";
+  const canonicalBase = resolved.site.custom_domain
+    ? `https://${resolved.site.custom_domain}`
+    : `https://${resolved.site.slug}.${rootDomain}`;
+  const canonicalUrl = `${canonicalBase}/${page.slug}`;
+
   return {
     title: page.meta_title || `${page.title} - ${appName}`,
     description:
       page.meta_description ||
       `Official ${page.title} page for the ${appName} mobile application.`,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     robots: {
       index: resolved.site.status === "published",
       follow: resolved.site.status === "published",
@@ -120,8 +147,8 @@ export default async function PublicSubpage({ params }: SubpageProps) {
     notFound();
   }
 
-  const isCustomDomain = slug.startsWith("domain:");
-  const homeHref = isCustomDomain ? "/" : `/site/${site.slug}`;
+  const isCustomerHost = await isCustomerHostRequest(slug);
+  const homeHref = isCustomerHost ? "/" : `/site/${site.slug}`;
 
   return (
     <PageRenderer

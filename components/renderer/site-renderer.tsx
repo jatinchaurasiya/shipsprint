@@ -17,6 +17,7 @@ interface SiteRendererProps {
   theme?: string;
   slug?: string;
   viewport?: "desktop" | "tablet" | "mobile";
+  basePath?: string;
 }
 
 interface AppleIPhoneMockupProps {
@@ -148,6 +149,7 @@ export function SiteRenderer({
   theme: _theme,
   slug: _slug,
   viewport = "desktop",
+  basePath,
 }: SiteRendererProps) {
   const {
     brand = { name: "App Name", logo_url: "" },
@@ -218,7 +220,11 @@ export function SiteRenderer({
 
   const resolveSubpageHref = (pageSlug: string) => {
     if (isPreview) return `#${pageSlug}`;
-    return `/${pageSlug}`;
+    const clean = pageSlug.startsWith("/") ? pageSlug.slice(1) : pageSlug;
+    if (basePath) {
+      return `${basePath}/${clean}`;
+    }
+    return `/${clean}`;
   };
 
   const navPages = (pages || []).filter(

@@ -10,6 +10,8 @@ import type { Site } from "@/types/database";
 import { generateSchemaOrgJsonLd, safeJsonLdStringify } from "@/lib/ai-discovery";
 import Link from "next/link";
 import { Eye, ArrowLeft, Globe } from "lucide-react";
+import { headers } from "next/headers";
+import { classifyHost } from "@/proxy";
 
 interface SitePageProps {
   params: Promise<{ slug: string }>;
@@ -165,6 +167,20 @@ export default async function PublicSitePage({ params }: SitePageProps) {
   // Valid Schema.org structured data for rich search engine results
   const jsonLdData = generateSchemaOrgJsonLd(site, liveUrl);
 
+  let isCustomerHost = slug.startsWith("custom:");
+  if (!isCustomerHost) {
+    try {
+      const reqHeaders = await headers();
+      const rawHost = reqHeaders.get("x-forwarded-host") || reqHeaders.get("host") || "";
+      const classified = classifyHost(rawHost);
+      isCustomerHost = classified.kind !== "app";
+    } catch {
+      isCustomerHost = false;
+    }
+  }
+
+  const basePath = isCustomerHost ? "" : `/site/${site.slug}`;
+
   return (
     <div className="relative min-h-screen">
       {/* JSON-LD Script for SEO & AI Discoverability */}
@@ -196,6 +212,10 @@ export default async function PublicSitePage({ params }: SitePageProps) {
       )}
 
       {/* Main Landing Page Content */}
+      {(() => {
+        // Render subpage links at root on customer domains/subdomains, or under /site/[slug] on app host
+        return null;
+      })()}
       <SiteRenderer
         content={site.content}
         plan={ownerPlan}
@@ -204,6 +224,8 @@ export default async function PublicSitePage({ params }: SitePageProps) {
         isPreview={!isPublished}
         siteId={isPublished ? site.id : undefined}
         theme={site.theme}
+        slug={site.slug}
+        basePath={basePath}
       />
     </div>
   );
