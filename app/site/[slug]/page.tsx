@@ -1,0 +1,232 @@
+import { notFound } from "next/navigation";
+import { cache } from "react";
+import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { resolvePublicSite } from "@/lib/site-lookup";
+import { appOrigin } from "@/lib/redirect";
+import { SiteRenderer } from "@/components/renderer/site-renderer";
+import type { Site } from "@/types/database";
+import { generateSchemaOrgJsonLd, safeJsonLdStringify } from "@/lib/ai-discovery";
+import Link from "next/link";
+import { Eye, ArrowLeft, Globe } from "lucide-react";
+import { headers } from "next/headers";
+import { classifyHost } from "@/proxy";
+
+interface SitePageProps {
+  params: Promise<{ slug: string }>;
+}
+
+/**
+ * Resolve the site behind a public hostname, or null when there is none.
+ * Wrapped in React cache() so generateMetadata and PublicSitePage share a single
+ * fetch. The lookup itself lives in lib/site-lookup.ts, which keeps this page's
+ * existence dependent on the site row alone rather than on a profile/plan join.
+ */
+const getSiteBySlugOrDomain = cache(async (slugParam: string) => {
+  return resolvePublicSite(slugParam, createAdminClient());
+});
+
+/**
+ * Dynamic SEO & OpenGraph tags generated from the site's live content
+ */
+export async function generateMetadata({
+  params,
+}: SitePageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const resolved = await getSiteBySlugOrDomain(slug);
+
+  if (!resolved) {
+    return {
+      title: "Landing Page Not Found | ShipSprint",
+      description: "The requested landing page does not exist or has been removed.",
+      robots: { index: false, follow: false },
+    };
+  }
+  const site = resolved.site;
+
+  // Prevent draft headlines and info leaking into search index for non-owners
+  if (site.status !== "published") {
+    const authSupabase = await createClient();
+    const {
+      data: { user },
+    } = await authSupabase.auth.getUser();
+
+    if (user?.id !== site.user_id) {
+      return {
+        title: "Page Not Found | ShipSprint",
+        robots: { index: false, follow: false },
+      };
+    }
+  }
+
+  const appName = site.content?.hero?.app_name || site.content?.brand?.name || site.slug;
+  const title = `${appName} - Official App`;
+  const description =
+    site.content?.hero?.short_description ||
+    site.content?.hero?.header ||
+    `Download ${appName} on iOS and Android.`;
+  const logoUrl = site.content?.brand?.logo_url;
+  const heroScreenshot = site.content?.screenshots?.[0];
+  const ogImage = heroScreenshot || logoUrl;
+
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "shipsprint.site";
+  const canonicalUrl = site.custom_domain
+    ? `https://${site.custom_domain}`
+    : `https://${site.slug}.${rootDomain}`;
+
+  return {
+    metadataBase: new URL(appOrigin()),
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      type: "website",
+      images: ogImage ? [{ url: ogImage, alt: appName }] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ogImage ? [ogImage] : [],
+    },
+    icons: logoUrl ? [{ rel: "icon", url: logoUrl }] : undefined,
+    robots: {
+      index: site.status === "published",
+      follow: site.status === "published",
+      "max-snippet": site.status === "published" ? -1 : undefined,
+      "max-image-preview": site.status === "published" ? "large" : undefined,
+    },
+  };
+}
+
+export default async function PublicSitePage({ params }: SitePageProps) {
+  const { slug } = await params;
+  const resolved = await getSiteBySlugOrDomain(slug);
+
+  if (!resolved) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 text-center font-sans">
+        <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-600 mb-6 shadow-sm">
+          <Globe className="w-8 h-8" />
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight mb-2">
+          Page Not Found
+        </h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 max-w-md mb-8">
+          The landing page you are looking for does not exist, or the address was entered incorrectly.
+        </p>
+        <Link
+          href={appOrigin()}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-semibold shadow-sm transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to ShipSprint</span>
+        </Link>
+      </div>
+    );
+  }
+
+  // The site row alone decides whether this page exists; the plan below only
+  // affects branding and entitlements, and already degrades to the free tier
+  // when it cannot be read.
+  const site: Site = resolved.site;
+
+  // Check if site is published or accessed by the logged in author
+  const isPublished = site.status === "published";
+  let isOwner = false;
+
+  if (!isPublished) {
+    const authSupabase = await createClient();
+    const {
+      data: { user },
+    } = await authSupabase.auth.getUser();
+
+    isOwner = user?.id === site.user_id;
+
+    if (!isOwner) {
+      // A 200 response here is a soft 404: crawlers index the page and treat
+      // "Page Not Published Yet" as real content. Only the owner may preview a
+      // draft, and everyone else should get a real 404.
+      notFound();
+    }
+  }
+
+  const ownerPlan = resolved.plan;
+
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "shipsprint.site";
+  const liveUrl = site.custom_domain
+    ? `https://${site.custom_domain}`
+    : `https://${site.slug}.${rootDomain}`;
+
+  // Valid Schema.org structured data for rich search engine results
+  const jsonLdData = generateSchemaOrgJsonLd(site, liveUrl);
+
+  let isCustomerHost = slug.startsWith("custom:");
+  if (!isCustomerHost) {
+    try {
+      const reqHeaders = await headers();
+      const rawHost = reqHeaders.get("x-forwarded-host") || reqHeaders.get("host") || "";
+      const classified = classifyHost(rawHost);
+      isCustomerHost = classified.kind !== "app";
+    } catch {
+      isCustomerHost = false;
+    }
+  }
+
+  const basePath = isCustomerHost ? "" : `/site/${site.slug}`;
+
+  return (
+    <div className="relative min-h-screen">
+      {/* JSON-LD Script for SEO & AI Discoverability */}
+      {isPublished && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLdData) }}
+        />
+      )}
+
+      {/* Draft Mode Banner for Site Owner — static so only the N9 header sticks (gate 56). */}
+      {!isPublished && isOwner && (
+        <div className="bg-amber-500 text-zinc-950 px-4 py-2.5 shadow-md flex items-center justify-between text-xs font-medium">
+          <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 shrink-0" />
+              <span>
+                <strong>Draft Preview:</strong> This page is only visible to you. Public visitors cannot see it until you publish.
+              </span>
+            </div>
+            <Link
+              href={`${appOrigin()}/dashboard/editor/${site.id}`}
+              className="px-3 py-1 bg-zinc-950 text-white rounded-lg text-xs font-semibold hover:bg-zinc-800 transition-colors shrink-0"
+            >
+              Open in Editor
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Main Landing Page Content */}
+      {(() => {
+        // Render subpage links at root on customer domains/subdomains, or under /site/[slug] on app host
+        return null;
+      })()}
+      <SiteRenderer
+        content={site.content}
+        plan={ownerPlan}
+        // The owner's own draft preview must not record a real page_view, or
+        // self-traffic inflates the numbers shown on the billing page.
+        isPreview={!isPublished}
+        siteId={isPublished ? site.id : undefined}
+        theme={site.theme}
+        slug={site.slug}
+        basePath={basePath}
+      />
+    </div>
+  );
+}

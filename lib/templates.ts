@@ -31,7 +31,7 @@ export function getFlagshipDefaultContent(
       badge_text: "Built for indie app makers",
       header: "Launch your app page. Without the code.",
       short_description:
-        "Plan, prioritize, and publish your App Store landing page in one simple workspace. Stay on-brand, track every install, and never touch frontend code again.",
+        "Build a high-converting App Store landing page without frontend code. Connect store links, preview on real device frames, and publish to your custom domain.",
       device_screenshot_url: "",
       device_screenshot_url_secondary: "",
       primary_cta_label: "Start building",
@@ -64,7 +64,7 @@ export function getFlagshipDefaultContent(
         icon: "Check",
         title: "Zero-drift page builder",
         description:
-          "Create, prioritize, and publish sections with ease. The editor renders the same component visitors see — what you arrange is what ships.",
+          "Arrange sections and preview updates directly in the browser. The live preview matches what visitors see on mobile and desktop.",
         proof_type: "checklist",
         proof_meta: {
           checklist_items: [
@@ -109,15 +109,15 @@ export function getFlagshipDefaultContent(
     how_it_works: [
       {
         step: "Step 1",
-        title: "Craft your identity",
+        title: "Set up your brand",
         description:
           "Add your icon, screenshots, store links, and copy. Watch the live preview update instantly with zero drift.",
       },
       {
         step: "Step 2",
-        title: "Showcase verified proof",
+        title: "Verified milestones & proof",
         description:
-          "Highlight core capabilities, checklist milestones, and verified ratings to build immediate trust with visitors.",
+          "Highlight core capabilities, checklist milestones, and verified ratings to establish clear credibility with visitors.",
       },
       {
         step: "Step 3",

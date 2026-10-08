@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — ShipSprint",
-  description: "Privacy policy describing how ShipSprint handles, stores, and protects user data and visitor analytics.",
+  description: "Privacy policy detailing data collection, storage practices, and analytics protection on ShipSprint.",
 };
 
 export default function PrivacyPage() {

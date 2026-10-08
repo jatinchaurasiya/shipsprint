@@ -1,4 +1,4 @@
-/* Hges allmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
 "use client";
 
 import React from "react";

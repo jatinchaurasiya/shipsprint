@@ -309,7 +309,7 @@ export function AnalyticsView({
               <Lock className="w-6 h-6" aria-hidden="true" />
             </div>
             <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-              Unlock ShipSprint Analytics
+              Enable ShipSprint Analytics
             </h2>
             <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
               Understand which marketing channels drive actual app downloads. Access real-time visitor counts, store link click-through rates (CTR), and referral attribution with ShipSprint Pro.

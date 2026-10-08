@@ -107,9 +107,9 @@ export default async function HomePage() {
                 Without the code.
               </h1>
               <p className="mt-5 max-w-[50ch] text-base leading-relaxed text-white/90 sm:text-lg">
-                Plan, pick, and publish your App Store landing page in one
-                simple workspace. Stay on-brand, track every install, and never
-                touch frontend code again.
+                Set up and launch your App Store landing page in minutes.
+                Connect store links, preview on real device frames, and host
+                on your own domain without frontend code.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3.5 leading-none">
                 <Link
@@ -159,7 +159,7 @@ export default async function HomePage() {
                 <div className="absolute left-1 top-1 z-20 w-[190px] rotate-[-6deg] transition-transform duration-500 hover:scale-[1.02] hover:rotate-[-4deg] sm:left-3 sm:top-2 sm:w-[218px] lg:w-[235px]">
                   <Image
                     src="/shipsprint-phone-mockup.png"
-                    alt="iPhone showcasing the mobile ShipSprint landing page with App Store and Google Play download buttons"
+                    alt="iPhone mockup displaying the ShipSprint mobile landing page with App Store and Google Play download buttons"
                     width={458}
                     height={950}
                     className="h-auto w-full drop-shadow-[0_28px_56px_rgba(0,0,0,0.48)]"
@@ -332,9 +332,8 @@ export default async function HomePage() {
               <p className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-lg font-semibold text-blue-600 dark:text-blue-400" aria-hidden="true">✓</p>
               <h3 className="mt-4 text-2xl font-semibold tracking-tight">Zero-drift page builder</h3>
               <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-[#505050] sm:text-[15px] dark:text-zinc-300">
-                Create, prioritize, and publish sections with ease. The editor
-                renders the same component visitors see — what you arrange is
-                what ships.
+                Arrange sections and preview updates directly in the browser.
+                The live preview matches what visitors see on mobile and desktop.
               </p>
             </div>
           </div>

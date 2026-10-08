@@ -193,7 +193,7 @@ export function AiDiscoveryPanel({ site, plan, siteId }: AiDiscoveryPanelProps) 
 
           <div className="mt-6 space-y-3">
             <h3 className="text-xs font-semibold text-zinc-900 uppercase tracking-wider dark:text-zinc-100">
-              What Pro Discoverability Unlocks:
+              What Pro Discoverability Includes:
             </h3>
             <ul className="space-y-2 text-xs text-zinc-600 dark:text-zinc-400">
               <li className="flex items-center gap-2">

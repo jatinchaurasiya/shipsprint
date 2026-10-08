@@ -45,7 +45,7 @@ export const HALLMARK_THEMES: Record<string, HallmarkThemeTokens> = {
     accentSubtle: "#E8E7FF",
     fontCategory: "sans",
     buttonRadius: "rounded-xl",
-    tagline: "Modern mobile app launch · Clean, precise & effortless",
+    tagline: "Modern mobile app launch · Built for fast indie shipping",
   },
   midnight: {
     id: "midnight",

@@ -179,7 +179,7 @@ export function BillingView({
             Plans &amp; Billing
           </h1>
           <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-            Manage your subscription, quotas, and unlock custom domains &amp;
+            Manage your subscription, domain settings, and privacy-focused
             analytics.
           </p>
         </div>

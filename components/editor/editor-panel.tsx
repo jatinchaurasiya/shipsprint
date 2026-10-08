@@ -847,7 +847,7 @@ export function EditorPanel({
                   }))
                 }
                 className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all leading-relaxed"
-                placeholder="Gentle nudges, intuitive progress rings, and private cloud sync designed to make healthy routines stick."
+                placeholder="Activity tracking, progress rings, and encrypted cloud sync for daily focus."
               />
             </div>
 
@@ -1509,7 +1509,7 @@ export function EditorPanel({
                   Feature Highlights
                 </h3>
                 <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                  Showcase the key features and benefits of your app.
+                  List your app&apos;s core features and customer benefits.
                 </p>
               </div>
               <button
@@ -1598,7 +1598,7 @@ export function EditorPanel({
                     <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                       Phone Mockup Image{" "}
                       <span className="font-normal text-zinc-400">
-                        (featured in the phone showcase band)
+                        (featured in the phone preview carousel)
                       </span>
                     </label>
                     {feature.image_url ? (
@@ -1680,15 +1680,15 @@ export function EditorPanel({
                 : [
                     {
                       step: "Step 1",
-                      title: "Craft your identity",
+                      title: "Set up your brand",
                       description:
                         "Add your icon, screenshots, store links, and copy. Watch the live preview update instantly with zero drift.",
                     },
                     {
                       step: "Step 2",
-                      title: "Showcase verified proof",
+                      title: "Verified milestones & proof",
                       description:
-                        "Highlight core capabilities, checklist milestones, and verified ratings to build immediate trust with visitors.",
+                        "Highlight core capabilities, checklist milestones, and verified ratings to establish clear credibility with visitors.",
                     },
                     {
                       step: "Step 3",
@@ -1721,13 +1721,13 @@ export function EditorPanel({
                             : [
                                 {
                                   step: "Step 1",
-                                  title: "Craft your identity",
+                                  title: "Set up your brand",
                                   description:
                                     "Add your icon, screenshots, store links, and copy.",
                                 },
                                 {
                                   step: "Step 2",
-                                  title: "Showcase verified proof",
+                                  title: "Verified milestones & proof",
                                   description:
                                     "Highlight core capabilities, checklist milestones, and ratings.",
                                 },
@@ -1758,13 +1758,13 @@ export function EditorPanel({
                             : [
                                 {
                                   step: "Step 1",
-                                  title: "Craft your identity",
+                                  title: "Set up your brand",
                                   description:
                                     "Add your icon, screenshots, store links, and copy.",
                                 },
                                 {
                                   step: "Step 2",
-                                  title: "Showcase verified proof",
+                                  title: "Verified milestones & proof",
                                   description:
                                     "Highlight core capabilities, checklist milestones, and ratings.",
                                 },
@@ -1798,7 +1798,7 @@ export function EditorPanel({
                 Screenshots Gallery
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                Upload your mobile app screenshots to showcase the interface.
+                Upload screenshots of your app running on mobile devices.
                 The first image displays inside the hero iPhone mockup.
               </p>
             </div>
@@ -1933,8 +1933,8 @@ export function EditorPanel({
                 App Release Panel
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                App Store listing metadata: rating, age, chart, version, and
-                notes. Always state honest metrics for your app.
+                App Store listing metadata including rating, age rating, rank, version, plus
+                release notes. State honest metrics for your app.
               </p>
             </div>
 
@@ -2064,7 +2064,7 @@ export function EditorPanel({
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                 Apple App Store Guideline 1.5 & 5.1.1 require active Privacy and Support URLs.
-                Free accounts include the 4 core compliance pages; Pro unlocks custom subpages.
+                Free accounts include the 4 standard compliance pages; Pro includes custom subpages.
               </p>
             </div>
 
@@ -2364,7 +2364,7 @@ export function EditorPanel({
                   <Lock className="w-5 h-5" />
                 </div>
                 <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  Unlock Custom Domains with ShipSprint Pro
+                  Connect Custom Domains with ShipSprint Pro
                 </h4>
                 <p className="text-xs text-zinc-600 dark:text-zinc-400 max-w-xs mx-auto">
                   Free and Basic tiers publish to `your-app.shipsprint.site`.

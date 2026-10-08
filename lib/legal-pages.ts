@@ -26,7 +26,7 @@ We only collect information necessary to provide and improve the ${appName} expe
 ### 2. Device Permissions
 
 Depending on your use of ${appName}, the app may request access to:
-- **Notifications:** To deliver important transactional updates, alerts, and feature reminders. You can opt out at any time in device settings.
+- **Notifications:** To deliver transactional updates and service alerts. You can opt out at any time in device settings.
 - **Photos / Storage:** Only requested when you explicitly choose to upload images or export content within the app.
 
 ### 3. Third-Party Service Providers
@@ -129,7 +129,7 @@ Subscriptions are managed directly by Apple or Google:
 - **Android:** Open **Google Play Store > Profile > Payments & Subscriptions > Subscriptions > ${appName} > Cancel**.
 
 #### How do I request account deletion?
-We respect your privacy and provide a seamless way to delete your data. You can initiate instant deletion within the app under **Settings > Privacy > Delete Account**, or email us directly at [${contactEmail}](mailto:${contactEmail}) with the subject line *"Account Deletion Request"*.
+We respect your privacy. You can initiate account and data deletion directly within the app under **Settings > Privacy > Delete Account**, or email us at [${contactEmail}](mailto:${contactEmail}) with the subject line *"Account Deletion Request"*.
 
 #### The app crashed or isn't behaving as expected. What should I do?
 1. Ensure you have updated to the latest version of ${appName} from the App Store or Google Play.
