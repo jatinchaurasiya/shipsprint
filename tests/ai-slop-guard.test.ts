@@ -1,38 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
 import { generatePrivacyPolicy, generateTermsOfService, generateSupportPage } from "@/lib/legal-pages";
 import { HALLMARK_THEMES } from "@/lib/theme-tokens";
-
-const DESLOP_PATH = resolve(process.cwd(), ".agents/skills/slopmonster/tools/deslop.py");
-
-function checkWithDeslop(text: string): { score: number; output: string } {
-  const res = spawnSync("python3", [DESLOP_PATH, "--text", text], {
-    encoding: "utf-8",
-  });
-  const output = (res.stdout || "") + (res.stderr || "");
-  const match = output.match(/score\s+(\d+)\/5/);
-  const score = match ? parseInt(match[1]!, 10) : (res.status === 0 ? 5 : 0);
-  return { score, output };
-}
+import { auditCopy } from "@/lib/slop-detector";
 
 describe("SlopMonster Production Copy Quality Guards", () => {
   it("enforces 5/5 score for default template hero copy", () => {
-    const text = "Build a high-converting App Store landing page without frontend code. Connect store links, preview on real device frames, and publish to your custom domain.";
-    const result = checkWithDeslop(text);
+    const text =
+      "Build a high-converting App Store landing page without frontend code. Connect store links, preview on real device frames, and publish to your custom domain.";
+    const result = auditCopy(text);
     expect(result.score).toBe(5);
+    expect(result.isClean).toBe(true);
   });
 
   it("enforces 5/5 score for default feature builder copy", () => {
-    const text = "Arrange sections and preview updates directly in the browser. The live preview matches what visitors see on mobile and desktop.";
-    const result = checkWithDeslop(text);
+    const text =
+      "Arrange sections and preview updates directly in the browser. The live preview matches what visitors see on mobile and desktop.";
+    const result = auditCopy(text);
     expect(result.score).toBe(5);
+    expect(result.isClean).toBe(true);
   });
 
   it("enforces 5/5 score for default theme tagline", () => {
     const text = HALLMARK_THEMES.minimal!.tagline;
-    const result = checkWithDeslop(text);
+    const result = auditCopy(text);
     expect(result.score).toBe(5);
+    expect(result.isClean).toBe(true);
   });
 
   it("enforces 5/5 score for generated legal account deletion copy", () => {
@@ -50,5 +42,26 @@ describe("SlopMonster Production Copy Quality Guards", () => {
     expect(support.toLowerCase()).not.toContain("seamless");
     expect(support.toLowerCase()).not.toContain("robust");
     expect(support.toLowerCase()).not.toContain("effortless");
+  });
+
+  it("correctly catches AI slop tells and deducts quality points", () => {
+    // 1. Catches AI vocabulary
+    const slopVocab = "Our app seamlessly elevates your daily morning routine with cutting-edge tools.";
+    const vocabResult = auditCopy(slopVocab);
+    expect(vocabResult.score).toBeLessThan(5);
+    expect(vocabResult.isClean).toBe(false);
+    expect(vocabResult.hits.vocab.length).toBeGreaterThan(0);
+
+    // 2. Catches AI constructions ("not just X, but Y")
+    const slopPhrase = "It's not just a tracker, but a lifestyle companion.";
+    const phraseResult = auditCopy(slopPhrase);
+    expect(phraseResult.score).toBeLessThan(5);
+    expect(phraseResult.hits.phrases.length).toBeGreaterThan(0);
+
+    // 3. Catches rule-of-three cadence
+    const slopTricolon = "Fast, clean, and direct app launcher.";
+    const tricolonResult = auditCopy(slopTricolon);
+    expect(tricolonResult.score).toBeLessThan(5);
+    expect(tricolonResult.hits.rhythm.length).toBeGreaterThan(0);
   });
 });
