@@ -156,6 +156,7 @@ export async function proxy(request: NextRequest) {
       pathname === "/api/health" ||
       pathname === "/robots.txt" ||
       pathname === "/sitemap.xml" ||
+      pathname === "/site.xml" ||
       pathname === "/llms.txt" ||
       pathname === "/favicon.ico"
     ) {

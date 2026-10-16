@@ -77,7 +77,10 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
 
         return {
           rules,
-          sitemap: `${canonicalOrigin}/sitemap.xml`,
+          sitemap: [
+            `${canonicalOrigin}/sitemap.xml`,
+            `${canonicalOrigin}/site.xml`,
+          ],
         };
       }
 
@@ -89,8 +92,16 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
             allow: "/",
             disallow: ["/api/"],
           },
+          {
+            userAgent: "Googlebot",
+            allow: "/",
+            disallow: ["/api/"],
+          },
         ],
-        sitemap: `${canonicalOrigin}/sitemap.xml`,
+        sitemap: [
+          `${canonicalOrigin}/sitemap.xml`,
+          `${canonicalOrigin}/site.xml`,
+        ],
       };
     }
   } catch (err) {
@@ -107,7 +118,15 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
         allow: "/",
         disallow: ["/dashboard/", "/api/"],
       },
+      {
+        userAgent: "Googlebot",
+        allow: "/",
+        disallow: ["/dashboard/", "/api/"],
+      },
     ],
-    sitemap: `${defaultBaseUrl}/sitemap.xml`,
+    sitemap: [
+      `${defaultBaseUrl}/sitemap.xml`,
+      `${defaultBaseUrl}/site.xml`,
+    ],
   };
 }
