@@ -26,6 +26,32 @@ export function SiteFooter() {
               Ship your app page. Without the code. The landing-page platform
               for indie iOS &amp; Android apps.
             </p>
+            <div className="mt-6">
+              <a
+                href="https://www.codehype.ai/product/shipsprint?utm_source=codehype_badge"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block transition-transform hover:scale-105 active:scale-95"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://www.codehype.ai/badges/shipsprint.svg?variant=find-us&v=20"
+                  alt="Featured on CodeHype"
+                  width={180}
+                  height={65}
+                  loading="lazy"
+                  decoding="async"
+                  style={{
+                    display: "inline-block",
+                    border: 0,
+                    width: "100%",
+                    maxWidth: "180px",
+                    height: "auto",
+                    maxHeight: "65px",
+                  }}
+                />
+              </a>
+            </div>
           </div>
           {/* Office / contact — real addresses from the imprint */}
           <div className="min-w-0 md:col-span-3">
