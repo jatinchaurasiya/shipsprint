@@ -441,8 +441,7 @@ export default async function HomePage() {
             Simple pricing for makers.
           </h2>
           <p className="mt-3 max-w-[60ch] text-sm text-[#505050] sm:text-base dark:text-zinc-300">
-            Start free. Upgrade when your portfolio grows. Prices below are
-            read from the database — the same source checkout uses.
+            Start free. Upgrade when your portfolio grows.
           </p>
         </div>
 
