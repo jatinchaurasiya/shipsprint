@@ -191,12 +191,17 @@ export const sitePageSchema = z
     nav_label: shortText(60).optional(),
     show_in_nav: z.boolean().optional(),
     show_in_footer: z.boolean().optional(),
-    page_type: z.enum(["home", "privacy", "terms", "support", "custom"]),
+    page_type: z.enum(["home", "privacy", "terms", "support", "custom", "blog"]),
     is_system: z.boolean().optional(),
     is_published: z.boolean().optional(),
     content_markdown: z.string().max(65536),
     meta_title: shortText(160).optional(),
     meta_description: shortText(320).optional(),
+    excerpt: shortText(500).optional(),
+    author: shortText(100).optional(),
+    published_date: z.string().max(40).optional(),
+    cover_image_url: httpUrl.or(z.literal("")).optional(),
+    reading_time_minutes: z.number().int().min(1).max(120).optional(),
     updated_at: z.string().optional(),
   })
   .strict();
@@ -274,7 +279,7 @@ export const siteContentSchema = z
       .optional(),
     store_links: storeLinksSchema,
     screenshots: z.array(httpUrl).max(20),
-    pages: z.array(sitePageSchema).max(30).optional(),
+    pages: z.array(sitePageSchema).max(120).optional(),
     trust: z
       .object({
         rating: shortText(20),

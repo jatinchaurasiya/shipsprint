@@ -231,7 +231,12 @@ export function SiteRenderer({
     (p) =>
       p.is_published !== false &&
       p.show_in_nav === true &&
+      p.page_type !== "blog" &&
       !["home", "privacy", "terms", "support", "imprint"].includes(p.slug)
+  );
+
+  const publishedBlogPosts = (pages || []).filter(
+    (p) => p.page_type === "blog" && p.is_published !== false
   );
 
   // Impacts fallbacks
@@ -336,6 +341,14 @@ export function SiteRenderer({
             >
               How it works
             </a>
+            {publishedBlogPosts.length > 0 && (
+              <a
+                href="#blog"
+                className="whitespace-nowrap transition-colors hover:text-[#131313] active:text-[#131313] dark:hover:text-white"
+              >
+                Blog
+              </a>
+            )}
             {navPages.map((page) => (
               <a
                 key={page.id}
@@ -881,6 +894,93 @@ export function SiteRenderer({
           </ol>
         </div>
       </section>
+
+      {/* Blog & Marketing Updates Section */}
+      {publishedBlogPosts.length > 0 && (
+        <section
+          id="blog"
+          className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 md:py-24 lg:px-8 border-t border-zinc-200 dark:border-zinc-800"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div className="max-w-2xl">
+              <p className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+                Updates & Insights
+              </p>
+              <h2 className={`mt-4 font-display ${isMobileView ? "text-3xl" : "text-4xl sm:text-5xl"} font-semibold tracking-tight text-balance`}>
+                From the blog.
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-[#505050] sm:text-base dark:text-zinc-300">
+                Discover the latest feature releases, design notes, and stories from the {appName} team.
+              </p>
+            </div>
+            {publishedBlogPosts.length > 3 && (
+              <a
+                href={resolveSubpageHref("blog")}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-zinc-100 hover:opacity-75 transition-opacity"
+              >
+                <span>View all articles</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
+
+          <div className={`mt-10 grid grid-cols-1 gap-6 ${isMobileView ? "grid-cols-1" : "md:grid-cols-2 lg:grid-cols-3"}`}>
+            {publishedBlogPosts.slice(0, 6).map((post) => {
+              const postWordCount = (post.content_markdown || "").trim().split(/\s+/).length;
+              const postReadingTime = post.reading_time_minutes || Math.max(1, Math.ceil(postWordCount / 200));
+              const postDate = post.published_date || post.updated_at
+                ? new Date(post.published_date || post.updated_at || "").toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "Recently published";
+
+              return (
+                <a
+                  key={post.id}
+                  href={resolveSubpageHref(post.slug)}
+                  className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-white p-6 transition-all duration-200 hover:border-zinc-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
+                >
+                  <div>
+                    {post.cover_image_url ? (
+                      <div className="mb-4 overflow-hidden rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={post.cover_image_url}
+                          alt={post.title}
+                          className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+                    ) : null}
+
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500">
+                      <span>{postDate}</span>
+                      <span>•</span>
+                      <span>{postReadingTime} min read</span>
+                    </div>
+
+                    <h3 className="mt-2.5 text-lg font-semibold tracking-tight text-zinc-950 group-hover:text-blue-600 transition-colors dark:text-zinc-50 dark:group-hover:text-blue-400">
+                      {post.title}
+                    </h3>
+
+                    {post.excerpt && (
+                      <p className="mt-2 text-xs leading-relaxed text-zinc-600 line-clamp-3 dark:text-zinc-400">
+                        {post.excerpt}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 group-hover:gap-2 transition-all dark:text-zinc-100">
+                    <span>Read article</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Official Store Badges / Download Station */}
       <section

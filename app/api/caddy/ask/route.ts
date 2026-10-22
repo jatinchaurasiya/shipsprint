@@ -4,7 +4,6 @@ import { logger } from "@/lib/logger";
 import { rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { clientKey } from "@/lib/request";
 import { normalizeHostname } from "@/lib/redirect";
-import { publicEnv } from "@/lib/env";
 
 /**
  * Caddy on-demand TLS authorization endpoint.
@@ -52,21 +51,28 @@ export async function GET(request: NextRequest) {
 
   try {
     const rootDomain = (
-      publicEnv().NEXT_PUBLIC_ROOT_DOMAIN ||
       process.env.ROOT_DOMAIN ||
-      "localhost"
+      process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
+      "shipsprint.site"
     )
       .toLowerCase()
       .split(":")[0]!;
 
     const r2PublicDomain = (process.env.R2_PUBLIC_DOMAIN || "").toLowerCase().trim();
+    const cnameTarget = (process.env.CNAME_TARGET_HOST || "").toLowerCase().trim().split(":")[0]!;
+    const appHosts = (process.env.APP_HOSTS || "")
+      .split(",")
+      .map((h) => h.trim().toLowerCase().split(":")[0]!)
+      .filter(Boolean);
 
-    // The root domain, www, and assets storage domains are always authorized.
+    // The root domain, www, assets storage, CNAME routing target, and explicit app hosts are always authorized.
     if (
       domain === rootDomain ||
       domain === `www.${rootDomain}` ||
       domain === `assets.${rootDomain}` ||
-      (r2PublicDomain && domain === r2PublicDomain)
+      (r2PublicDomain && domain === r2PublicDomain) ||
+      (cnameTarget && domain === cnameTarget) ||
+      appHosts.includes(domain)
     ) {
       return new NextResponse(null, { status: 200 });
     }
@@ -81,7 +87,6 @@ export async function GET(request: NextRequest) {
         .from("sites")
         .select("id, custom_domain, status")
         .eq("slug", slug)
-        .eq("status", "published")
         .maybeSingle();
       site = data;
     } else {
@@ -89,7 +94,6 @@ export async function GET(request: NextRequest) {
         .from("sites")
         .select("id, custom_domain, status")
         .eq("custom_domain", domain)
-        .eq("status", "published")
         .maybeSingle();
       site = data;
     }
@@ -103,7 +107,7 @@ export async function GET(request: NextRequest) {
       await admin
         .from("domain_verifications")
         .update({
-          ssl_status: "issuing",
+          ssl_status: "active",
           checked_at: new Date().toISOString(),
         })
         .eq("site_id", site.id);

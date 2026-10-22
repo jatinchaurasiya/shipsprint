@@ -141,8 +141,10 @@ START_TIME=$(date +%s)
 
 PULL_SUCCESS=false
 if [ "${FORCE_CLEAN:-false}" != "true" ]; then
-  if $COMPOSE_CMD pull app redis caddy; then
+  if $COMPOSE_CMD pull app redis; then
     log_success "Successfully pulled pre-built production container images."
+    log_info "Building Caddy with Cloudflare DNS-01 plugin..."
+    $COMPOSE_CMD build caddy
     PULL_SUCCESS=true
   else
     log_warn "Failed to pull pre-built app image from registry. Falling back to local build."

@@ -440,6 +440,38 @@ export function EditorPanel({
     setActivePageId(newPage.id);
   };
 
+  const handleAddBlogPage = (pageData: Partial<SitePage> & { title: string; slug: string }) => {
+    const now = new Date().toISOString();
+    const newPage: SitePage = {
+      id: `blog-${Date.now()}`,
+      slug: pageData.slug,
+      title: pageData.title,
+      nav_label: pageData.nav_label || pageData.title,
+      show_in_nav: pageData.show_in_nav ?? false,
+      show_in_footer: pageData.show_in_footer ?? true,
+      page_type: "blog",
+      is_system: false,
+      is_published: true,
+      excerpt: pageData.excerpt || "",
+      author: pageData.author || content.brand?.name || content.hero?.app_name || "Team",
+      published_date: now.split("T")[0],
+      cover_image_url: pageData.cover_image_url || "",
+      reading_time_minutes: pageData.reading_time_minutes || 3,
+      content_markdown:
+        pageData.content_markdown ||
+        `# ${pageData.title}\n\nWrite your blog post here...`,
+      updated_at: now,
+    };
+    updateContent((prev) => ({
+      ...prev,
+      pages: [
+        ...(prev.pages && prev.pages.length > 0 ? prev.pages : appPages),
+        newPage,
+      ],
+    }));
+    setActivePageId(newPage.id);
+  };
+
   const handleDeleteCustomPage = (pageId: string) => {
     updateContent((prev) => ({
       ...prev,
@@ -456,7 +488,7 @@ export function EditorPanel({
     { id: "features", label: "Features", badge: content.features?.length || 0 },
     { id: "how", label: "How It Works" },
     { id: "store", label: "Store Links" },
-    { id: "pages", label: "Legal & Pages", badge: appPages.length },
+    { id: "pages", label: "Pages & Blog", badge: appPages.length },
     { id: "footer", label: "Footer" },
     { id: "domain", label: "Domain" },
     { id: "ai_discovery", label: "AI & Search" },
@@ -2060,11 +2092,10 @@ export function EditorPanel({
           <div className="space-y-5 animate-in fade-in duration-150">
             <div>
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                App Pages & Regulatory Compliance
+                Pages, Blog & Regulatory Compliance
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                Apple App Store Guideline 1.5 & 5.1.1 require active Privacy and Support URLs.
-                Free accounts include the 4 standard compliance pages; Pro includes custom subpages.
+                Publish marketing articles to power app SEO and AEO discoverability, plus maintain required App Store legal & support documents.
               </p>
             </div>
 
@@ -2075,6 +2106,7 @@ export function EditorPanel({
               onSelectPage={setActivePageId}
               onUpdatePage={handleUpdatePage}
               onAddCustomPage={handleAddCustomPage}
+              onAddBlogPage={handleAddBlogPage}
               onDeleteCustomPage={handleDeleteCustomPage}
             />
           </div>
@@ -2518,7 +2550,10 @@ export function EditorPanel({
                         {(
                           [
                             [domainInstructions.ownership, "Ownership (TXT)"],
-                            [domainInstructions.routing, "Routing (CNAME)"],
+                            [
+                              domainInstructions.routing,
+                              `Routing (${domainInstructions.routing.type})`,
+                            ],
                           ] as const
                         ).map(([record, label]) => (
                           <div

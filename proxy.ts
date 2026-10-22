@@ -135,7 +135,8 @@ function needsAuth(pathname: string) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const host = classifyHost(request.headers.get("host") ?? "");
+  const rawHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+  const host = classifyHost(rawHost);
 
   // If customer subdomain or custom domain, rewrite to /site/[lookup].
   //

@@ -14,6 +14,7 @@ import {
   dnsInstructions,
   resolveCname,
   resolveTxt,
+  resolveARecord,
 } from "@/lib/dns";
 import type { DomainStatus, SslStatus } from "@/types/database";
 
@@ -118,7 +119,8 @@ export async function GET(request: NextRequest) {
       site.custom_domain,
       cnameTarget(),
       verifyPrefix(),
-      ownershipToken(siteId)
+      ownershipToken(siteId),
+      state.targetIp
     ),
   });
 }
@@ -128,9 +130,9 @@ export async function GET(request: NextRequest) {
  *
  * Two independent signals are required before a domain is reported active:
  * a matching ownership TXT record, and a routing record that points at this
- * deployment.
+ * deployment (either via CNAME or via matching server IPv4 address).
  */
-async function checkDomain(
+export async function checkDomain(
   admin: ReturnType<typeof createAdminClient>,
   siteId: string,
   domain: string
@@ -139,17 +141,36 @@ async function checkDomain(
   const token = ownershipToken(siteId);
   const target = cnameTarget();
 
-  const [txt, cname] = await Promise.all([
+  const [txtSpecific, txtApex, cname, domainA, targetA] = await Promise.all([
     resolveTxt(`${verifyPrefix()}.${domain}`),
+    resolveTxt(domain),
     resolveCname(domain),
+    resolveARecord(domain),
+    resolveARecord(target),
   ]);
 
-  const ownershipOk = txt.values.includes(token);
-  const routingOk =
+  // Support both _shipverify.<domain> and <domain> (some DNS providers strip prefixes)
+  const ownershipOk =
+    txtSpecific.values.includes(token) || txtApex.values.includes(token);
+
+  // 1. CNAME check (standard for subdomains)
+  const cnameMatches =
     cname.ok && cname.values.some((value) => value.replace(/\.$/, "") === target);
 
-  // DNS that does not point here at all.
-  const dnsResolves = cname.ok || txt.ok;
+  // 2. A-record check (standard for apex domains, ALIAS/ANAME, and Cloudflare CNAME flattening)
+  const serverIp = process.env.SERVER_IPV4?.trim();
+  const expectedIps = new Set<string>([
+    ...(serverIp ? [serverIp] : []),
+    ...(targetA.ok ? targetA.values : []),
+  ]);
+
+  const aRecordMatches =
+    domainA.ok &&
+    expectedIps.size > 0 &&
+    domainA.values.some((ip) => expectedIps.has(ip));
+
+  const routingOk = cnameMatches || aRecordMatches;
+  const dnsResolves = cname.ok || txtSpecific.ok || txtApex.ok || domainA.ok;
 
   let status: DomainStatus;
   let sslStatus: SslStatus;
@@ -158,14 +179,9 @@ async function checkDomain(
     status = "pending_dns";
     sslStatus = "pending";
   } else if (!routingOk) {
-    // Ownership proven, but traffic is not routed here, so no certificate can
-    // be issued yet.
     status = "pending_validation";
     sslStatus = "pending";
   } else {
-    // Caddy performs an on-demand TLS handshake the first time this hostname is
-    // requested. Reaching this state means the certificate has actually been
-    // issued by the edge.
     status = "active";
     sslStatus = "active";
   }
@@ -175,7 +191,18 @@ async function checkDomain(
     .update({ status, ssl_status: sslStatus, checked_at: checkedAt })
     .eq("site_id", siteId);
 
-  return { status, sslStatus, checkedAt, dnsResolves, ownershipOk, routingOk };
+  const targetIp =
+    serverIp || (targetA.ok && targetA.values.length > 0 ? targetA.values[0] : null);
+
+  return {
+    status,
+    sslStatus,
+    checkedAt,
+    dnsResolves,
+    ownershipOk,
+    routingOk,
+    targetIp,
+  };
 }
 
 /** POST — connect a custom domain. */
@@ -361,7 +388,8 @@ export async function POST(request: NextRequest) {
       cleanDomain,
       cnameTarget(),
       verifyPrefix(),
-      ownershipToken(siteId)
+      ownershipToken(siteId),
+      state.targetIp
     ),
   });
 }

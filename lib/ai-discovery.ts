@@ -9,7 +9,7 @@
  * Strict Hallmark constraint: Never fabricate metrics, reviews, ratings, or ranking guarantees.
  */
 
-import type { Site, SiteContent } from "@/types/database";
+import type { Site, SiteContent, SitePage } from "@/types/database";
 
 export interface DiscoverabilityCheckItem {
   id: string;
@@ -190,6 +190,62 @@ export function generateSchemaOrgJsonLd(
 }
 
 /**
+ * Generates valid Schema.org BlogPosting structured data for published articles.
+ * Crucial for Google Rich Articles and LLM answer engine attribution (AEO).
+ */
+export function generateBlogPostingJsonLd(options: {
+  site: Site;
+  page: SitePage;
+  canonicalUrl: string;
+}): Record<string, unknown> {
+  const { site, page, canonicalUrl } = options;
+  const content = site.content;
+  const appName = content.brand?.name || content.hero?.app_name || site.slug;
+  const description =
+    page.excerpt ||
+    page.meta_description ||
+    `Official article by ${appName}: ${page.title}`;
+
+  const jsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: page.title,
+    description,
+    url: canonicalUrl,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonicalUrl,
+    },
+    datePublished: page.published_date || page.updated_at || new Date().toISOString(),
+    dateModified: page.updated_at || page.published_date || new Date().toISOString(),
+    author: {
+      "@type": "Person",
+      name: page.author || `${appName} Team`,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: appName,
+      ...(content.brand?.logo_url
+        ? {
+            logo: {
+              "@type": "ImageObject",
+              url: content.brand.logo_url,
+            },
+          }
+        : {}),
+    },
+  };
+
+  if (page.cover_image_url) {
+    jsonLd.image = page.cover_image_url;
+  } else if (content.screenshots?.[0]) {
+    jsonLd.image = content.screenshots[0];
+  }
+
+  return jsonLd;
+}
+
+/**
  * Returns supported AI crawler policies.
  */
 export function getSupportedCrawlerPolicies(site: {
@@ -301,9 +357,23 @@ export function generateLlmsTxtContent(
   lines.push(`- [Home](${canonicalOrigin})`);
 
   const pages = content.pages || [];
-  for (const page of pages) {
+  const complianceAndCustomPages = pages.filter((p) => p.page_type !== "blog");
+  const blogPosts = pages.filter(
+    (p) => p.page_type === "blog" && p.is_published !== false
+  );
+
+  for (const page of complianceAndCustomPages) {
     if (page.is_published !== false && page.slug) {
       lines.push(`- [${page.title || page.slug}](${canonicalOrigin}/${page.slug})`);
+    }
+  }
+
+  if (blogPosts.length > 0) {
+    lines.push("");
+    lines.push("## Blog & Product Updates");
+    for (const post of blogPosts) {
+      const desc = post.excerpt ? `: ${post.excerpt}` : "";
+      lines.push(`- [${post.title}](${canonicalOrigin}/${post.slug})${desc}`);
     }
   }
 

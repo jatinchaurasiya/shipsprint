@@ -168,19 +168,41 @@ export async function resolveSitemapEntries(
           });
         }
 
-        // Custom published pages
+        // Custom published pages & blog posts
         const contentPages = site.content?.pages || [];
+        const hasBlogPosts = contentPages.some(
+          (p) => p.page_type === "blog" && p.is_published !== false
+        );
+        const hasExplicitBlogSlug = contentPages.some((p) => p.slug === "blog");
+
+        // Automatically provide /blog in sitemap if blog posts exist
+        if (hasBlogPosts && !hasExplicitBlogSlug) {
+          customerRoutes.push({
+            url: `${canonicalOrigin}/blog`,
+            lastModified: siteLastMod,
+            changeFrequency: "weekly",
+            priority: 0.7,
+          });
+        }
+
         for (const p of contentPages) {
           if (
             p.is_published !== false &&
             p.slug &&
             !standardSlugs.includes(p.slug)
           ) {
+            const isBlog = p.page_type === "blog";
+            const postImages: string[] = [];
+            if (p.cover_image_url) {
+              postImages.push(p.cover_image_url);
+            }
+
             customerRoutes.push({
               url: `${canonicalOrigin}/${p.slug}`,
               lastModified: p.updated_at ? new Date(p.updated_at) : siteLastMod,
-              changeFrequency: "monthly",
-              priority: 0.6,
+              changeFrequency: isBlog ? "weekly" : "monthly",
+              priority: isBlog ? 0.8 : 0.6,
+              ...(postImages.length > 0 ? { images: postImages } : {}),
             });
           }
         }

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/logger";
 import { assertCronAuthorized } from "@/lib/request";
+import { checkDomain } from "@/app/api/domains/route";
 
 /**
  * Scheduled maintenance.
@@ -63,12 +64,35 @@ export async function POST(request: NextRequest) {
       .select("site_id, status")
       .in("status", ["pending_dns", "pending_validation"])
       .lt("checked_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
-      .limit(50);
+      .limit(20);
 
     if (stuckError) throw stuckError;
+
+    let reconciledCount = 0;
+    if (stuck && stuck.length > 0) {
+      const siteIds = stuck.map((s) => s.site_id);
+      const { data: sites } = await admin
+        .from("sites")
+        .select("id, custom_domain")
+        .in("id", siteIds);
+
+      const siteMap = new Map((sites ?? []).map((s) => [s.id, s.custom_domain]));
+
+      for (const item of stuck) {
+        const domain = siteMap.get(item.site_id);
+        if (domain) {
+          try {
+            await checkDomain(admin, item.site_id, domain);
+            reconciledCount++;
+          } catch {
+            // best-effort per domain check
+          }
+        }
+      }
+    }
+
     result.domainsPending = stuck?.length ?? 0;
-    // Full re-verification happens on the next /api/domains read or editor poll;
-    // this only marks what is stale so it is not silently forgotten.
+    result.domainsReconciled = reconciledCount;
   } catch (error) {
     result.domainsPending = null;
     logger.exception("domain reconcile failed", error);

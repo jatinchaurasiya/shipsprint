@@ -13,6 +13,10 @@ import {
   generateTermsOfService,
   generateSupportPage,
 } from "@/lib/legal-pages";
+import {
+  generateBlogPostingJsonLd,
+  safeJsonLdStringify,
+} from "@/lib/ai-discovery";
 
 interface SubpageProps {
   params: Promise<{ slug: string; pageSlug: string }>;
@@ -82,6 +86,37 @@ function resolvePage(site: Site, pageSlug: string): SitePage | null {
     };
   }
 
+  // Automatic blog index if customer visits /blog and has published blog posts
+  if (pageSlug === "blog") {
+    const blogPosts = pages.filter(
+      (p) => p.page_type === "blog" && p.is_published !== false
+    );
+    if (blogPosts.length > 0) {
+      const postsMarkdown = blogPosts
+        .map((p) => {
+          const dateStr = p.published_date
+            ? ` *(${p.published_date})*`
+            : p.updated_at
+            ? ` *(${p.updated_at.split("T")[0]})*`
+            : "";
+          const desc = p.excerpt ? `\n\n${p.excerpt}` : "";
+          return `### [${p.title}](/${p.slug})${dateStr}${desc}\n\n[Read full article →](/${p.slug})`;
+        })
+        .join("\n\n---\n\n");
+
+      return {
+        id: "generated-blog-index",
+        slug: "blog",
+        title: "Blog & Product Updates",
+        page_type: "blog",
+        is_system: true,
+        content_markdown: `# Blog & Product Updates\n\nLatest updates, announcements, and guides from the **${appName}** team.\n\n---\n\n${postsMarkdown}`,
+        meta_title: `Blog & Product Updates - ${appName}`,
+        meta_description: `Read the latest articles, releases, and announcements for ${appName}.`,
+      };
+    }
+  }
+
   return null;
 }
 
@@ -105,13 +140,34 @@ export async function generateMetadata({
     : `https://${resolved.site.slug}.${rootDomain}`;
   const canonicalUrl = `${canonicalBase}/${page.slug}`;
 
+  const isBlog = page.page_type === "blog";
+  const desc =
+    page.excerpt ||
+    page.meta_description ||
+    `Official ${page.title} page for the ${appName} mobile application.`;
+
   return {
     title: page.meta_title || `${page.title} - ${appName}`,
-    description:
-      page.meta_description ||
-      `Official ${page.title} page for the ${appName} mobile application.`,
+    description: desc,
     alternates: {
       canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: page.title,
+      description: desc,
+      url: canonicalUrl,
+      type: isBlog ? "article" : "website",
+      images: page.cover_image_url
+        ? [{ url: page.cover_image_url, alt: page.title }]
+        : undefined,
+      publishedTime: page.published_date || page.updated_at,
+      authors: page.author ? [page.author] : undefined,
+    },
+    twitter: {
+      card: isBlog && page.cover_image_url ? "summary_large_image" : "summary",
+      title: page.title,
+      description: desc,
+      images: page.cover_image_url ? [page.cover_image_url] : undefined,
     },
     robots: {
       index: resolved.site.status === "published",
@@ -150,11 +206,35 @@ export default async function PublicSubpage({ params }: SubpageProps) {
   const isCustomerHost = await isCustomerHostRequest(slug);
   const homeHref = isCustomerHost ? "/" : `/site/${site.slug}`;
 
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "shipsprint.site";
+  const canonicalBase = site.custom_domain
+    ? `https://${site.custom_domain}`
+    : `https://${site.slug}.${rootDomain}`;
+  const canonicalUrl = `${canonicalBase}/${page.slug}`;
+
+  const isPublished = site.status === "published";
+  const jsonLd =
+    page.page_type === "blog" && isPublished
+      ? generateBlogPostingJsonLd({
+          site,
+          page,
+          canonicalUrl,
+        })
+      : null;
+
   return (
-    <PageRenderer
-      content={site.content}
-      page={page}
-      homeHref={homeHref}
-    />
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
+        />
+      )}
+      <PageRenderer
+        content={site.content}
+        page={page}
+        homeHref={homeHref}
+      />
+    </>
   );
 }

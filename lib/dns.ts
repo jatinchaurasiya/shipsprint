@@ -5,13 +5,12 @@ import { promises as dns } from "node:dns";
 /**
  * DNS resolution for custom-domain verification.
  *
- * There was no verification loop at all: `domain_verifications` rows were
- * written once and never read, and the editor reported "Active & TLS Verified"
- * the instant the user clicked Connect. These helpers are what make the
- * reported status reflect reality.
+ * Provides real-time DNS queries for:
+ *   1. Domain ownership TXT records (_shipverify.<domain>)
+ *   2. Domain routing CNAME records (pointing to cnameTarget)
+ *   3. Domain routing A records (matching server IPv4 or cnameTarget IPv4)
  *
- * Uses `dns/promises`, which is available in the Node.js runtime. Route
- * handlers that call this must not be pinned to the edge runtime.
+ * Uses `dns/promises`, which is available in the Node.js runtime.
  */
 
 export interface DnsResult {
@@ -42,8 +41,6 @@ export async function resolveTxt(hostname: string): Promise<DnsResult> {
     };
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
-    // ENODATA / ENOTFOUND simply mean the record is absent, which is a normal
-    // state while the user is still configuring DNS.
     return {
       ok: false,
       values: [],
@@ -87,42 +84,111 @@ export async function resolveARecord(hostname: string): Promise<DnsResult> {
 }
 
 /**
- * What the user must create, derived from the domain itself.
+ * Resolves the primary public IPv4 address of the routing target.
+ * Prefers the explicit SERVER_IPV4 environment variable, falling back to
+ * dynamically resolving the A record of `cnameTarget`.
+ */
+export async function getDnsTargetIp(cnameTarget: string): Promise<string | null> {
+  const envIp = process.env.SERVER_IPV4?.trim();
+  if (envIp) return envIp;
+
+  try {
+    const res = await resolveARecord(cnameTarget);
+    if (res.ok && res.values.length > 0 && res.values[0]) {
+      return res.values[0];
+    }
+  } catch {
+    // Non-fatal; falls back to cnameTarget string
+  }
+  return null;
+}
+
+/**
+ * Detects whether a domain is an apex domain (e.g. `example.com`, `example.co.uk`)
+ * or a subdomain (e.g. `app.example.com`, `launch.example.co.uk`), and extracts
+ * the exact relative record name for registrar configurations.
+ */
+export function parseDomainLabels(domain: string): {
+  isApex: boolean;
+  subdomainLabel: string;
+} {
+  const clean = domain.trim().toLowerCase().replace(/\.$/, "");
+  const parts = clean.split(".").filter(Boolean);
+
+  if (parts.length <= 2) {
+    return { isApex: true, subdomainLabel: "@" };
+  }
+
+  // Common second-level domain ccTLDs where a 3-part hostname is still an apex
+  const twoPartTlds = new Set([
+    "co.uk", "org.uk", "me.uk", "ltd.uk",
+    "com.au", "net.au", "org.au", "edu.au",
+    "co.nz", "net.nz", "org.nz",
+    "co.za", "org.za",
+    "co.jp", "ne.jp", "or.jp",
+    "com.br", "net.br",
+    "com.mx", "org.mx",
+    "co.in", "net.in", "org.in", "gen.in", "firm.in", "ind.in",
+    "com.sg", "edu.sg",
+    "com.tr", "org.tr",
+  ]);
+
+  const lastTwo = `${parts[parts.length - 2]}.${parts[parts.length - 1]}`;
+  if (parts.length === 3 && twoPartTlds.has(lastTwo)) {
+    return { isApex: true, subdomainLabel: "@" };
+  }
+
+  const apexLabelCount = twoPartTlds.has(lastTwo) ? 3 : 2;
+  const subLabels = parts.slice(0, parts.length - apexLabelCount);
+  return {
+    isApex: false,
+    subdomainLabel: subLabels.join(".") || "@",
+  };
+}
+
+/**
+ * Produces accurate, registrar-compatible DNS instructions for a custom domain.
  *
- * An apex domain (`myapp.com`) cannot be pointed with a CNAME, so it needs an
- * A/ALIAS record. The previous instructions said "CNAME" for every domain and
- * gave the record name as `@ or app` while the API stored the first label
- * (`myapp`), so the UI and the API answered the same question differently.
+ * For subdomains (e.g. `app.mybrand.com`):
+ *   - Type: CNAME
+ *   - Name: `app` (relative)
+ *   - Value: `cname.shipsprint.site`
+ *
+ * For apex domains (e.g. `mybrand.com`):
+ *   - Type: A
+ *   - Name: `@`
+ *   - Value: IPv4 address (or cnameTarget for ALIAS/ANAME)
  */
 export function dnsInstructions(
   domain: string,
   cnameTarget: string,
   verifyPrefix: string,
-  expectedIp: string | null
+  ownershipToken: string,
+  targetIp: string | null = null
 ) {
-  const isApex = domain.split(".").filter(Boolean).length === 2;
+  const { isApex, subdomainLabel } = parseDomainLabels(domain);
 
   return {
-    // The value that must be matched exactly in the TXT lookup.
     ownership: {
       type: "TXT" as const,
       name: `${verifyPrefix}.${domain}`,
-      value: expectedIp ?? "",
-      note: "Proves you control this domain. Must be present for verification to complete.",
+      value: ownershipToken,
+      note: `Proves domain control. Add TXT record with host '${verifyPrefix}' (or '${verifyPrefix}.${domain}') and value above.`,
     },
     routing: isApex
       ? {
           type: "A" as const,
           name: "@",
-          value: cnameTarget,
-          note:
-            "An apex domain cannot use CNAME. If your DNS provider supports ALIAS or ANAME, use that instead of A.",
+          value: targetIp || cnameTarget,
+          note: targetIp
+            ? `Point '@' to ${targetIp} via an A record, or use an ALIAS/ANAME record pointing to ${cnameTarget} if your DNS provider supports CNAME flattening.`
+            : `An apex domain cannot use CNAME. Point '@' to ${cnameTarget} using an ALIAS or ANAME record (or an A record to your server IP).`,
         }
       : {
           type: "CNAME" as const,
-          name: "@",
+          name: subdomainLabel,
           value: cnameTarget,
-          note: "A certificate is issued automatically on the first request once DNS resolves.",
+          note: `Point your subdomain '${subdomainLabel}' (or '${domain}') to ${cnameTarget} using a CNAME record.`,
         },
   };
 }

@@ -3,25 +3,33 @@ import type { PlanId, PageType } from "@/types/database";
 
 export interface TierPageLimits {
   canCreateCustomPages: boolean;
+  canCreateBlogPages: boolean;
   maxPages: number;
+  maxBlogPages: number;
   allowedSystemPages: PageType[];
 }
 
 export const PLAN_PAGE_LIMITS: Record<PlanId, TierPageLimits> = {
   free: {
     canCreateCustomPages: false,
-    maxPages: 4, // Home, Privacy, Terms, Support
+    canCreateBlogPages: false,
+    maxPages: 4, // Home, Privacy, Terms, Support (App Store compliance)
+    maxBlogPages: 0,
     allowedSystemPages: ["home", "privacy", "terms", "support"],
   },
   basic: {
     canCreateCustomPages: true,
-    maxPages: 8,
-    allowedSystemPages: ["home", "privacy", "terms", "support", "custom"],
+    canCreateBlogPages: true,
+    maxPages: 14, // 4 compliance pages + 10 blog/custom pages
+    maxBlogPages: 10,
+    allowedSystemPages: ["home", "privacy", "terms", "support", "custom", "blog"],
   },
   pro: {
     canCreateCustomPages: true,
-    maxPages: 15,
-    allowedSystemPages: ["home", "privacy", "terms", "support", "custom"],
+    canCreateBlogPages: true,
+    maxPages: 104, // 4 compliance pages + 100 blog/custom pages (effectively unlimited)
+    maxBlogPages: 100,
+    allowedSystemPages: ["home", "privacy", "terms", "support", "custom", "blog"],
   },
 };
 
@@ -39,8 +47,16 @@ export function canCreateCustomPages(planId?: PlanId | null): boolean {
   return getTierLimits(planId).canCreateCustomPages;
 }
 
+export function canCreateBlogPages(planId?: PlanId | null): boolean {
+  return getTierLimits(planId).canCreateBlogPages;
+}
+
 export function getMaxPages(planId?: PlanId | null): number {
   return getTierLimits(planId).maxPages;
+}
+
+export function getMaxBlogPages(planId?: PlanId | null): number {
+  return getTierLimits(planId).maxBlogPages;
 }
 
 export function isPageLimitReached(
@@ -48,4 +64,11 @@ export function isPageLimitReached(
   planId?: PlanId | null
 ): boolean {
   return currentPagesCount >= getMaxPages(planId);
+}
+
+export function isBlogLimitReached(
+  currentBlogCount: number,
+  planId?: PlanId | null
+): boolean {
+  return currentBlogCount >= getMaxBlogPages(planId);
 }

@@ -106,7 +106,7 @@ export interface StoreLinks {
   testflight_url?: string;
 }
 
-export type PageType = "home" | "privacy" | "terms" | "support" | "custom";
+export type PageType = "home" | "privacy" | "terms" | "support" | "custom" | "blog";
 
 export interface SitePage {
   id: string;
@@ -121,6 +121,11 @@ export interface SitePage {
   content_markdown: string;
   meta_title?: string;
   meta_description?: string;
+  excerpt?: string;
+  author?: string;
+  published_date?: string;
+  cover_image_url?: string;
+  reading_time_minutes?: number;
   updated_at?: string;
 }
 

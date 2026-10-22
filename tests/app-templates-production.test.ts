@@ -1,7 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { BUILTIN_TEMPLATES } from "@/lib/templates";
 import { getDefaultSitePages } from "@/lib/legal-pages";
-import { PLAN_PAGE_LIMITS, canCreateCustomPages, getMaxPages } from "@/lib/tier-limits";
+import {
+  PLAN_PAGE_LIMITS,
+  canCreateCustomPages,
+  canCreateBlogPages,
+  getMaxPages,
+  getMaxBlogPages,
+} from "@/lib/tier-limits";
 import { updateSiteSchema } from "@/lib/validation";
 
 describe("Template Architecture Pruning", () => {
@@ -32,19 +38,25 @@ describe("Legal Compliance Page Generators", () => {
   });
 });
 
-describe("Tier Gating for Multi-Page System", () => {
-  it("restricts Free tier to 4 system pages and denies custom pages", () => {
+describe("Tier Gating for Multi-Page and Blog System", () => {
+  it("restricts Free tier to 4 system pages and denies custom and blog pages", () => {
     expect(canCreateCustomPages("free")).toBe(false);
+    expect(canCreateBlogPages("free")).toBe(false);
     expect(getMaxPages("free")).toBe(4);
+    expect(getMaxBlogPages("free")).toBe(0);
     expect(PLAN_PAGE_LIMITS.free.allowedSystemPages).toEqual(["home", "privacy", "terms", "support"]);
   });
 
-  it("permits Basic and Pro tiers to create custom subpages with higher page caps", () => {
+  it("permits Basic and Pro tiers to create blog posts and custom subpages with promised caps", () => {
     expect(canCreateCustomPages("basic")).toBe(true);
-    expect(getMaxPages("basic")).toBe(8);
+    expect(canCreateBlogPages("basic")).toBe(true);
+    expect(getMaxPages("basic")).toBe(14);
+    expect(getMaxBlogPages("basic")).toBe(10);
 
     expect(canCreateCustomPages("pro")).toBe(true);
-    expect(getMaxPages("pro")).toBe(15);
+    expect(canCreateBlogPages("pro")).toBe(true);
+    expect(getMaxPages("pro")).toBe(104);
+    expect(getMaxBlogPages("pro")).toBe(100);
   });
 });
 

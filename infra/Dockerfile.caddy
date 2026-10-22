@@ -1,0 +1,20 @@
+# ==============================================================================
+# ShipSprint Production Caddy Build with Cloudflare DNS-01 Plugin
+#
+# Standard Caddy images do not bundle DNS provider plugins. To issue wildcard
+# certificates (*.shipsprint.site) via Let's Encrypt / ZeroSSL, Caddy requires
+# the Cloudflare DNS module (`github.com/caddy-dns/cloudflare`) to solve the
+# mandatory ACME DNS-01 challenge.
+#
+# This multi-stage build uses `xcaddy` to compile the official Cloudflare plugin
+# directly into Caddy 2.10, producing an efficient, production-ready Alpine image.
+# ==============================================================================
+
+FROM caddy:2.10-builder-alpine AS builder
+
+RUN xcaddy build \
+    --with github.com/caddy-dns/cloudflare
+
+FROM caddy:2.10-alpine
+
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy

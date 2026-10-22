@@ -14,7 +14,10 @@
 
 services:
   caddy:
-    image: caddy:2.10-alpine
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.caddy
+    image: shipsprint-caddy:latest
     restart: unless-stopped
     ports:
       - "80:80"
@@ -27,6 +30,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     environment:
+      ROOT_DOMAIN: ${ROOT_DOMAIN:-shipsprint.site}
       ACME_CONTACT_EMAIL: ${ACME_CONTACT_EMAIL:?set ACME_CONTACT_EMAIL}
       # Provider token for DNS-01, which is the only challenge that can
       # validate a wildcard name.
@@ -78,6 +82,7 @@ services:
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:?}
       R2_PUBLIC_DOMAIN: ${R2_PUBLIC_DOMAIN:-}
       CNAME_TARGET_HOST: ${CNAME_TARGET_HOST:-cname.shipsprint.site}
+      SERVER_IPV4: ${SERVER_IPV4:-}
       DOMAIN_VERIFY_PREFIX: _shipverify
       ACME_CONTACT_EMAIL: ${ACME_CONTACT_EMAIL:?}
       CRON_SECRET: ${CRON_SECRET:?}
