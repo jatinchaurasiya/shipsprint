@@ -9,7 +9,6 @@ interface CreateSiteDialogProps {
   canCreate: boolean;
   currentCount: number;
   maxLimit: number;
-  initialTemplateId?: string;
 }
 
 export function CreateSiteDialog({

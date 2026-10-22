@@ -280,7 +280,7 @@ export default async function HomePage() {
             <div className="min-w-0">
               <p className="text-sm font-semibold whitespace-nowrap">&lt; {metrics.launchSpeedMinutes} min launch time</p>
               <p className="mt-0.5 text-[13px] text-[#505050] dark:text-zinc-400">
-                From template selection to live custom domain
+                From app name to live custom domain
               </p>
             </div>
           </div>
@@ -417,7 +417,7 @@ export default async function HomePage() {
           </div>
           <ol className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
             {[
-              { n: "Step 1", t: "Pick a template", d: "Start from an App Store template made for your category. Every section is editable." },
+              { n: "Step 1", t: "Create your page", d: "Add your app name and pick a subdomain. Every section is editable from the start." },
               { n: "Step 2", t: "Make it yours", d: "Add your icon, screenshots, store links, and copy. Watch the live preview update instantly." },
               { n: "Step 3", t: "Publish & share", d: "Publish to your subdomain or custom domain with automatic TLS. Track installs from day one." },
             ].map((s) => (

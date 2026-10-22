@@ -95,7 +95,6 @@ export async function POST(request: NextRequest) {
         content: initialContent,
         status: "draft",
         theme: "flagship",
-        template_id: null,
       })
       .select()
       .single();
