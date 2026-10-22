@@ -28,6 +28,7 @@ export const META_KEY_ALLOWLIST: ReadonlySet<string> = new Set([
   "path",
   "screen",
   "button_type",
+  "cta_type",
   "target_host",
   "target_url",
 ]);
@@ -144,11 +145,17 @@ export function buildAnalyticsRow(
   userAgent: string,
   now: Date = new Date(),
 ): { site_id: string; event_type: EventType; meta: AnalyticsMeta } {
+  const buttonType =
+    event.meta.button_type ||
+    event.meta.cta_type ||
+    (event.eventType === "button_click" ? "button" : undefined);
+
   return {
     site_id: event.siteId,
     event_type: event.eventType,
     meta: {
       ...event.meta,
+      ...(buttonType ? { button_type: buttonType } : {}),
       device: inferDevice(userAgent),
       recorded_at: now.toISOString(),
     },

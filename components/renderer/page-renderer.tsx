@@ -1,8 +1,9 @@
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import type { SiteContent, SitePage } from "@/types/database";
+import { trackEvent } from "@/lib/track-client";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -19,12 +20,14 @@ interface PageRendererProps {
   content: SiteContent;
   page: SitePage;
   homeHref?: string;
+  siteId?: string;
 }
 
 export function PageRenderer({
   content,
   page,
   homeHref = "/",
+  siteId,
 }: PageRendererProps) {
   const brand = content?.brand || { name: "App" };
   const appName = brand.name || content?.hero?.app_name || "App";
@@ -51,6 +54,44 @@ export function PageRenderer({
   const storeLinks = content?.store_links || {};
   const hasAppStore = Boolean(storeLinks.app_store_url);
   const hasPlayStore = Boolean(storeLinks.play_store_url);
+
+  const pageViewFired = useRef(false);
+
+  useEffect(() => {
+    if (!siteId || pageViewFired.current) return;
+    pageViewFired.current = true;
+
+    trackEvent({
+      siteId,
+      eventType: "page_view",
+      meta: {
+        referrer: typeof document !== "undefined" ? document.referrer : "",
+        path: typeof window !== "undefined" ? window.location.pathname : `/${page.slug}`,
+      },
+    });
+  }, [siteId, page.slug]);
+
+  const handleCtaClick = (buttonType: string, targetUrl?: string) => {
+    if (!siteId) return;
+    let targetHost = "";
+    if (targetUrl) {
+      try {
+        targetHost = new URL(targetUrl).hostname.toLowerCase();
+      } catch {
+        targetHost = "";
+      }
+    }
+    trackEvent({
+      siteId,
+      eventType: "button_click",
+      meta: {
+        button_type: buttonType,
+        target_host: targetHost,
+        target_url: targetUrl || "",
+        path: typeof window !== "undefined" ? window.location.pathname : `/${page.slug}`,
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans text-zinc-950 antialiased selection:bg-zinc-950 selection:text-white dark:bg-zinc-950 dark:text-zinc-50 dark:selection:bg-zinc-50 dark:selection:text-zinc-950 flex flex-col justify-between">
@@ -150,6 +191,7 @@ export function PageRenderer({
                   href={storeLinks.app_store_url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => handleCtaClick("app_store", storeLinks.app_store_url)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-xs font-semibold text-zinc-950 shadow-xs hover:bg-zinc-100 transition-colors"
                 >
                   <Download className="h-3.5 w-3.5" />
@@ -161,6 +203,7 @@ export function PageRenderer({
                   href={storeLinks.play_store_url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => handleCtaClick("play_store", storeLinks.play_store_url)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-xs font-semibold text-zinc-950 shadow-xs hover:bg-zinc-100 transition-colors"
                 >
                   <Download className="h-3.5 w-3.5" />

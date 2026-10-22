@@ -1,7 +1,7 @@
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { SiteContent, Plan, FeatureItem, HowItWorksStep, BentoImpacts } from "@/types/database";
 import { trackEvent } from "@/lib/track-client";
 import { ArrowRight, Check, Star, Signal, Wifi, Battery } from "lucide-react";
@@ -193,6 +193,22 @@ export function SiteRenderer({
   const [emailDone, setEmailDone] = useState(false);
   const [emailError, setEmailError] = useState("");
 
+  const pageViewFired = useRef(false);
+
+  useEffect(() => {
+    if (isPreview || !siteId || pageViewFired.current) return;
+    pageViewFired.current = true;
+
+    trackEvent({
+      siteId,
+      eventType: "page_view",
+      meta: {
+        referrer: typeof document !== "undefined" ? document.referrer : "",
+        path: typeof window !== "undefined" ? window.location.pathname : "/",
+      },
+    });
+  }, [isPreview, siteId]);
+
   const submitEmailCapture = (event: React.FormEvent) => {
     event.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim())) {
@@ -201,17 +217,37 @@ export function SiteRenderer({
     }
     setEmailError("");
     setEmailDone(true);
+
+    if (!isPreview && siteId) {
+      trackEvent({
+        siteId,
+        eventType: "button_click",
+        meta: {
+          button_type: "email_capture",
+          path: typeof window !== "undefined" ? window.location.pathname : "/",
+        },
+      });
+    }
   };
 
   const availability = store_links.availability || "both";
 
   const handleCtaClick = (ctaType: string, targetUrl?: string) => {
     if (isPreview || !siteId) return;
+    let targetHost = "";
+    if (targetUrl) {
+      try {
+        targetHost = new URL(targetUrl).hostname.toLowerCase();
+      } catch {
+        // ignore non-URL targets like #download
+      }
+    }
     trackEvent({
       siteId,
       eventType: "button_click",
       meta: {
-        cta_type: ctaType,
+        button_type: ctaType,
+        target_host: targetHost,
         target_url: targetUrl || "",
         path: typeof window !== "undefined" ? window.location.pathname : "/",
       },

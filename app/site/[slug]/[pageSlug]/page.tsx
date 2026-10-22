@@ -234,6 +234,7 @@ export default async function PublicSubpage({ params }: SubpageProps) {
         content={site.content}
         page={page}
         homeHref={homeHref}
+        siteId={isPublished ? site.id : undefined}
       />
     </>
   );

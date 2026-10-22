@@ -40,6 +40,7 @@ alter table public.plans add column if not exists has_branding            boolea
 alter table public.plans add column if not exists has_custom_domain       boolean     not null default false;
 alter table public.plans add column if not exists has_analytics_dashboard boolean     not null default false;
 alter table public.plans add column if not exists has_email_capture       boolean     not null default false;
+alter table public.plans add column if not exists has_ai_discovery        boolean     not null default false;
 alter table public.plans add column if not exists sort_order              integer     not null default 100;
 alter table public.plans add column if not exists is_active               boolean     not null default true;
 alter table public.plans add column if not exists created_at              timestamptz not null default now();
@@ -54,14 +55,14 @@ update public.plans set name = 'Pro'   where id = 'pro'   and (name is null or n
 
 insert into public.plans
   (id, name, tagline, site_limit, has_branding, has_custom_domain,
-   has_analytics_dashboard, has_email_capture, sort_order)
+   has_analytics_dashboard, has_email_capture, has_ai_discovery, sort_order)
 values
   ('free',  'Free',  'One landing page to get started.',
-   1,  true,  false, false, false, 10),
+   1,  true,  false, false, false, false, 10),
   ('basic', 'Basic', 'For a solo launch with a real domain.',
-   3,  false, true,  false, true,  20),
+   3,  false, true,  false, true,  false, 20),
   ('pro',   'Pro',   'Multiple apps with analytics.',
-   10, false, true,  true,  true,  30)
+   10, false, true,  true,  true,  true,  30)
 on conflict (id) do update
   set name                    = excluded.name,
       tagline                 = excluded.tagline,
@@ -70,6 +71,7 @@ on conflict (id) do update
       has_custom_domain       = excluded.has_custom_domain,
       has_analytics_dashboard = excluded.has_analytics_dashboard,
       has_email_capture       = excluded.has_email_capture,
+      has_ai_discovery        = excluded.has_ai_discovery,
       sort_order              = excluded.sort_order;
 
 -- ===========================================================================
@@ -180,10 +182,21 @@ alter table public.sites add column if not exists template_id   text;
 alter table public.sites add column if not exists created_at    timestamptz not null default now();
 alter table public.sites add column if not exists updated_at    timestamptz not null default now();
 alter table public.sites add column if not exists published_at  timestamptz;
+alter table public.sites add column if not exists ai_discovery_enabled         boolean not null default false;
+alter table public.sites add column if not exists ai_search_crawling_enabled   boolean not null default true;
+alter table public.sites add column if not exists ai_training_crawling_enabled boolean not null default false;
+alter table public.sites add column if not exists llms_txt_enabled             boolean not null default false;
+alter table public.sites add column if not exists ai_category                  text;
+alter table public.sites add column if not exists ai_target_audience           text;
+alter table public.sites add column if not exists ai_summary                   text;
+alter table public.sites add column if not exists ai_score                     integer default null;
+alter table public.sites add column if not exists ai_last_scan                 timestamptz default null;
+alter table public.sites add column if not exists ai_check_results             jsonb not null default '{}'::jsonb;
 
-create index if not exists idx_sites_user_id     on public.sites (user_id);
-create index if not exists idx_sites_user_created on public.sites (user_id, created_at desc);
-create index if not exists idx_sites_published   on public.sites (status) where status = 'published';
+create index if not exists idx_sites_user_id        on public.sites (user_id);
+create index if not exists idx_sites_user_created   on public.sites (user_id, created_at desc);
+create index if not exists idx_sites_published      on public.sites (status) where status = 'published';
+create index if not exists idx_sites_ai_discovery   on public.sites (ai_discovery_enabled) where ai_discovery_enabled = true;
 
 -- ===========================================================================
 -- 6. SUBSCRIPTIONS — Subscriptions from Dodo Payments
@@ -709,19 +722,52 @@ group by
     else regexp_replace(regexp_replace(ev.meta->>'referrer', '^https?://(www\.)?', ''), '/.*$', '')
   end;
 
+drop view if exists public.site_analytics_cta cascade;
+
 create or replace view public.site_analytics_cta
 with (security_invoker = true) as
 select
-  ev.site_id,
-  (ev.created_at at time zone 'utc')::date as day,
-  coalesce(nullif(ev.meta->>'button_type', ''), 'unknown') as button_type,
+  site_id,
+  day,
+  button_type,
+  store,
   count(*) as clicks
-from public.analytics_events ev
-where ev.event_type = 'button_click'
-group by
-  ev.site_id,
-  (ev.created_at at time zone 'utc')::date,
-  coalesce(nullif(ev.meta->>'button_type', ''), 'unknown');
+from (
+  select
+    site_id,
+    day,
+    button_type,
+    case
+      -- 1. An explicit store in the button type is authoritative.
+      when lower(button_type) ~ '(app_store|ios|apple)' then 'apple'
+      when lower(button_type) ~ '(play_store|android|google)' then 'google'
+      -- 2. Legacy store-agnostic types ('nav_download') still carry the store
+      --    in the destination they opened. Comparing the hostname rather than
+      --    the whole URL keeps a lookalike such as
+      --    'https://apps.apple.com.evil.example/' out of the Apple total.
+      when target_host in ('apps.apple.com', 'itunes.apple.com') then 'apple'
+      when target_host in ('play.google.com', 'market.android.com') then 'google'
+      -- 3. Anything else is not a store click.
+      else 'other'
+    end as store
+  from (
+    select
+      ev.site_id,
+      (ev.created_at at time zone 'utc')::date as day,
+      coalesce(nullif(ev.meta->>'button_type', ''), 'unknown') as button_type,
+      -- scheme, then path, then port, leaving the bare hostname
+      split_part(
+        split_part(
+          split_part(lower(coalesce(ev.meta->>'target_url', '')), '://', 2),
+          '/', 1
+        ),
+        ':', 1
+      ) as target_host
+    from public.analytics_events ev
+    where ev.event_type = 'button_click'
+  ) with_target
+) classified
+group by site_id, day, button_type, store;
 
 -- Daily rollup without Cartesian multiplication or null-key crashes
 create or replace function public.rollup_telemetry(p_days integer default 3)
