@@ -422,6 +422,25 @@ alter table public.telemetry_daily add column if not exists desktop       intege
 alter table public.telemetry_daily add column if not exists referrers     jsonb   not null default '{}'::jsonb;
 
 -- ===========================================================================
+-- 11b. SITE SUBSCRIBERS — Leads & Waitlist
+-- ===========================================================================
+
+create table if not exists public.site_subscribers (
+  id         uuid primary key default gen_random_uuid(),
+  site_id    uuid not null references public.sites (id) on delete cascade,
+  email      text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.site_subscribers add column if not exists created_at timestamptz not null default now();
+
+create unique index if not exists idx_site_subscribers_unique
+  on public.site_subscribers (site_id, lower(email));
+
+create index if not exists idx_site_subscribers_site_created
+  on public.site_subscribers (site_id, created_at desc);
+
+-- ===========================================================================
 -- 12. DATA MIGRATION
 --
 -- Executed BEFORE adding CHECK constraints to prevent historical value failures.
@@ -863,7 +882,7 @@ begin
   foreach t in array array[
     'plans','products','profiles','sites','subscriptions','analytics_events',
     'domain_verifications','checkout_intents','webhook_events','audit_log',
-    'templates','telemetry_daily'
+    'templates','telemetry_daily','site_subscribers'
   ] loop
     execute format('alter table public.%I enable row level security', t);
   end loop;
@@ -982,6 +1001,26 @@ create policy "Users can view own telemetry" on public.telemetry_daily
 
 revoke insert, update, delete on public.telemetry_daily from anon, authenticated;
 grant select on public.telemetry_daily to authenticated;
+
+-- Site Subscribers
+drop policy if exists "Owners can view subscribers" on public.site_subscribers;
+create policy "Owners can view subscribers" on public.site_subscribers
+  for select using (exists (
+    select 1 from public.sites
+    where sites.id = site_subscribers.site_id
+      and sites.user_id = (select auth.uid())
+  ));
+
+drop policy if exists "Owners can delete subscribers" on public.site_subscribers;
+create policy "Owners can delete subscribers" on public.site_subscribers
+  for delete using (exists (
+    select 1 from public.sites
+    where sites.id = site_subscribers.site_id
+      and sites.user_id = (select auth.uid())
+  ));
+
+revoke insert, update on public.site_subscribers from anon, authenticated;
+grant select, delete on public.site_subscribers to authenticated;
 
 -- Internal tables (Service role only)
 revoke all on public.webhook_events, public.audit_log from anon, authenticated;

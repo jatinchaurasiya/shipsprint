@@ -292,6 +292,7 @@ if enabling:
         "plans", "products", "profiles", "sites", "subscriptions",
         "analytics_events", "domain_verifications", "checkout_intents",
         "webhook_events", "audit_log", "templates", "telemetry_daily",
+        "site_subscribers",
     }
     missing = expected - covered
     if missing:

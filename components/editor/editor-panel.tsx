@@ -20,6 +20,7 @@ import {
   Globe,
   ExternalLink,
   RefreshCw,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { AVAILABLE_ICONS } from "@/lib/icons";
@@ -36,6 +37,7 @@ import { PageManager } from "./page-manager";
 import { LogoManager } from "./logo-manager";
 import { ImageEditorModal, type CroppedImageResult } from "./image-editor-modal";
 import { AiDiscoveryPanel } from "./ai-discovery-panel";
+import { SubscribersDialog } from "./subscribers-dialog";
 import { normalizeImageUrl } from "@/lib/storage/image-url";
 import { getDefaultSitePages } from "@/lib/legal-pages";
 import type { SitePage } from "@/types/database";
@@ -54,6 +56,7 @@ interface EditorPanelProps {
   onChange: (updated: SiteContent) => void;
   plan?: Plan | null;
   siteId?: string;
+  siteSlug?: string;
   initialDomain?: string | null;
 }
 
@@ -62,6 +65,7 @@ export function EditorPanel({
   onChange,
   plan,
   siteId,
+  siteSlug,
   initialDomain,
 }: EditorPanelProps) {
   const [activeSection, setActiveSection] = useState<EditorSectionId>("hero");
@@ -102,6 +106,24 @@ export function EditorPanel({
     text: string;
   } | null>(null);
   const [domainState, setDomainState] = useState<DomainState | null>(null);
+  const [isSubscribersOpen, setIsSubscribersOpen] = useState(false);
+  const [subscribersCount, setSubscribersCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!siteId) return;
+    let cancelled = false;
+    fetch(`/api/sites/${siteId}/subscribers`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.count === "number") {
+          setSubscribersCount(data.count);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [siteId]);
 
   const refreshDomainState = useCallback(async () => {
     if (!siteId || !connectedDomain) return;
@@ -1270,6 +1292,47 @@ export function EditorPanel({
                       className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 dark:focus-visible:ring-zinc-100/15 focus-visible:border-zinc-900 dark:focus-visible:border-zinc-100 transition-all"
                     />
                   </div>
+
+                  {siteId && (
+                    <div className="pt-2">
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shrink-0 shadow-xs">
+                            <Users className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                              <span>Subscribers</span>
+                              <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
+                                {subscribersCount !== null ? subscribersCount : "..."}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-zinc-500 truncate">
+                              Direct leads from your hero
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setIsSubscribersOpen(true)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-medium shadow-xs transition-colors"
+                          >
+                            <span>Manage</span>
+                          </button>
+                          <a
+                            href={`/api/sites/${siteId}/subscribers?format=csv`}
+                            download
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors"
+                            title="Download CSV export"
+                          >
+                            <span>CSV</span>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2633,6 +2696,16 @@ export function EditorPanel({
           </div>
         )}
       </div>
+
+      {siteId && (
+        <SubscribersDialog
+          siteId={siteId}
+          siteSlug={siteSlug || "site"}
+          isOpen={isSubscribersOpen}
+          onClose={() => setIsSubscribersOpen(false)}
+          onCountChange={(count) => setSubscribersCount(count)}
+        />
+      )}
     </div>
   );
 }

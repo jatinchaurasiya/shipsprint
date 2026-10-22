@@ -192,6 +192,7 @@ export function SiteRenderer({
   const [emailValue, setEmailValue] = useState("");
   const [emailDone, setEmailDone] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
 
   const pageViewFired = useRef(false);
 
@@ -209,24 +210,45 @@ export function SiteRenderer({
     });
   }, [isPreview, siteId]);
 
-  const submitEmailCapture = (event: React.FormEvent) => {
+  const submitEmailCapture = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim())) {
+    const cleanEmail = emailValue.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       setEmailError("Enter a valid email address.");
       return;
     }
     setEmailError("");
-    setEmailDone(true);
 
-    if (!isPreview && siteId) {
-      trackEvent({
-        siteId,
-        eventType: "button_click",
-        meta: {
-          button_type: "email_capture",
-          path: typeof window !== "undefined" ? window.location.pathname : "/",
-        },
+    if (isPreview || !siteId) {
+      setEmailDone(true);
+      return;
+    }
+
+    setEmailLoading(true);
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          site_id: siteId,
+          email: cleanEmail,
+        }),
       });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setEmailError(
+          data.error || "Unable to submit right now. Please try again."
+        );
+        setEmailLoading(false);
+        return;
+      }
+
+      setEmailDone(true);
+    } catch {
+      setEmailError("Connection error. Please try again.");
+    } finally {
+      setEmailLoading(false);
     }
   };
 
@@ -517,9 +539,10 @@ export function SiteRenderer({
                       />
                       <button
                         type="submit"
-                        className="rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-[#131313] hover:bg-zinc-100"
+                        disabled={emailLoading}
+                        className="rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-[#131313] hover:bg-zinc-100 disabled:opacity-60 transition-opacity"
                       >
-                        {emailCapture.ctaLabel}
+                        {emailLoading ? "Submitting..." : emailCapture.ctaLabel}
                       </button>
                     </form>
                   )}

@@ -355,6 +355,7 @@ export function EditorView({ site, plan }: EditorViewProps) {
             onChange={handleContentChange}
             plan={plan}
             siteId={site.id}
+            siteSlug={site.slug}
             initialDomain={site.custom_domain}
           />
         </section>

@@ -153,6 +153,7 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith("/_next") ||
       pathname.startsWith("/uploads") ||
       pathname.startsWith("/api/track") ||
+      pathname.startsWith("/api/subscribe") ||
       pathname === "/api/caddy/ask" ||
       pathname === "/api/health" ||
       pathname === "/robots.txt" ||

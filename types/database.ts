@@ -405,3 +405,10 @@ export interface PlatformMetrics {
   weeklyInstallsSample: number;
   conversionRate: number;
 }
+
+export interface SiteSubscriber {
+  id: string;
+  site_id: string;
+  email: string;
+  created_at: string;
+}

@@ -103,6 +103,7 @@ describe("proxy()", () => {
       "/_next/static/chunks/app.js",
       "/uploads/2026-10-07/test.png",
       "/api/track",
+      "/api/subscribe",
       "/api/caddy/ask",
       "/api/health",
       "/robots.txt",

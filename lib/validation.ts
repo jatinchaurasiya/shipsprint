@@ -492,6 +492,15 @@ export const updateAiDiscoverySchema = z
 
 export type ValidatedAiDiscoveryConfig = z.infer<typeof updateAiDiscoverySchema>;
 
+export const subscribeSchema = z
+  .object({
+    site_id: z.string().uuid(),
+    email: z.string().trim().toLowerCase().email().max(255),
+  })
+  .strict();
+
+export type ValidatedSubscribe = z.infer<typeof subscribeSchema>;
+
 /** Flattens Zod issues into a single client-safe message. */
 export function firstIssue(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Invalid request body";
