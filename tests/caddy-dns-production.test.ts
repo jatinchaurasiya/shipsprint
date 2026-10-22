@@ -243,4 +243,25 @@ describe("Caddy & DNS Production Verification Suite", () => {
       expect(res.status).toBe(403);
     });
   });
+
+  describe("Caddyfile Production Configuration Guard", () => {
+    it("ensures on_demand_tls does not contain removed interval or burst options (Caddy 2.8+)", async () => {
+      const fs = await import("fs");
+      const path = await import("path");
+      const caddyfilePath = path.resolve(process.cwd(), "infra/Caddyfile");
+      const caddyfileContent = fs.readFileSync(caddyfilePath, "utf-8");
+
+      // Caddy 2.8+ / 2.10+ fatal syntax errors
+      expect(caddyfileContent).not.toMatch(/on_demand_tls\s*{[^}]*\binterval\b/);
+      expect(caddyfileContent).not.toMatch(/on_demand_tls\s*{[^}]*\bburst\b/);
+
+      // Must configure the ask endpoint for TLS authorization
+      expect(caddyfileContent).toMatch(/ask\s+http:\/\/app:3000\/api\/caddy\/ask/);
+
+      // Must include wildcard DNS-01 for subdomains and on-demand block for custom domains
+      expect(caddyfileContent).toContain("tls {\n\t\tdns cloudflare {$CF_API_TOKEN}\n\t}");
+      expect(caddyfileContent).toContain("on_demand");
+    });
+  });
 });
+
