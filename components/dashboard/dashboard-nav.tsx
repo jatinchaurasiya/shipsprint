@@ -90,6 +90,7 @@ export function DashboardNav({ userEmail, plan }: DashboardNavProps) {
           {!isPro && (
             <Link
               href="/dashboard/billing"
+              data-ml-goal="pricing_cta"
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-medium shadow-sm transition-colors"
             >
               <span>Upgrade</span>

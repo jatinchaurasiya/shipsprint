@@ -103,6 +103,7 @@ export default async function DashboardPage() {
         {!canCreate && (
           <Link
             href="/dashboard/billing"
+            data-ml-goal="pricing_cta"
             className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
           >
             <span>Upgrade for more site capacity</span>

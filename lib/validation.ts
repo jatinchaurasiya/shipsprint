@@ -432,6 +432,8 @@ export const checkoutSchema = z.object({
     "pro_monthly",
     "pro_yearly",
   ]),
+  ml_visitor_id: z.string().optional(),
+  ml_session_id: z.string().optional(),
 });
 
 export const createDomainSchema = z.object({

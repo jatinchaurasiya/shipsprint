@@ -67,6 +67,19 @@ function SignupForm() {
         return;
       }
 
+      window.minilytics?.("goal", "signup_completed");
+
+      if (data?.user) {
+        window.minilytics?.("identify", {
+          user_id: data.user.id,
+          email: data.user.email ?? email,
+          name:
+            (data.user.user_metadata?.name as string | undefined) ??
+            (data.user.user_metadata?.full_name as string | undefined) ??
+            undefined,
+        });
+      }
+
       // If session is already created (email confirmation off)
       if (data?.session) {
         router.push(destination);
@@ -163,6 +176,7 @@ function SignupForm() {
             type="button"
             onClick={handleGoogleSignup}
             disabled={oauthLoading || loading}
+            data-ml-goal="signup_click"
             className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-colors disabled:cursor-not-allowed disabled:opacity-55 shadow-sm"
           >
             {oauthLoading ? (
@@ -274,6 +288,7 @@ function SignupForm() {
             <button
               type="submit"
               disabled={loading || oauthLoading}
+              data-ml-goal="signup_click"
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-sm font-medium text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white transition-colors disabled:cursor-not-allowed disabled:opacity-55 shadow-sm mt-2"
             >
               {loading ? (

@@ -83,10 +83,23 @@ export function BillingView({
     setLoadingProduct(productId);
 
     try {
+      const attribution =
+        typeof window !== "undefined"
+          ? window.minilytics?.attribution?.()
+          : undefined;
+
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId }),
+        body: JSON.stringify({
+          product_id: productId,
+          ...(attribution?.ml_visitor_id
+            ? { ml_visitor_id: attribution.ml_visitor_id }
+            : {}),
+          ...(attribution?.ml_session_id
+            ? { ml_session_id: attribution.ml_session_id }
+            : {}),
+        }),
       });
 
       const data = await res.json();
@@ -468,6 +481,8 @@ export function BillingView({
                       <button
                         onClick={() => handleCheckout(product.id)}
                         disabled={loadingProduct === product.id}
+                        data-ml-goal="checkout_click"
+                        data-ml-goal-plan={product.plan_id}
                         className={`w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold shadow-md transition-colors active:scale-[0.98] ${
                           isPopular
                             ? "bg-purple-600 hover:bg-purple-500 text-white"

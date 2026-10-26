@@ -109,6 +109,7 @@ export interface CheckoutInput {
   userName?: string | null;
   product: Product;
   appUrl: string;
+  metadata?: Record<string, string>;
 }
 
 export interface CheckoutResult {
@@ -130,6 +131,13 @@ export async function createCheckout(input: CheckoutInput): Promise<CheckoutResu
     input.appUrl
   ).toString();
 
+  const mergedMetadata: Record<string, string> = {
+    user_id: input.userId,
+    product_id: input.product.id,
+    plan_id: input.product.plan_id,
+    ...(input.metadata ?? {}),
+  };
+
   // Create the customer explicitly rather than passing an inline address.
   //
   // The inline `customer: { email, name }` form (NewCustomer) accepts no
@@ -139,11 +147,7 @@ export async function createCheckout(input: CheckoutInput): Promise<CheckoutResu
   const customer = await dodo.customers.create({
     email: input.userEmail,
     name: input.userName || input.userEmail,
-    metadata: {
-      user_id: input.userId,
-      product_id: input.product.id,
-      plan_id: input.product.plan_id,
-    },
+    metadata: mergedMetadata,
   });
 
   const session = await dodo.checkoutSessions.create({
@@ -151,11 +155,7 @@ export async function createCheckout(input: CheckoutInput): Promise<CheckoutResu
     customer: { customer_id: customer.customer_id },
     // Session metadata is a second path back to the user. The checkout_intents
     // row is the authoritative one; this is belt and braces.
-    metadata: {
-      user_id: input.userId,
-      product_id: input.product.id,
-      plan_id: input.product.plan_id,
-    },
+    metadata: mergedMetadata,
     return_url: billing,
     cancel_url: cancelled,
   });

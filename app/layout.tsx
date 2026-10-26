@@ -17,6 +17,8 @@ import "@fontsource/plus-jakarta-sans/800.css";
 import "@fontsource/geist-mono/400.css";
 import "@fontsource/geist-mono/500.css";
 import "./globals.css";
+import Script from "next/script";
+import { MinilyticsIdentify } from "@/components/analytics/minilytics-identify";
 import { SmoothScrollProvider } from "@/components/providers/smooth-scroll";
 import { appOrigin } from "@/lib/redirect";
 
@@ -85,6 +87,13 @@ export default function RootLayout({
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col bg-white text-zinc-900 dark:bg-black dark:text-zinc-50">
+        <Script
+          defer
+          data-website-id="6e473l2o2d3t123p"
+          src="https://minilytics.chaursiajatin7.workers.dev/js/script.js"
+          strategy="afterInteractive"
+        />
+        <MinilyticsIdentify />
         <SmoothScrollProvider>{children}</SmoothScrollProvider>
       </body>
     </html>

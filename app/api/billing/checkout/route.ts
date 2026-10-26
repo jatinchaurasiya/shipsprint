@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -108,6 +109,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const cookieJar = await cookies();
+  const mlVisitorId =
+    cookieJar.get("ml_vid")?.value ??
+    request.cookies.get("ml_vid")?.value ??
+    parsed.data.ml_visitor_id ??
+    "";
+  const mlSessionId =
+    cookieJar.get("ml_sid")?.value ??
+    request.cookies.get("ml_sid")?.value ??
+    parsed.data.ml_session_id ??
+    "";
+
   let checkout;
   try {
     checkout = await createCheckout({
@@ -116,6 +129,10 @@ export async function POST(request: NextRequest) {
       userName: (user.user_metadata?.name as string | undefined) ?? null,
       product,
       appUrl: publicEnv().NEXT_PUBLIC_APP_URL,
+      metadata: {
+        ml_visitor_id: mlVisitorId,
+        ml_session_id: mlSessionId,
+      },
     });
   } catch (error) {
     if (error instanceof ProductNotConfiguredError) {

@@ -71,6 +71,7 @@ export default async function HomePage() {
             </Link>
             <Link
               href="/signup"
+              data-ml-goal="signup_click"
               className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#131313] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-black active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-white"
             >
               <span>Get started</span>
@@ -114,6 +115,7 @@ export default async function HomePage() {
               <div className="mt-8 flex flex-wrap items-center gap-3.5 leading-none">
                 <Link
                   href="/signup"
+                  data-ml-goal="start_trial"
                   className="inline-flex items-center gap-2.5 rounded-full bg-white py-2 pr-2 pl-6 text-[13px] font-semibold tracking-wider whitespace-nowrap text-[#131313] uppercase transition-all hover:bg-zinc-100 active:bg-zinc-200 active:scale-[0.98] shadow-lg shadow-black/10"
                 >
                   <span>Start building</span>
@@ -483,6 +485,8 @@ export default async function HomePage() {
             <div className="mt-8">
               <Link
                 href="/signup"
+                data-ml-goal="pricing_cta"
+                data-ml-goal-plan="free"
                 className="inline-flex w-full items-center justify-center whitespace-nowrap rounded-full border border-zinc-300 bg-white px-4 py-2.5 text-[13px] font-medium text-[#131313] transition-colors hover:bg-zinc-50 active:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-55 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
               >
                 Get started free
@@ -550,6 +554,8 @@ export default async function HomePage() {
                 <div className="mt-8">
                   <Link
                     href={`/signup?plan=${tier.yearly.id}`}
+                    data-ml-goal="pricing_cta"
+                    data-ml-goal-plan={tier.plan.id}
                     className={
                       isPro
                         ? "inline-flex w-full items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-55"

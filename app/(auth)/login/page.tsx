@@ -36,15 +36,27 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const { error: signInError } = await supabase().auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data: signInData, error: signInError } =
+        await supabase().auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (signInError) {
         setError(signInError.message);
         setLoading(false);
         return;
+      }
+
+      if (signInData?.user) {
+        window.minilytics?.("identify", {
+          user_id: signInData.user.id,
+          email: signInData.user.email ?? email,
+          name:
+            (signInData.user.user_metadata?.name as string | undefined) ??
+            (signInData.user.user_metadata?.full_name as string | undefined) ??
+            undefined,
+        });
       }
 
       router.push(next);
