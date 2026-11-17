@@ -87,6 +87,17 @@ export default function RootLayout({
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col bg-white text-zinc-900 dark:bg-black dark:text-zinc-50">
+        {/* Google Tag Manager (noscript) — required by GTM for visitors without JS.
+            Must be the first child of <body>. */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-MKWD5RW6"
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+            title="Google Tag Manager"
+          />
+        </noscript>
         <Script
           defer
           data-website-id="6e473l2o2d3t123p"
@@ -94,6 +105,17 @@ export default function RootLayout({
           strategy="afterInteractive"
         />
         <MinilyticsIdentify />
+        {/* Google Tag Manager — id GTM-MKWD5RW6. Tag/analytics configuration lives
+            in the GTM container, not in this codebase. */}
+        <Script
+          src="https://www.googletagmanager.com/gtm.js?id=GTM-MKWD5RW6"
+          strategy="afterInteractive"
+        />
+        <Script id="gtm-data-layer" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());`}
+        </Script>
         <SmoothScrollProvider>{children}</SmoothScrollProvider>
       </body>
     </html>
