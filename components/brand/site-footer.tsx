@@ -26,7 +26,7 @@ export function SiteFooter() {
               Ship your app page. Without the code. The landing-page platform
               for indie iOS &amp; Android apps.
             </p>
-            <div className="mt-6">
+            <div className="mt-6 flex flex-wrap items-center gap-4">
               <a
                 href="https://www.codehype.ai/product/shipsprint?utm_source=codehype_badge"
                 target="_blank"
@@ -48,6 +48,30 @@ export function SiteFooter() {
                     maxWidth: "180px",
                     height: "auto",
                     maxHeight: "65px",
+                  }}
+                />
+              </a>
+              <a
+                href="https://productsboost.com/?ref=badge"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block transition-transform hover:scale-105 active:scale-95"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://productsboost.com/badge.svg?theme=light"
+                  alt="Featured on ProductsBoost"
+                  width={220}
+                  height={54}
+                  loading="lazy"
+                  decoding="async"
+                  style={{
+                    display: "inline-block",
+                    border: 0,
+                    width: "100%",
+                    maxWidth: "220px",
+                    height: "auto",
+                    maxHeight: "54px",
                   }}
                 />
               </a>
