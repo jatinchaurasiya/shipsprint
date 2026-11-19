@@ -191,21 +191,17 @@ describe("ShipSprint Flagship Landing Page Generator", () => {
 
     expect(content.brand.name).toBe("DayFlow");
     expect(content.hero.app_name).toBe("DayFlow");
-    expect(content.hero.badge_text).toBe("Built for indie app makers");
+    expect(content.hero.badge_text).toBe("");
+    expect(content.hero.header).toBe("DayFlow");
+    expect(content.hero.short_description).toBe("");
     expect(content.hero.device_screenshot_url).toBe("");
     expect(content.hero.device_screenshot_url_secondary).toBe("");
-    // H2: no fabricated social proof in the default content.
+    // Neutral defaults: no ShipSprint marketing copy or seeded content.
     expect(content.hero.rating_stars).toBeUndefined();
-    expect(content.impacts?.title).toBe("Built for your launch.");
-    expect(content.impacts?.metric_stat).toBeUndefined();
-    expect(content.impacts?.rating_score).toBeUndefined();
-    expect(content.impacts?.sla_stat).toBeUndefined();
-    expect(content.impacts?.trust_headline).toBeUndefined();
-    expect(content.features.length).toBe(3);
-    expect(content.features[0]?.proof_type).toBe("checklist");
-    expect(content.features[1]?.proof_type).toBeUndefined();
-    expect(content.features[2]?.proof_type).toBe("readiness");
-    expect(content.how_it_works?.length).toBe(3);
+    expect(content.impacts).toBeUndefined();
+    expect(content.features).toEqual([]);
+    expect(content.how_it_works).toBeUndefined();
+    expect(content.footer.tagline).toBe("");
     expect(content.pages?.length).toBe(4);
 
     // Strict validation verification

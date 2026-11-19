@@ -402,6 +402,16 @@ is idempotent. Verified on a real PostgreSQL 16 cluster: **18/18 checks**.
 Run the preview query at the top of the migration, apply it, then the
 post-check must return 0 rows.
 
+**Neutral defaults for new sites (no ShipSprint marketing in user pages).**
+The default content no longer seeds ShipSprint's own marketing copy, feature
+list, onboarding steps or social proof into customer sites. New sites start
+with the user's app name as the headline and **empty**
+badge/description/features/how-it-works/impacts; the renderer hides those
+sections until the user fills them. `016_clean_shipsprint_copy.sql` removes
+the old ShipSprint copy/features/steps from existing sites with
+**exact-combination matching** (customer edits are preserved) and is
+idempotent — **17/17 functional checks** on a real PostgreSQL 16 cluster.
+
 ---
 
 ## Starting state

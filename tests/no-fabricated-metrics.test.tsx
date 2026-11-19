@@ -69,6 +69,40 @@ describe("H2 — default site content has no fabricated metrics", () => {
   });
 });
 
+describe("H2 — default site content is neutral (no ShipSprint marketing)", () => {
+  const content = getFlagshipDefaultContent("TestApp");
+
+  it("does not seed ShipSprint's marketing copy or feature list", () => {
+    const allText = JSON.stringify(content);
+    for (const s of [
+      "Built for indie app makers",
+      "Launch your app page. Without the code.",
+      "Build a high-converting App Store landing page",
+      "Zero-drift page builder",
+      "Store buttons that convert",
+      "Domains, TLS & reminders",
+      "Set up your brand",
+      "Verified milestones & proof",
+      "Publish & track installs",
+      "Designed for indie apps shipping worldwide.",
+    ]) {
+      expect(allText, `default content must not contain ${s}`).not.toContain(s);
+    }
+  });
+
+  it("starts with an empty feature list and no impacts/how-it-works", () => {
+    expect(content.features).toEqual([]);
+    expect(content.impacts).toBeUndefined();
+    expect(content.how_it_works).toBeUndefined();
+  });
+
+  it("uses the user's app name as the headline", () => {
+    expect(content.hero.header).toBe("TestApp");
+    expect(content.hero.badge_text).toBe("");
+    expect(content.hero.short_description).toBe("");
+  });
+});
+
 describe("H2 — marketing source has no fabricated metrics", () => {
   const metricsSrc = readFileSync(join(ROOT, "lib/metrics.ts"), "utf8");
   const pageSrc = readFileSync(join(ROOT, "app/page.tsx"), "utf8");

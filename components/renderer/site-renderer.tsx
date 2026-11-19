@@ -155,10 +155,9 @@ export function SiteRenderer({
     brand = { name: "App Name", logo_url: "" },
     hero = {
       app_name: "App Name",
-      badge_text: "Built for indie app makers",
-      header: "Launch your app page. Without the code.",
-      short_description:
-        "Build a high-converting App Store landing page without frontend code. Connect store links, preview on real device frames, and publish to your custom domain.",
+      badge_text: "",
+      header: "Your headline",
+      short_description: "",
     },
     impacts,
     features = [],
@@ -326,33 +325,11 @@ export function SiteRenderer({
       impactsData.speed_stat,
   );
 
-  // How it works steps fallback
-  const stepsData: HowItWorksStep[] = how_it_works && how_it_works.length > 0
-    ? how_it_works
-    : [
-        {
-          step: "Step 1",
-          title: "Set up your brand",
-          description:
-            "Add your icon, screenshots, store links, and copy. Watch the live preview update instantly with zero drift.",
-        },
-        {
-          step: "Step 2",
-          title: "Verified milestones & proof",
-          description:
-            "Highlight core capabilities, checklist milestones, and verified ratings to establish clear credibility with visitors.",
-        },
-        {
-          step: "Step 3",
-          title: "Publish & track installs",
-          description:
-            "Publish to your subdomain or custom domain with automated TLS. Track cookieless store taps from day one.",
-        },
-      ];
+  // How it works steps — only what the user provided (no ShipSprint defaults).
+  const stepsData: HowItWorksStep[] = how_it_works ?? [];
 
-  const categories = brand.categories && brand.categories.length > 0
-    ? brand.categories
-    : ["Habit", "Focus", "Productivity", "Health", "Design", "Life"];
+  // Categories — only what the user provided.
+  const categories = brand.categories ?? [];
 
   return (
     <div className="min-h-screen bg-white font-sans text-[#131313] antialiased selection:bg-[#131313] selection:text-white dark:bg-zinc-950 dark:text-zinc-50 dark:selection:bg-zinc-50 dark:selection:text-zinc-950">
@@ -596,24 +573,26 @@ export function SiteRenderer({
         </div>
       </section>
 
-      {/* Category Proof Strip */}
-      <section
-        aria-label="Made for"
-        className="border-y border-zinc-200 bg-[#f7f7f7] dark:border-zinc-800 dark:bg-zinc-900/30"
-      >
-        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-semibold tracking-widest text-[#505050] uppercase dark:text-zinc-400">
-            Made for indie apps shipping worldwide
-          </p>
-          <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-semibold text-[#262424] dark:text-zinc-300">
-            {categories.map((c) => (
-              <li key={c} className="whitespace-nowrap">
-                {c}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      {/* Category Proof Strip — only when the user provided categories */}
+      {categories.length > 0 && (
+        <section
+          aria-label="Made for"
+          className="border-y border-zinc-200 bg-[#f7f7f7] dark:border-zinc-800 dark:bg-zinc-900/30"
+        >
+          <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+            <p className="text-center text-xs font-semibold tracking-widest text-[#505050] uppercase dark:text-zinc-400">
+              Made for indie apps shipping worldwide
+            </p>
+            <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-semibold text-[#262424] dark:text-zinc-300">
+              {categories.map((c) => (
+                <li key={c} className="whitespace-nowrap">
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
 
       {/* Impacts — only the sections the owner actually filled in (H2) */}
       {hasImpactsContent && (
@@ -937,7 +916,8 @@ export function SiteRenderer({
         </section>
       )}
 
-      {/* How It Works — 3 Steps Grid */}
+      {/* How It Works — only when the user provided steps */}
+      {stepsData.length > 0 && (
       <section
         id="how"
         className="border-y border-zinc-200 bg-[#f7f7f7] dark:border-zinc-800 dark:bg-zinc-900/30"
@@ -975,6 +955,7 @@ export function SiteRenderer({
           </ol>
         </div>
       </section>
+      )}
 
       {/* Blog & Marketing Updates Section */}
       {publishedBlogPosts.length > 0 && (

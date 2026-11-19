@@ -10,102 +10,43 @@ import { getDefaultSitePages } from "./legal-pages";
 export const BUILTIN_TEMPLATES: Template[] = [];
 
 /**
- * Flagship ShipSprint Landing Page Template Generator.
- * Directly seeds new sites with the exact visual fidelity and copy structure
- * of the high-converting ShipSprint marketing landing page.
+ * Default content for a new user site.
+ *
+ * This is deliberately **neutral**: the user's app name and contact email,
+ * and nothing else. It must never seed ShipSprint's own marketing copy,
+ * feature list, onboarding steps or social proof into a customer's page —
+ * the page is about *their* app, not about ShipSprint.
+ *
+ * Everything else is left empty so the editor/renderer shows honest
+ * placeholders and the user fills in their own content.
  */
 export function getFlagshipDefaultContent(
   appName: string,
   email?: string
 ): SiteContent {
-  const contactEmail = email || "support@shipsprint.site";
+  const contactEmail = email || "";
   return {
     brand: {
       name: appName,
       logo_url: "",
       app_icon_url: "",
-      categories: ["Habit", "Focus", "Productivity", "Health", "Design", "Life"],
+      categories: [],
     },
     hero: {
       app_name: appName,
-      badge_text: "Built for indie app makers",
-      header: "Launch your app page. Without the code.",
-      short_description:
-        "Build a high-converting App Store landing page without frontend code. Connect store links, preview on real device frames, and publish to your custom domain.",
+      badge_text: "",
+      header: appName,
+      short_description: "",
       device_screenshot_url: "",
       device_screenshot_url_secondary: "",
-      primary_cta_label: "Start building",
-      secondary_cta_label: "See How It Works",
+      primary_cta_label: "",
+      secondary_cta_label: "",
       email_capture_enabled: false,
       email_placeholder: "Enter your email for early access",
       email_cta_label: "Get Early Access",
       email_success_message: "You're on the list. We'll be in touch.",
     },
-    impacts: {
-      eyebrow: `Why ${appName}`,
-      title: "Built for your launch.",
-      description:
-        "Everything your visitors need to understand your app and download it — structured, fast, and on-brand.",
-    },
-    features: [
-      {
-        id: "feat-1",
-        icon: "Check",
-        title: "Zero-drift page builder",
-        description:
-          "Arrange sections and preview updates directly in the browser. The live preview matches what visitors see on mobile and desktop.",
-        proof_type: "checklist",
-        proof_meta: {
-          checklist_items: [
-            { label: "App icon + screenshots", status: "Required" },
-            { label: "Store links", status: "Required" },
-            { label: "Custom domain", status: "Optional" },
-          ],
-        },
-      },
-      {
-        id: "feat-2",
-        icon: "Zap",
-        title: "Store buttons that convert",
-        description:
-          "App Store and Google Play buttons with cookieless tap tracking. See which visits become installs — no banners, no cookies.",
-      },
-      {
-        id: "feat-3",
-        icon: "Shield",
-        title: "Domains, TLS & reminders",
-        description:
-          "Connect a custom domain with automatic TLS, and never miss a launch step again. Status is read from the database — never claimed before it is true.",
-        proof_type: "readiness",
-        proof_meta: {
-          readiness_items: [
-            { key: "App icon + screenshots", value: "Add" },
-            { key: "Store links", value: "Connect" },
-            { key: "Automatic SSL/TLS", value: "Included" },
-          ],
-        },
-      },
-    ],
-    how_it_works: [
-      {
-        step: "Step 1",
-        title: "Set up your brand",
-        description:
-          "Add your icon, screenshots, store links, and copy. Watch the live preview update instantly with zero drift.",
-      },
-      {
-        step: "Step 2",
-        title: "Verified milestones & proof",
-        description:
-          "Highlight core capabilities, checklist milestones, and verified ratings to establish clear credibility with visitors.",
-      },
-      {
-        step: "Step 3",
-        title: "Publish & track installs",
-        description:
-          "Publish to your subdomain or custom domain with automated TLS. Track cookieless store taps from day one.",
-      },
-    ],
+    features: [],
     store_links: {
       availability: "both",
       app_store_url: "",
@@ -116,7 +57,7 @@ export function getFlagshipDefaultContent(
     pages: getDefaultSitePages(appName, contactEmail),
     footer: {
       brand_name: appName,
-      tagline: "Designed for indie apps shipping worldwide.",
+      tagline: "",
       legal_links: [],
       contact_email: contactEmail,
     },
