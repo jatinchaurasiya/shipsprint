@@ -161,6 +161,72 @@ database, then verify with the post-apply checks at the bottom of the file.
 
 ---
 
+## C3 — Eliminate stored XSS in the markdown renderer
+
+**Severity:** CRITICAL · **Audit ref:** `audit/C3-markdown-xss.md`
+
+**The hole.** `components/renderer/page-renderer.tsx` rendered page bodies and
+blog posts with `dangerouslySetInnerHTML` and a `formatInline()` helper that
+performed **no HTML escaping**:
+
+```ts
+function formatInline(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong ...>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em ...>$1</em>')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" ...>$1</a>');
+}
+```
+
+Any site owner (free tier included) could put
+`<img src=x onerror=...>` or `[x](javascript:...)` in a page body or blog
+post. Because the Supabase session cookie is scoped to the apex domain
+(`.shipsprint.site`) and is not `httpOnly`, script on any customer page could
+steal the session of any logged-in ShipSprint user — full account takeover.
+The generated legal pages also interpolated the brand name into paragraphs
+that flowed through the same sink.
+
+**The fix — remove the sink entirely, not filter it.**
+
+1. **`lib/markdown.ts`** (new, pure/isomorphic): a small markdown parser that
+   returns a **token tree** (`text` / `strong` / `em` / `link` / `heading` /
+   `paragraph` / `list` / `hr`). It never builds an HTML string. Link targets
+   go through `safeMarkdownHref()`, which allows only `http:`, `https:`,
+   `mailto:`, `tel:`, root-relative paths and `#anchors`; `javascript:`,
+   `data:`, `vbscript:`, `file:`, `blob:`, protocol-relative, backslash and
+   quote/control-character payloads all become `#`.
+2. **`components/renderer/markdown-viewer.tsx`** (new): maps the token tree to
+   React elements. **No `dangerouslySetInnerHTML`, no `innerHTML`** — React
+   escapes every text node and attribute by construction, so there is no
+   injection sink left to get wrong.
+3. **`page-renderer.tsx`**: the old `MarkdownViewer` + `formatInline` are
+   deleted; store links now go through `safeHref()` as defence in depth for
+   rows written before validation existed.
+4. **`tests/markdown-renderer.test.tsx`** (new, 18 tests): pure parser tests
+   plus real `renderToStaticMarkup` assertions against an XSS corpus
+   (`<img onerror>`, `javascript:`, `data:text/html`, `vbscript:`, attribute
+   breakout, malicious brand names in generated legal pages) and positive
+   cases (http/https/mailto/tel/relative links, bold/italic/headings/lists).
+
+**Verification.**
+
+```
+npm run typecheck   pass
+npm run lint        pass
+npm run test        332 passed (25 files; 18 new)
+npm run build       pass
+```
+
+No database change is required — this is an application-code fix. The next
+production deploy rebuilds the app with the safe renderer.
+
+**Post-deploy verification:** publish a test page whose body contains
+`<img src=x onerror=alert(1)>` and `[x](javascript:alert(1))`, open the live
+URL, and confirm the text renders inertly (no `alert`, no image tag) and the
+link is `#`.
+
+---
+
 ## Starting state
 
 `node_modules` had never been installed. There was no `.env` file, no
