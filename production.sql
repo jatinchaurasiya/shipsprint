@@ -913,17 +913,54 @@ revoke insert, update, delete on public.templates from anon, authenticated;
 grant select on public.templates to anon, authenticated;
 
 -- Profiles
+-- Clients may read their own profile (RLS below), but never write any column.
+-- Every legitimate write (checkout, billing webhook, dev simulator) uses the
+-- service-role client. Plan immutability is enforced independently by
+-- trg_guard_profile_plan so a mistaken re-grant cannot escalate a plan.
 drop policy if exists "Users can view own profile" on public.profiles;
 create policy "Users can view own profile" on public.profiles
   for select using ((select auth.uid()) = id);
 
 drop policy if exists "Users can update own profile" on public.profiles;
-create policy "Users can update own profile" on public.profiles
-  for update using ((select auth.uid()) = id)
-  with check ((select auth.uid()) = id);
 
-revoke insert, delete on public.profiles from anon, authenticated;
-grant select, update on public.profiles to authenticated;
+revoke insert, update, delete on public.profiles from anon, authenticated;
+revoke update (id, plan_id, dodo_customer_id, created_at, updated_at)
+  on public.profiles from anon, authenticated;
+revoke select on public.profiles from anon;
+grant select on public.profiles to authenticated;
+
+-- Defence in depth: refuse plan_id / dodo_customer_id changes from any
+-- session role that is not a trusted billing/ops role. current_setting('role')
+-- is the session role; current_user would be the SECURITY DEFINER owner.
+create or replace function public.guard_profile_plan()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if coalesce(current_setting('role', true), 'none') not in
+       ('service_role', 'postgres', 'supabase_admin')
+     and session_user not in ('service_role', 'postgres', 'supabase_admin') then
+    if new.plan_id is distinct from old.plan_id then
+      raise exception 'Plan changes are managed by billing'
+        using errcode = 'insufficient_privilege';
+    end if;
+
+    if new.dodo_customer_id is distinct from old.dodo_customer_id then
+      raise exception 'Billing identifiers are managed by billing'
+        using errcode = 'insufficient_privilege';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_guard_profile_plan on public.profiles;
+create trigger trg_guard_profile_plan
+  before update on public.profiles
+  for each row execute function public.guard_profile_plan();
 
 -- Sites
 drop policy if exists "Users can view own sites" on public.sites;

@@ -18,6 +18,77 @@ npm run db:validate pass  (191 statements parse, all convergence assertions)
 
 ---
 
+## C1 — Lock `profiles.plan_id` (free plan escalation)
+
+**Severity:** CRITICAL · **Audit ref:** `audit/C1-plan-escalation.md`
+
+**The hole.** `authenticated` held a table-wide `UPDATE` grant on
+`public.profiles` plus a permissive `"Users can update own profile"` policy.
+Because the Supabase anon key is public and every user gets a session JWT, any
+signed-up user could run
+`PATCH /rest/v1/profiles?id=eq.<uid> {"plan_id":"pro"}` and grant themselves
+Pro — 10 sites, custom domains, analytics, AI discovery — without paying.
+
+**The fix (defence in depth, both layers):**
+
+1. **No client writes.** `supabase/migrations/012_lock_profile_plan.sql`
+   revokes `insert, update, delete` on `public.profiles` from `anon` and
+   `authenticated` and grants only `SELECT`. The permissive UPDATE policy is
+   dropped. No app code writes profiles with the user client — every
+   legitimate write (checkout, billing webhook, dev simulator) already uses the
+   service-role client, verified by a static test.
+2. **Immutability trigger.** `guard_profile_plan()` (SECURITY DEFINER, pinned
+   `search_path`) refuses `plan_id` / `dodo_customer_id` changes from any
+   session role that is not a trusted billing/ops role. It checks **both**
+   `current_setting('role')` (PostgREST's `SET ROLE service_role` /
+   `authenticated`) **and** `session_user` (the login role; a plain
+   `postgres` session reports `role = 'none'`). `current_user` is deliberately
+   not used — inside a SECURITY DEFINER function it is always the owner, which
+   would make the guard a no-op.
+3. **Self-verification.** The migration ends with a `DO` block that fails if
+   the client UPDATE grant, the permissive policy, or the guard trigger is
+   missing.
+4. **Mirrored** into `supabase/schema.sql` and `production.sql` so fresh
+   installs and the duplicate production script cannot drift.
+5. **CI enforcement:** `scripts/validate_schema.py` asserts the grant is
+   revoked, the policy is gone, and the guard is SECURITY DEFINER + pinned
+   `search_path` + tests both `current_setting('role')` and `session_user`.
+   `tests/profile-plan-guard.test.ts` (11 tests) locks the schema, the
+   migration, and the app's use of the admin client.
+
+**Verification.**
+
+```
+python scripts/validate_schema.py   pass (all C1 assertions)
+npm run typecheck                   pass
+npm run lint                        pass
+npm run test                        303 passed (23 files)
+npm run build                       pass
+```
+
+Functional proof against a throwaway PostgreSQL 16 cluster, applying the real
+`012_lock_profile_plan.sql` and simulating PostgREST (`authenticator` →
+`SET ROLE`) and direct admin (`postgres`) access — **33/33 checks pass**:
+
+- PostgREST `authenticated` UPDATE → `permission denied`
+- PostgREST `authenticated` INSERT → `permission denied`
+- PostgREST `service_role` UPDATE plan + customer → allowed (webhook path)
+- PostgREST `authenticated` UPDATE with a mistaken re-grant → blocked by the
+  trigger (`Plan changes are managed by billing`)
+- `dodo_customer_id` change → blocked by the trigger
+- `updated_at` update → allowed
+- `postgres` (SQL editor / migrations) UPDATE plan → allowed
+- self-verification DO block → passes
+- owner SELECT policy retained
+
+**Deploy step (required):** apply
+`supabase/migrations/012_lock_profile_plan.sql` to the production database
+(Supabase SQL editor or `supabase db push`). The migration self-verifies and
+fails loudly if the lock is incomplete. Then re-run the post-apply checks at
+the bottom of the migration file.
+
+---
+
 ## Starting state
 
 `node_modules` had never been installed. There was no `.env` file, no

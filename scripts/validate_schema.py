@@ -307,6 +307,7 @@ for table, label in [
     ("analytics_events", "telemetry"),
     ("domain_verifications", "verification rows"),
     ("checkout_intents", "checkout intents"),
+    ("profiles", "plan/entitlement"),
     ("plans", "reference data"),
 ]:
     if re.search(rf"revoke\s+insert,?\s*update,?\s*delete\s+on\s+public\.{table}\b", sql, re.IGNORECASE) or \
@@ -314,6 +315,88 @@ for table, label in [
         ok(f"client writes revoked on {table} ({label})")
     else:
         warn(f"no explicit revoke on {table}; verify no INSERT policy grants it")
+
+# ---------------------------------------------------------------------------
+# 6b. Profile plan is locked (C1)
+# ---------------------------------------------------------------------------
+head("6b. Profile plan lock (C1)")
+
+# A table-wide UPDATE grant on profiles for clients is the original hole.
+if re.search(
+    r"grant\s+[^;]*\bupdate\b[^;]*on\s+public\.profiles\s+to\s+authenticated",
+    sql,
+    re.IGNORECASE,
+):
+    bad("authenticated holds a table-wide UPDATE grant on public.profiles (C1)")
+else:
+    ok("no table-wide UPDATE grant on profiles for authenticated")
+
+if re.search(r"revoke\s+[^;]*\bupdate\b[^;]*on\s+public\.profiles", sql, re.IGNORECASE):
+    ok("UPDATE on profiles explicitly revoked from clients")
+else:
+    bad("no explicit revoke of UPDATE on public.profiles")
+
+if re.search(r"revoke\s+update\s*\([^)]*\)\s+on\s+public\.profiles", sql, re.IGNORECASE):
+    ok("column-level UPDATE revoked on profiles")
+else:
+    bad("no column-level UPDATE revoke on public.profiles")
+
+if re.search(r"revoke\s+select\s+on\s+public\.profiles\s+from\s+anon", sql, re.IGNORECASE):
+    ok("anon SELECT on profiles revoked")
+else:
+    bad("anon still has SELECT on public.profiles")
+
+if re.search(r'create\s+policy\s+"Users can update own profile"', sql, re.IGNORECASE):
+    bad("the permissive 'Users can update own profile' policy still exists")
+else:
+    ok("permissive profiles UPDATE policy removed")
+
+if re.search(r"create\s+or\s+replace\s+function\s+public\.guard_profile_plan\s*\(", sql, re.IGNORECASE):
+    ok("guard_profile_plan() defined")
+else:
+    bad("missing guard_profile_plan()")
+
+if re.search(r"create\s+trigger\s+trg_guard_profile_plan", sql, re.IGNORECASE):
+    ok("trg_guard_profile_plan trigger present")
+else:
+    bad("missing trg_guard_profile_plan trigger")
+
+guard_match = re.search(
+    r"create\s+or\s+replace\s+function\s+public\.guard_profile_plan.*?\$;",
+    sql,
+    re.IGNORECASE | re.DOTALL,
+)
+if guard_match:
+    guard_body = guard_match.group(0)
+    if "security definer" in guard_body.lower() and "set search_path" in guard_body.lower():
+        ok("guard_profile_plan is SECURITY DEFINER with pinned search_path")
+    else:
+        bad("guard_profile_plan must be SECURITY DEFINER with a pinned search_path")
+    if "current_setting('role'" in guard_body.lower():
+        ok("guard tests the effective role (not current_user)")
+    else:
+        bad("guard must test current_setting('role'); current_user is the definer")
+    if "session_user" in guard_body.lower():
+        ok("guard also trusts the login role (session_user)")
+    else:
+        bad("guard must also test session_user; a plain postgres session reports role='none'")
+else:
+    bad("could not read guard_profile_plan body")
+
+migration_012 = MIGRATIONS_DIR / "012_lock_profile_plan.sql"
+if migration_012.exists():
+    migration_text = migration_012.read_text(encoding="utf-8")
+    if "guard_profile_plan" in migration_text and re.search(r"revoke", migration_text, re.IGNORECASE):
+        ok("migration 012_lock_profile_plan.sql carries the C1 fix")
+    else:
+        bad("migration 012 exists but does not carry the C1 fix")
+
+    if "column_privileges" in migration_text:
+        ok("migration also checks column-level UPDATE grants")
+    else:
+        bad("migration must check information_schema.column_privileges")
+else:
+    bad("missing supabase/migrations/012_lock_profile_plan.sql")
 
 # ---------------------------------------------------------------------------
 # 7. Foreign keys guarded by column pair, never by constraint name

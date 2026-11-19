@@ -51,3 +51,8 @@ supabase/.temp/
 .claude/
 agent/
 skills-lock.json
+
+# internal security audit — contains unfixed exploit details; never publish
+# (this repository is public). Keep the reports local or move them to a
+# private repository.
+/audit/
