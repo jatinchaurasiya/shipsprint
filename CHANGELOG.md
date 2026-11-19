@@ -89,6 +89,78 @@ the bottom of the migration file.
 
 ---
 
+## C2 — Lock analytics maintenance functions (anonymous data destruction)
+
+**Severity:** CRITICAL · **Audit ref:** `audit/C2-anon-rpc-data-loss.md`
+
+**The hole.** `prune_analytics(integer)` and `rollup_telemetry(integer)` are
+`SECURITY DEFINER` functions (they run as their owner and bypass RLS), and
+there was **no `revoke execute`** anywhere. PostgreSQL grants `EXECUTE` on
+functions to `PUBLIC` by default, and Supabase exposes public-schema functions
+over PostgREST RPC, so anyone holding the public anon key could call:
+
+```bash
+curl -X POST "https://<project>.supabase.co/rest/v1/rpc/prune_analytics" \
+  -H "apikey: <public anon key>" -H "Content-Type: application/json" \
+  -d '{"p_days": 100000}'
+```
+
+That deletes **every analytics event for every tenant**. `rollup_telemetry`
+can likewise poison `telemetry_daily` or force expensive re-aggregation.
+
+**The fix (defence in depth + convergence enforcement):**
+
+1. **No client execute.** `supabase/migrations/013_lock_analytics_functions.sql`
+   revokes `EXECUTE` on `prune_analytics(integer)` and `rollup_telemetry(integer)`
+   from `public`, `anon` and `authenticated`, and grants it to `service_role`
+   only. The maintenance cron already uses the service-role client.
+2. **Trigger functions locked too.** `set_updated_at()`, `guard_profile_plan()`,
+   `enforce_site_limit()`, `reject_reserved_slug()` and `handle_new_user()` are
+   internal; their `EXECUTE` is revoked from clients (triggers still fire —
+   verified functionally).
+3. **`get_platform_metrics()` stays public.** It returns only aggregate counts
+   and is used by the marketing homepage with the anon client.
+4. **Self-verification.** The migration ends with a `DO` block that fails if
+   anon/authenticated can still execute either function, if service_role cannot,
+   if `get_platform_metrics()` lost its anon grant, or if either function's
+   `search_path` is not pinned. It also `NOTIFY pgrst, 'reload schema'` so
+   PostgREST drops the old privileges immediately.
+5. **Mirrored** into `supabase/schema.sql` and `production.sql`.
+6. **CI enforcement:** `scripts/validate_schema.py` section 6c asserts the
+   revokes/grants, and — generically — that **every** `SECURITY DEFINER`
+   function in `schema.sql` is locked except the intentional public
+   `get_platform_metrics()`. `tests/analytics-rpc-guard.test.ts` locks the
+   schema, the migration, and the app's client usage (cron = admin, homepage =
+   anon).
+
+**Verification.**
+
+```
+python scripts/validate_schema.py   pass (section 6c + generic SECURITY DEFINER scan)
+npm run typecheck                   pass
+npm run lint                        pass
+npm run test                        314 passed (24 files)
+npm run build                       pass
+```
+
+Functional proof against a throwaway PostgreSQL 16 cluster, applying the real
+`013_lock_analytics_functions.sql` twice (idempotency) with Supabase-like
+roles (`authenticator` login → `SET ROLE anon|authenticated|service_role`) and
+`PUBLIC` execute granted — **25/25 checks pass**:
+
+- `anon` / `authenticated` → `permission denied` on both functions
+- `service_role` → allowed; `prune_analytics` actually deletes, `rollup` writes
+- `postgres` (SQL editor) → allowed
+- `get_platform_metrics()` → anon allowed (homepage)
+- `search_path` pinned on both functions
+- revoking `EXECUTE` on trigger functions does **not** stop them firing
+
+**Deploy step (required):** apply
+`supabase/migrations/013_lock_analytics_functions.sql` to the production
+database, then verify with the post-apply checks at the bottom of the file.
+
+---
+
 ## Starting state
 
 `node_modules` had never been installed. There was no `.env` file, no

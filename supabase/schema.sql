@@ -1192,6 +1192,27 @@ revoke all on public.webhook_events, public.audit_log from anon, authenticated;
 grant select on public.site_analytics_summary, public.site_analytics_sources, public.site_analytics_cta to authenticated;
 grant execute on function public.get_platform_metrics() to anon, authenticated;
 
+-- Analytics maintenance functions are service-role only (C2). PostgreSQL
+-- grants EXECUTE on functions to PUBLIC by default, and Supabase exposes
+-- public-schema functions over PostgREST RPC, so revoke explicitly: anon and
+-- authenticated must never be able to prune or roll up telemetry.
+revoke execute on function public.prune_analytics(integer)  from public, anon, authenticated;
+revoke execute on function public.rollup_telemetry(integer) from public, anon, authenticated;
+grant execute on function public.prune_analytics(integer)  to service_role;
+grant execute on function public.rollup_telemetry(integer) to service_role;
+
+-- Trigger functions are internal; clients have no reason to invoke them via RPC.
+revoke execute on function public.set_updated_at()        from public, anon, authenticated;
+revoke execute on function public.guard_profile_plan()    from public, anon, authenticated;
+revoke execute on function public.enforce_site_limit()    from public, anon, authenticated;
+revoke execute on function public.reject_reserved_slug()  from public, anon, authenticated;
+revoke execute on function public.handle_new_user()       from public, anon, authenticated;
+grant execute on function public.set_updated_at()       to service_role;
+grant execute on function public.guard_profile_plan()   to service_role;
+grant execute on function public.enforce_site_limit()   to service_role;
+grant execute on function public.reject_reserved_slug() to service_role;
+grant execute on function public.handle_new_user()      to service_role;
+
 -- service_role bypasses RLS, which the webhook, the public renderer and the
 -- analytics beacon rely on.
 grant usage on all sequences in schema public to authenticated;

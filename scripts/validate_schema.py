@@ -23,6 +23,7 @@ from pathlib import Path
 
 try:
     from pglast import parse_sql
+    from pglast.ast import CreateFunctionStmt
 except ImportError:  # pragma: no cover
     print("pglast is not installed. Run: pip install pglast")
     sys.exit(2)
@@ -397,6 +398,79 @@ if migration_012.exists():
         bad("migration must check information_schema.column_privileges")
 else:
     bad("missing supabase/migrations/012_lock_profile_plan.sql")
+
+# ---------------------------------------------------------------------------
+# 6c. Analytics maintenance functions are service-role only (C2)
+# ---------------------------------------------------------------------------
+head("6c. Analytics RPC lock (C2)")
+
+for fn in ("prune_analytics(integer)", "rollup_telemetry(integer)"):
+    if re.search(
+        rf"revoke\s+execute\s+on\s+function\s+public\.{re.escape(fn)}\s+from\s+public",
+        sql,
+        re.IGNORECASE,
+    ):
+        ok(f"{fn} revoked from public")
+    else:
+        bad(f"{fn}: no revoke execute from public")
+
+    if re.search(
+        rf"grant\s+execute\s+on\s+function\s+public\.{re.escape(fn)}\s+to\s+service_role",
+        sql,
+        re.IGNORECASE,
+    ):
+        ok(f"{fn} granted to service_role")
+    else:
+        bad(f"{fn}: service_role cannot execute")
+
+if re.search(
+    r"grant\s+execute\s+on\s+function\s+public\.get_platform_metrics\(\)\s+to\s+anon",
+    sql,
+    re.IGNORECASE,
+):
+    ok("get_platform_metrics() still callable by anon")
+else:
+    bad("get_platform_metrics() lost its anon grant")
+
+# Generic: every SECURITY DEFINER function in schema.sql must be locked.
+# get_platform_metrics() is the one intentional public function (read-only
+# aggregate counts). This catches a future function added without a lock.
+unlocked = []
+for raw in statements:
+    stmt = raw.stmt
+    if isinstance(stmt, CreateFunctionStmt):
+        name = stmt.funcname[-1].sval if stmt.funcname else "?"
+        is_secdef = any(
+            o.defname == "security"
+            and getattr(getattr(o, "arg", None), "boolval", False)
+            for o in stmt.options
+        )
+        if is_secdef and name != "get_platform_metrics":
+            if not re.search(
+                rf"revoke\s+execute\s+on\s+function\s+public\.{re.escape(name)}\b",
+                sql,
+                re.IGNORECASE,
+            ):
+                unlocked.append(name)
+
+if unlocked:
+    bad(f"SECURITY DEFINER function(s) without revoke execute: {sorted(set(unlocked))}")
+else:
+    ok("every SECURITY DEFINER function is locked (except get_platform_metrics)")
+
+migration_013 = MIGRATIONS_DIR / "013_lock_analytics_functions.sql"
+if migration_013.exists():
+    migration_013_text = migration_013.read_text(encoding="utf-8")
+    if (
+        "prune_analytics" in migration_013_text
+        and "rollup_telemetry" in migration_013_text
+        and "has_function_privilege" in migration_013_text
+    ):
+        ok("migration 013_lock_analytics_functions.sql carries the C2 fix")
+    else:
+        bad("migration 013 exists but does not carry the C2 fix")
+else:
+    bad("missing supabase/migrations/013_lock_analytics_functions.sql")
 
 # ---------------------------------------------------------------------------
 # 7. Foreign keys guarded by column pair, never by constraint name
