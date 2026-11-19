@@ -329,6 +329,32 @@ export async function POST(request: NextRequest) {
     .eq("user_id", user.id);
 
   if (updateError) {
+    // trg_guard_custom_domain is the authoritative plan/root/format check.
+    // Map its errors to actionable responses instead of a generic 500.
+    if (updateError.code === "42501") {
+      return NextResponse.json(
+        {
+          error:
+            "Custom domains require the Pro plan. Upgrade to connect your own domain.",
+        },
+        { status: 403 },
+      );
+    }
+
+    if (updateError.code === "23514") {
+      return NextResponse.json(
+        { error: updateError.message || "That domain cannot be used." },
+        { status: 400 },
+      );
+    }
+
+    if (updateError.code === "23505") {
+      return NextResponse.json(
+        { error: "That domain is already connected to another landing page." },
+        { status: 409 },
+      );
+    }
+
     logger.exception("custom domain update failed", updateError, { site_id: siteId });
     return NextResponse.json(
       { error: "Could not connect that domain." },

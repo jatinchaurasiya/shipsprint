@@ -473,6 +473,69 @@ else:
     bad("missing supabase/migrations/013_lock_analytics_functions.sql")
 
 # ---------------------------------------------------------------------------
+# 6d. Custom domains are Pro-only, enforced in the database (H1)
+# ---------------------------------------------------------------------------
+head("6d. Custom-domain plan lock (H1)")
+
+if re.search(
+    r"create\s+or\s+replace\s+function\s+public\.guard_custom_domain\s*\(",
+    sql,
+    re.IGNORECASE,
+):
+    ok("guard_custom_domain() defined")
+else:
+    bad("missing guard_custom_domain()")
+
+if re.search(r"create\s+trigger\s+trg_guard_custom_domain", sql, re.IGNORECASE):
+    ok("trg_guard_custom_domain trigger present")
+else:
+    bad("missing trg_guard_custom_domain trigger")
+
+if re.search(
+    r"before\s+insert\s+or\s+update\s+of\s+custom_domain\s+on\s+public\.sites",
+    sql,
+    re.IGNORECASE | re.DOTALL,
+):
+    ok("trigger fires on INSERT and UPDATE OF custom_domain")
+else:
+    bad("trigger must fire on INSERT and UPDATE OF custom_domain")
+
+guard_fn = re.search(
+    r"create\s+or\s+replace\s+function\s+public\.guard_custom_domain.*?\$;",
+    sql,
+    re.IGNORECASE | re.DOTALL,
+)
+if guard_fn:
+    guard_body = guard_fn.group(0)
+    for label, needle in (
+        ("plan check (has_custom_domain)", "has_custom_domain"),
+        ("root-domain hijack check", "app.root_domain"),
+        ("hostname format check", "!~"),
+        ("security definer", "security definer"),
+        ("pinned search_path", "set search_path"),
+    ):
+        if needle.lower() in guard_body.lower():
+            ok(f"guard_custom_domain {label}")
+        else:
+            bad(f"guard_custom_domain missing {label}")
+else:
+    bad("could not read guard_custom_domain body")
+
+migration_014 = MIGRATIONS_DIR / "014_lock_custom_domain_plan.sql"
+if migration_014.exists():
+    migration_014_text = migration_014.read_text(encoding="utf-8")
+    if (
+        "guard_custom_domain" in migration_014_text
+        and "has_custom_domain" in migration_014_text
+        and "pg_get_functiondef" in migration_014_text
+    ):
+        ok("migration 014_lock_custom_domain_plan.sql carries the H1 fix")
+    else:
+        bad("migration 014 exists but does not carry the H1 fix")
+else:
+    bad("missing supabase/migrations/014_lock_custom_domain_plan.sql")
+
+# ---------------------------------------------------------------------------
 # 7. Foreign keys guarded by column pair, never by constraint name
 # ---------------------------------------------------------------------------
 head("7. Foreign key guards")

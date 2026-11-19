@@ -822,6 +822,90 @@ create trigger trg_reject_reserved_slug
   before insert or update of slug on public.sites
   for each row execute function public.reject_reserved_slug();
 
+-- --- Custom domains are Pro-only, enforced in the database (H1) -------------
+-- The only plan gate used to be in app/api/domains/route.ts. Because the anon
+-- key is public and `sites` has an owner INSERT/UPDATE policy, any free user
+-- could call PostgREST directly and set `custom_domain`, then get on-demand
+-- TLS for it via /api/caddy/ask. This trigger enforces the plan, blocks
+-- hijacking ShipSprint's own domains, and validates the hostname for direct
+-- writes that never pass through lib/redirect.ts normalizeHostname().
+create or replace function public.guard_custom_domain()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_has_domain boolean;
+  v_root       text;
+begin
+  if new.custom_domain is not null then
+    new.custom_domain := trim(lower(new.custom_domain));
+    if new.custom_domain = '' then
+      new.custom_domain := null;
+    end if;
+  end if;
+
+  -- Disconnecting is always allowed.
+  if new.custom_domain is null then
+    return new;
+  end if;
+
+  select pl.has_custom_domain
+    into v_has_domain
+  from public.profiles pr
+  join public.plans pl on pl.id = pr.plan_id
+  where pr.id = new.user_id;
+
+  if coalesce(v_has_domain, false) = false then
+    raise exception 'Custom domains require the Pro plan'
+      using errcode = 'insufficient_privilege';
+  end if;
+
+  -- Root can be overridden per database:
+  --   ALTER DATABASE <db> SET app.root_domain = 'example.com';
+  -- The real platform domain is also hard-coded so a session-level SET
+  -- app.root_domain cannot be used to bypass the check.
+  v_root := coalesce(
+    nullif(current_setting('app.root_domain', true), ''),
+    'shipsprint.site'
+  );
+
+  if new.custom_domain = 'shipsprint.site'
+     or new.custom_domain like '%.shipsprint.site'
+     or new.custom_domain = v_root
+     or new.custom_domain like ('%.' || v_root) then
+    raise exception 'You cannot use a ShipSprint domain as a custom domain'
+      using errcode = 'check_violation';
+  end if;
+
+  if length(new.custom_domain) > 253 then
+    raise exception 'Domain name is too long'
+      using errcode = 'check_violation';
+  end if;
+
+  if new.custom_domain !~
+     '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$' then
+    raise exception 'Invalid domain name'
+      using errcode = 'check_violation';
+  end if;
+
+  if new.custom_domain ~ '^[0-9.]+$' then
+    raise exception 'IP addresses cannot be used as custom domains'
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_guard_custom_domain on public.sites;
+create trigger trg_guard_custom_domain
+  before insert or update of custom_domain on public.sites
+  for each row execute function public.guard_custom_domain();
+
+revoke execute on function public.guard_custom_domain() from public, anon, authenticated;
+
 -- --- Profile creation on signup --------------------------------------------
 -- SECURITY DEFINER without a pinned search_path can be hijacked by anyone who
 -- can create an object in a schema on the path.
@@ -1207,11 +1291,13 @@ revoke execute on function public.guard_profile_plan()    from public, anon, aut
 revoke execute on function public.enforce_site_limit()    from public, anon, authenticated;
 revoke execute on function public.reject_reserved_slug()  from public, anon, authenticated;
 revoke execute on function public.handle_new_user()       from public, anon, authenticated;
+revoke execute on function public.guard_custom_domain()   from public, anon, authenticated;
 grant execute on function public.set_updated_at()       to service_role;
 grant execute on function public.guard_profile_plan()   to service_role;
 grant execute on function public.enforce_site_limit()   to service_role;
 grant execute on function public.reject_reserved_slug() to service_role;
 grant execute on function public.handle_new_user()      to service_role;
+grant execute on function public.guard_custom_domain()  to service_role;
 
 -- service_role bypasses RLS, which the webhook, the public renderer and the
 -- analytics beacon rely on.

@@ -287,6 +287,66 @@ must not emit a `Location` pointing at `evil.com`.
 
 ---
 
+## C5 — Custom domains are Pro-only, enforced in the database (H1)
+
+**Severity:** HIGH · **Audit ref:** `audit/H1-custom-domain-gate.md`
+
+**The hole.** The only custom-domain plan gate was in
+`app/api/domains/route.ts`. Because the anon key is public and `sites` has an
+owner INSERT/UPDATE policy, any free user could call PostgREST directly:
+
+```bash
+PATCH /rest/v1/sites?id=eq.<site-uid>  {"custom_domain":"myapp.com"}
+```
+
+and get a custom domain + automatic TLS without paying. Once the row exists,
+`/api/caddy/ask` authorizes on-demand TLS for that hostname — so the same hole
+also allowed Let's Encrypt rate-limit exhaustion (the PRDD's R2 attack).
+
+**The fix.**
+
+1. **`supabase/migrations/014_lock_custom_domain_plan.sql`** (new) —
+   `guard_custom_domain()` BEFORE INSERT OR UPDATE OF `custom_domain`:
+   - normalizes to lowercase/trim (blank → NULL/disconnect);
+   - **plan gate** via `profiles → plans.has_custom_domain` (fails closed);
+   - **platform-domain hijack protection** — rejects `shipsprint.site`,
+     `*.shipsprint.site`, plus a configurable `app.root_domain`; the real
+     platform domain is hard-coded so a session-level `SET app.root_domain`
+     cannot bypass it;
+   - **hostname validation** (≤253 chars, per-label ≤63, no leading/trailing
+     hyphens) and **IP-address rejection** for direct writes;
+   - `SECURITY DEFINER` + pinned `search_path`; EXECUTE revoked from clients;
+   - self-verifying `DO` block + `NOTIFY pgrst`.
+2. **`app/api/domains/route.ts`** — maps trigger errors to actionable
+   responses: `42501` → 403 (Pro required), `23514` → 400 (domain/root/format),
+   `23505` → 409 (already connected).
+3. **Mirrored** into `supabase/schema.sql` and `production.sql`.
+4. **CI:** `scripts/validate_schema.py` section 6d + the generic SECURITY
+   DEFINER scan; `tests/domain-plan-guard.test.ts` (15 tests).
+
+**Verification.**
+
+```
+python scripts/validate_schema.py   pass (section 6d + generic scan)
+npm run typecheck                   pass
+npm run lint                        pass
+npm run test                        356 passed (26 files; 15 new H1 tests)
+npm run build                       pass
+```
+
+Functional proof on a real PostgreSQL 16 cluster applying the actual migration
+twice — **31/31 checks pass:** free user denied / Pro allowed, root + subdomain
+hijack rejected (even with `SET app.root_domain`), invalid hostname/IP
+rejected, uppercase normalized, disconnect allowed, INSERT rules, duplicate
+domain, service-role plan rule, trigger EXECUTE lock, SECURITY DEFINER +
+search_path.
+
+**Deploy step (required):** apply
+`supabase/migrations/014_lock_custom_domain_plan.sql` to the production
+database, then verify with the post-apply checks at the bottom of the file.
+
+---
+
 ## Starting state
 
 `node_modules` had never been installed. There was no `.env` file, no
