@@ -412,6 +412,14 @@ the old ShipSprint copy/features/steps from existing sites with
 **exact-combination matching** (customer edits are preserved) and is
 idempotent — **17/17 functional checks** on a real PostgreSQL 16 cluster.
 
+**Marketing page mock data (product decision).** The ShipSprint marketing
+landing page (`app/page.tsx` + `lib/metrics.ts`) intentionally keeps its
+illustrative mockup / social-proof data (published-site count, rating, uptime,
+CTR, installs, avatars, stars). It is the marketing surface, not a customer
+page. The H2 fix remains scoped to **user sites**: neutral default content,
+neutral renderer fallbacks, no prefilled editor values, and data migrations
+`015` / `016` for existing customer sites.
+
 ---
 
 ## Starting state

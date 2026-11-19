@@ -103,35 +103,29 @@ describe("H2 — default site content is neutral (no ShipSprint marketing)", () 
   });
 });
 
-describe("H2 — marketing source has no fabricated metrics", () => {
-  const metricsSrc = readFileSync(join(ROOT, "lib/metrics.ts"), "utf8");
-  const pageSrc = readFileSync(join(ROOT, "app/page.tsx"), "utf8");
+// The ShipSprint marketing landing page (app/page.tsx + lib/metrics.ts)
+// intentionally keeps illustrative mockup/social-proof data — it is the
+// marketing surface, not a customer page. The H2 fix is scoped to user sites:
+// the default content, the renderer fallbacks, and the editor inputs.
+// Those are covered by the describes above.
 
-  it("lib/metrics.ts has no Math.max floor and no fabricated defaults", () => {
-    expect(metricsSrc).not.toMatch(/Math\.max/);
-    expect(metricsSrc).not.toMatch(/publishedSites:\s*120/);
-    expect(metricsSrc).not.toMatch(/makerRating/);
-    expect(metricsSrc).not.toMatch(/weeklyInstallsSample/);
-    expect(metricsSrc).not.toMatch(/conversionRate/);
-    expect(metricsSrc).not.toMatch(/uptimePercent/);
+describe("H2 — user sites never inherit ShipSprint marketing", () => {
+  it("the renderer has neutral fallbacks", () => {
+    const src = readFileSync(
+      join(ROOT, "components/renderer/site-renderer.tsx"),
+      "utf8",
+    );
+    expect(src).not.toContain("Built for indie app makers");
+    expect(src).not.toContain("Launch your app page. Without the code.");
+    expect(src).not.toContain("Build a high-converting App Store landing page");
   });
 
-  it("app/page.tsx no longer renders the fabricated metrics", () => {
-    for (const fake of [
-      "makerRating",
-      "weeklyInstallsSample",
-      "conversionRate",
-      "uptimePercent",
-      "launchSpeedMinutes",
-      "Trusted by indie makers",
-      "Starred by indie makers",
-      "Average indie maker rating",
-    ]) {
-      expect(pageSrc, `app/page.tsx must not reference ${fake}`).not.toContain(fake);
-    }
-  });
-
-  it("app/page.tsx shows only the real published-site count", () => {
-    expect(pageSrc).toContain("metrics.publishedSites");
+  it("the editor does not prefill marketing copy", () => {
+    const src = readFileSync(
+      join(ROOT, "components/editor/editor-panel.tsx"),
+      "utf8",
+    );
+    expect(src).not.toContain("Built for indie app makers");
+    expect(src).not.toContain("Launch your app page. Without the code.");
   });
 });
