@@ -82,6 +82,106 @@ describe("safeRedirectPath", () => {
   });
 });
 
+/**
+ * C4 — control-character smuggling.
+ *
+ * The WHATWG URL parser strips ASCII tab, LF and CR from anywhere in the URL.
+ * `trim()` only removes leading/trailing whitespace, so an *interior* tab
+ * survived the old checks and turned "/\t/evil.com" into "//evil.com" — a
+ * protocol-relative redirect to an attacker host after a trusted email
+ * confirmation. These cases lock the fix.
+ */
+describe("safeRedirectPath — control-character smuggling (C4)", () => {
+  it("rejects literal tab, newline and carriage return inside the path", () => {
+    expect(safeRedirectPath("/\t/evil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("/\n/evil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("/\r/evil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("/\t/evil.com/path")).toBe("/dashboard");
+    expect(safeRedirectPath("/dashboard\t/..")).toBe("/dashboard");
+    expect(safeRedirectPath("/\t\\evil.com")).toBe("/dashboard");
+  });
+
+  it("rejects other C0 controls and DEL", () => {
+    expect(safeRedirectPath("/\u0000/evil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("/\u000b/evil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("/\u000c/evil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("/\u007f/evil.com")).toBe("/dashboard");
+  });
+
+  it("rejects percent-encoded separators and controls in the path", () => {
+    expect(safeRedirectPath("/%2f%2fevil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("/%5c%5cevil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("/%09/evil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("/%0d%0a/evil.com")).toBe("/dashboard");
+  });
+
+  it("still allows encoded values in the query string", () => {
+    expect(safeRedirectPath("/dashboard?next=%2Ffoo")).toBe(
+      "/dashboard?next=%2Ffoo",
+    );
+    expect(safeRedirectPath("/dashboard?x=%0A")).toBe("/dashboard?x=%0A");
+  });
+
+  it("resolves every payload to the same origin", () => {
+    const origin = "https://shipsprint.site";
+    const payloads = [
+      "/\t/evil.com",
+      "/\n/evil.com",
+      "/\r/evil.com",
+      "/\t\\evil.com",
+      "/%2f%2fevil.com",
+      "/%09/evil.com",
+    ];
+    for (const payload of payloads) {
+      const safe = safeRedirectPath(payload);
+      expect(new URL(safe, origin).origin, `payload: ${JSON.stringify(payload)}`).toBe(
+        origin,
+      );
+    }
+  });
+
+  it("keeps ordinary paths working", () => {
+    expect(safeRedirectPath("/dashboard/editor/abc?x=1#y")).toBe(
+      "/dashboard/editor/abc?x=1#y",
+    );
+    expect(safeRedirectPath("/dashboard?tab=analytics")).toBe(
+      "/dashboard?tab=analytics",
+    );
+    expect(safeRedirectPath("/dashboard/billing?upgrade=pro_yearly")).toBe(
+      "/dashboard/billing?upgrade=pro_yearly",
+    );
+  });
+
+  it("rejects leading whitespace before a protocol-relative URL", () => {
+    // trim() removes the leading tab, leaving //evil.com, which is rejected.
+    expect(safeRedirectPath("\t//evil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("\n//evil.com")).toBe("/dashboard");
+  });
+
+  it("rejects encoded traversal in the path", () => {
+    expect(safeRedirectPath("/..%2f..%2fevil.com")).toBe("/dashboard");
+    expect(safeRedirectPath("/%2e%2e%2f%2e%2e%2fevil.com")).toBe("/dashboard");
+  });
+
+  it("survives double-encoding without becoming an authority", () => {
+    const safe = safeRedirectPath("/%252f%252fevil.com");
+    expect(new URL(safe, "https://shipsprint.site").origin).toBe(
+      "https://shipsprint.site",
+    );
+  });
+
+  it("layers with the login page: an encoded payload in ?next= is re-checked", () => {
+    // The proxy may place an encoded payload in the query; the login page then
+    // runs safeRedirectPath on the decoded value and must reject it.
+    const outer = safeRedirectPath("/dashboard?next=%2F%09%2Fevil.com");
+    expect(outer).toBe("/dashboard?next=%2F%09%2Fevil.com");
+    const inner = safeRedirectPath(
+      new URLSearchParams(outer.split("?")[1] ?? "").get("next"),
+    );
+    expect(inner).toBe("/dashboard");
+  });
+});
+
 describe("normalizeHostname", () => {
   it("accepts and lowercases valid domains", () => {
     expect(normalizeHostname("MyApp.com")).toBe("myapp.com");

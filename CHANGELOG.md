@@ -227,6 +227,66 @@ link is `#`.
 
 ---
 
+## C4 — Close the open-redirect control-character bypass
+
+**Severity:** HIGH · **Audit ref:** `audit/C4-open-redirect.md`
+
+**The hole.** `lib/redirect.ts` `safeRedirectPath()` blocked `//`, `/\`,
+`\`, `scheme:` and `%2f`/`%5c`, but **not ASCII control characters**. The
+WHATWG URL parser strips `\t`, `\n` and `\r` from **anywhere** in a URL, and
+`trim()` only removes leading/trailing whitespace — so an *interior* tab
+survived and `"/\t/evil.com"` was parsed as `"//evil.com"`:
+
+```
+safeRedirectPath("/\t/evil.com")  ->  "/\t/evil.com"  (allowed)
+new URL("/\t/evil.com", "https://shipsprint.site")  ->  https://evil.com/
+```
+
+Reachable sinks: the email-confirmation callback
+(`app/(auth)/auth/callback/route.ts`), the proxy's already-signed-in bounce
+(`proxy.ts`), and the login page's `router.push(next)`. A crafted
+`https://shipsprint.site/auth/callback?next=%2F%09%2Fevil.com` link would
+redirect the user to an attacker site **after** a trusted ShipSprint email —
+a ready-made phishing primitive. The existing 39 tests all passed because none
+used control characters.
+
+**The fix.**
+
+1. **`lib/redirect.ts`** — `safeRedirectPath()` now rejects:
+   - any C0 control (U+0000–U+001F) or DEL (U+007F) anywhere in the value
+     (explicit code-point loop; avoids the `no-control-regex` lint rule);
+   - percent-encoded path separators/controls (`%2f`, `%5c`, `%09`, `%0a`,
+     `%0d`) in the **path portion** (query/hash values remain exempt so a
+     legitimate `?next=%2Ffoo` still works);
+   - plus the existing `//`, `/\`, `\`, `scheme:` and non-root-relative
+     checks.
+2. **`app/(dashboard)/dashboard/editor/[id]/page.tsx`** — the login redirect
+   now `encodeURIComponent`s the `id` path param, so a crafted path cannot put
+   control characters into the `?next=` query (defence in depth).
+3. **`tests/redirect.test.ts`** — 10 new cases (49 total in the file):
+   literal tab/LF/CR, other C0 controls and DEL, encoded separators/controls,
+   leading-whitespace protocol-relative, encoded traversal, double-encoding,
+   query-string exemption, and a layered test showing the login page re-checks
+   an encoded payload from `?next=`.
+
+**Verification.**
+
+```
+npm run typecheck   pass
+npm run lint        pass
+npm run test        342 passed (25 files; 49 redirect tests)
+npm run build       pass
+```
+
+No database change — application-code fix; ships with the next deploy. All
+other `new URL(...)` sinks were audited: they use trusted input (env origins,
+server URLs, hostname parsing), not user redirects.
+
+**Post-deploy check:** `curl -sSI "https://shipsprint.site/auth/callback?next=%2F%09%2Fevil.com"`
+must not emit a `Location` pointing at `evil.com`.
+
+---
+
 ## Starting state
 
 `node_modules` had never been installed. There was no `.env` file, no

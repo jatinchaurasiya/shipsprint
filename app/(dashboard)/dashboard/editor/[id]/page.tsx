@@ -18,7 +18,9 @@ export default async function EditorPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?next=/dashboard/editor/${id}`);
+    // Encode the id: route params are URL-decoded, so a crafted path could
+    // otherwise put control characters into the login redirect's ?next=.
+    redirect(`/login?next=${encodeURIComponent(`/dashboard/editor/${id}`)}`);
   }
 
   // Fetch site owned by user

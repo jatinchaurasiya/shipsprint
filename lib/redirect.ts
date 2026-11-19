@@ -129,15 +129,31 @@ export function safeRedirectPath(
   const value = candidate.trim();
   if (!value) return fallback;
 
+  // Reject ASCII control characters (C0 + DEL). The WHATWG URL parser strips
+  // \t, \n and \r everywhere in the input, so an interior tab turns
+  // "/\t/evil.com" into "//evil.com" — a protocol-relative URL to an attacker
+  // host. `trim()` only removes leading/trailing whitespace, so interior
+  // controls survive it. This must run before the "starts with /" test.
+  // (An explicit code-point loop avoids the no-control-regex lint rule.)
+  for (const char of value) {
+    const code = char.charCodeAt(0);
+    if (code <= 0x1f || code === 0x7f) return fallback;
+  }
+
+  // Reject percent-encoded separators/controls in the path portion. The URL
+  // parser does not decode these, but a downstream consumer that does must not
+  // be able to turn them into an authority. Query/hash values are exempt so a
+  // legitimate ?next=%2Ffoo keeps working.
+  const pathPart = value.split(/[?#]/, 1)[0] ?? "";
+  if (/%(?:2f|5c|09|0a|0d)/i.test(pathPart)) return fallback;
+
   // Reject anything that could escape the origin.
   //   //host, /\host  -> protocol-relative
   //   scheme:...     -> absolute URL or javascript:
-  //   %2f%2fhost     -> percent-encoded protocol-relative
   if (value.startsWith("//")) return fallback;
   if (value.startsWith("/\\")) return fallback;
   if (value.includes("\\")) return fallback;
   if (/^\s*[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value)) return fallback;
-  if (/^%2f/i.test(value) || /^%5c/i.test(value)) return fallback;
 
   // Must be a root-relative path with no authority component.
   if (!value.startsWith("/")) return fallback;
