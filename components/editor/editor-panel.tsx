@@ -1123,16 +1123,18 @@ export function EditorPanel({
                   type="number"
                   min="1"
                   max="5"
-                  value={content.hero?.rating_stars || 5}
-                  onChange={(e) =>
+                  step="1"
+                  value={content.hero?.rating_stars ?? ""}
+                  onChange={(e) => {
+                    const parsed = parseInt(e.target.value, 10);
                     updateContent((prev) => ({
                       ...prev,
                       hero: {
                         ...prev.hero,
-                        rating_stars: parseInt(e.target.value, 10) || 5,
+                        rating_stars: Number.isNaN(parsed) ? undefined : parsed,
                       },
-                    }))
-                  }
+                    }));
+                  }}
                   className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
                 />
               </div>
@@ -1419,7 +1421,7 @@ export function EditorPanel({
                   </label>
                   <input
                     type="text"
-                    value={content.impacts?.metric_stat || "1,200+"}
+                    value={content.impacts?.metric_stat ?? ""}
                     onChange={(e) =>
                       updateContent((prev) => ({
                         ...prev,
@@ -1435,7 +1437,7 @@ export function EditorPanel({
                   </label>
                   <input
                     type="text"
-                    value={content.impacts?.metric_label || "Live app landing pages published worldwide"}
+                    value={content.impacts?.metric_label ?? ""}
                     onChange={(e) =>
                       updateContent((prev) => ({
                         ...prev,
@@ -1463,13 +1465,17 @@ export function EditorPanel({
                     step="0.1"
                     min="1"
                     max="5"
-                    value={content.impacts?.rating_score ?? 4.9}
-                    onChange={(e) =>
+                    value={content.impacts?.rating_score ?? ""}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
                       updateContent((prev) => ({
                         ...prev,
-                        impacts: { ...prev.impacts, rating_score: parseFloat(e.target.value) || 5 },
-                      }))
-                    }
+                        impacts: {
+                          ...prev.impacts,
+                          rating_score: Number.isNaN(parsed) ? undefined : parsed,
+                        },
+                      }));
+                    }}
                     className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100"
                   />
                 </div>
@@ -1479,7 +1485,7 @@ export function EditorPanel({
                   </label>
                   <input
                     type="text"
-                    value={content.impacts?.rating_reviews_label || "Average indie maker rating across launches"}
+                    value={content.impacts?.rating_reviews_label ?? ""}
                     onChange={(e) =>
                       updateContent((prev) => ({
                         ...prev,
@@ -1504,7 +1510,7 @@ export function EditorPanel({
                   </label>
                   <input
                     type="text"
-                    value={content.impacts?.sla_stat || "99.9%"}
+                    value={content.impacts?.sla_stat ?? ""}
                     onChange={(e) =>
                       updateContent((prev) => ({
                         ...prev,
@@ -1520,7 +1526,7 @@ export function EditorPanel({
                   </label>
                   <input
                     type="text"
-                    value={content.impacts?.sla_label || "Uptime SLA via Caddy edge & automated TLS"}
+                    value={content.impacts?.sla_label ?? ""}
                     onChange={(e) =>
                       updateContent((prev) => ({
                         ...prev,
@@ -1542,7 +1548,7 @@ export function EditorPanel({
                   </label>
                   <input
                     type="text"
-                    value={content.impacts?.speed_stat || "< 2 min"}
+                    value={content.impacts?.speed_stat ?? ""}
                     onChange={(e) =>
                       updateContent((prev) => ({
                         ...prev,
@@ -1558,7 +1564,7 @@ export function EditorPanel({
                   </label>
                   <input
                     type="text"
-                    value={content.impacts?.speed_label || "From setup to live custom domain"}
+                    value={content.impacts?.speed_label ?? ""}
                     onChange={(e) =>
                       updateContent((prev) => ({
                         ...prev,

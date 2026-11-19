@@ -297,25 +297,34 @@ export function SiteRenderer({
     (p) => p.page_type === "blog" && p.is_published !== false
   );
 
-  // Impacts fallbacks
+  // Impacts — only what the owner actually provided. No invented metrics,
+  // ratings, uptime or review counts (H2).
   const impactsData: BentoImpacts = {
-    eyebrow: impacts?.eyebrow || "Our impacts",
-    title: impacts?.title || "Real results. Real impact.",
-    description:
-      impacts?.description ||
-      `See how indie makers turn visitors into installs. From faster launches to calmer workflows, ${appName} helps you ship more — every single day.`,
-    trust_avatars: impacts?.trust_avatars || ["ZH", "FF", "SA"],
-    trust_headline: impacts?.trust_headline || "Trusted by indie makers",
-    metric_stat: impacts?.metric_stat || "1,200+",
-    metric_label: impacts?.metric_label || "Live app landing pages published worldwide",
-    rating_score: impacts?.rating_score ?? 4.9,
-    rating_reviews_label:
-      impacts?.rating_reviews_label || "Average indie maker rating across launches",
-    sla_stat: impacts?.sla_stat || "99.9%",
-    sla_label: impacts?.sla_label || "Uptime SLA via Caddy edge & automated TLS",
-    speed_stat: impacts?.speed_stat || "< 2 min",
-    speed_label: impacts?.speed_label || "From setup to live custom domain",
+    eyebrow: impacts?.eyebrow ?? "",
+    title: impacts?.title ?? "",
+    description: impacts?.description ?? "",
+    trust_avatars: impacts?.trust_avatars,
+    trust_headline: impacts?.trust_headline,
+    metric_stat: impacts?.metric_stat,
+    metric_label: impacts?.metric_label,
+    rating_score: impacts?.rating_score,
+    rating_reviews_label: impacts?.rating_reviews_label,
+    sla_stat: impacts?.sla_stat,
+    sla_label: impacts?.sla_label,
+    speed_stat: impacts?.speed_stat,
+    speed_label: impacts?.speed_label,
   };
+
+  const hasImpactsContent = Boolean(
+    impactsData.eyebrow ||
+      impactsData.title ||
+      impactsData.description ||
+      impactsData.trust_headline ||
+      impactsData.metric_stat ||
+      impactsData.rating_score != null ||
+      impactsData.sla_stat ||
+      impactsData.speed_stat,
+  );
 
   // How it works steps fallback
   const stepsData: HowItWorksStep[] = how_it_works && how_it_works.length > 0
@@ -499,27 +508,29 @@ export function SiteRenderer({
                 )}
               </div>
 
-              {/* Star Rating Proof */}
-              <p
-                className={`mt-8 flex flex-wrap items-center gap-2.5 leading-tight sm:flex-nowrap ${
-                  isMobileView ? "justify-center" : "justify-start"
-                }`}
-                role="img"
-                aria-label={`Rated ${hero.rating_stars || 5} stars`}
-              >
-                <span className="flex items-center gap-1 shrink-0" aria-hidden="true">
-                  {Array.from({ length: hero.rating_stars || 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-4 w-4 fill-yellow-300 text-yellow-300"
-                      aria-hidden="true"
-                    />
-                  ))}
-                </span>
-                <span className="text-xs font-semibold tracking-wider uppercase text-white/95">
-                  {hero.rating_text || "Built for App Store launches"}
-                </span>
-              </p>
+              {/* Rating proof — only when the owner supplied a real rating */}
+              {hero.rating_stars != null && (
+                <p
+                  className={`mt-8 flex flex-wrap items-center gap-2.5 leading-tight sm:flex-nowrap ${
+                    isMobileView ? "justify-center" : "justify-start"
+                  }`}
+                  role="img"
+                  aria-label={`Rated ${hero.rating_stars} stars`}
+                >
+                  <span className="flex items-center gap-1 shrink-0" aria-hidden="true">
+                    {Array.from({ length: hero.rating_stars }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className="h-4 w-4 fill-yellow-300 text-yellow-300"
+                        aria-hidden="true"
+                      />
+                    ))}
+                  </span>
+                  <span className="text-xs font-semibold tracking-wider uppercase text-white/95">
+                    {hero.rating_text || "Rated"}
+                  </span>
+                </p>
+              )}
 
               {/* Optional Email Capture */}
               {emailCapture.enabled && (
@@ -604,124 +615,137 @@ export function SiteRenderer({
         </div>
       </section>
 
-      {/* Impacts — 4-Tile Bento Mosaic Grid */}
-      <section
-        id="impacts"
-        className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 md:py-24 lg:px-8"
-      >
-        <div className="section__head block">
-          <p className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-            {impactsData.eyebrow}
-          </p>
-        </div>
-        <div className={`mt-4 grid grid-cols-1 ${isMobileView ? "gap-4" : "gap-8 md:grid-cols-7"}`}>
-          <h2 className={`section__title font-display ${isMobileView ? "text-3xl" : "text-4xl sm:text-5xl md:col-span-4"} font-semibold tracking-tight text-balance`}>
-            {impactsData.title}
-          </h2>
-          <p className={`max-w-[52ch] text-sm leading-relaxed text-[#505050] dark:text-zinc-300 ${isMobileView ? "mt-2" : "self-end md:col-span-3"}`}>
-            {impactsData.description}
-          </p>
-        </div>
-
-        <div
-          className={`mt-10 grid grid-cols-1 gap-5 ${
-            isMobileView ? "grid-cols-1" : isTabletView ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"
-          }`}
+      {/* Impacts — only the sections the owner actually filled in (H2) */}
+      {hasImpactsContent && (
+        <section
+          id="impacts"
+          className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 md:py-24 lg:px-8"
         >
-          {/* Avatar trust tile */}
-          <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2" aria-hidden="true">
-                {(impactsData.trust_avatars || []).map((t) => (
-                  <span
-                    key={t}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#f7f7f7] text-[11px] font-semibold text-[#262424] dark:border-zinc-950 dark:bg-zinc-800 dark:text-zinc-200"
+          {(impactsData.eyebrow || impactsData.title || impactsData.description) && (
+            <>
+              <div className="section__head block">
+                <p className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+                  {impactsData.eyebrow}
+                </p>
+              </div>
+              <div className={`mt-4 grid grid-cols-1 ${isMobileView ? "gap-4" : "gap-8 md:grid-cols-7"}`}>
+                <h2 className={`section__title font-display ${isMobileView ? "text-3xl" : "text-4xl sm:text-5xl md:col-span-4"} font-semibold tracking-tight text-balance`}>
+                  {impactsData.title}
+                </h2>
+                <p className={`max-w-[52ch] text-sm leading-relaxed text-[#505050] dark:text-zinc-300 ${isMobileView ? "mt-2" : "self-end md:col-span-3"}`}>
+                  {impactsData.description}
+                </p>
+              </div>
+            </>
+          )}
+
+          <div
+            className={`mt-10 grid grid-cols-1 gap-5 ${
+              isMobileView ? "grid-cols-1" : isTabletView ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"
+            }`}
+          >
+            {/* Avatar trust tile */}
+            {(impactsData.trust_headline || impactsData.metric_stat) && (
+              <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+                <div className="flex items-center gap-3">
+                  {(impactsData.trust_avatars?.length ?? 0) > 0 && (
+                    <div className="flex -space-x-2" aria-hidden="true">
+                      {(impactsData.trust_avatars ?? []).map((t) => (
+                        <span
+                          key={t}
+                          className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#f7f7f7] text-[11px] font-semibold text-[#262424] dark:border-zinc-950 dark:bg-zinc-800 dark:text-zinc-200"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {impactsData.trust_headline && (
+                    <p className="text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:text-zinc-400">
+                      {impactsData.trust_headline}
+                    </p>
+                  )}
+                </div>
+                {impactsData.metric_stat && (
+                  <div className="mt-8">
+                    <p className="font-display text-5xl font-semibold tracking-tight">
+                      {impactsData.metric_stat}
+                      <span className="text-[#505050] dark:text-zinc-500">+</span>
+                    </p>
+                    <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
+                      {impactsData.metric_label}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Rating tile */}
+            {impactsData.rating_score != null && (
+              <div className="flex min-w-0 flex-col justify-between rounded-3xl bg-[#131313] p-6 text-white sm:row-span-2 dark:bg-zinc-900">
+                <div className="mt-10">
+                  <p className="font-display text-5xl font-semibold tracking-tight">
+                    {impactsData.rating_score?.toFixed(1)}
+                    <span className="text-zinc-500">/5</span>
+                  </p>
+                  <div
+                    className="mt-3 flex items-center gap-1"
+                    role="img"
+                    aria-label={`Average maker rating: ${impactsData.rating_score} out of 5 stars`}
                   >
-                    {t}
-                  </span>
-                ))}
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                        aria-hidden="true"
+                      />
+                    ))}
+                  </div>
+                  {impactsData.rating_reviews_label && (
+                    <p className="mt-2 text-[13px] text-zinc-400">
+                      {impactsData.rating_reviews_label}
+                    </p>
+                  )}
+                </div>
               </div>
-              <p className="text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:text-zinc-400">
-                {impactsData.trust_headline}
-              </p>
-            </div>
-            <div className="mt-8">
-              <p className="max-w-[52ch] text-[15px] leading-relaxed font-medium">
-                Our platform helps you stay focused, meet launch day, and achieve more with every release.
-              </p>
-              <p className="mt-6 font-display text-5xl font-semibold tracking-tight">
-                {impactsData.metric_stat}
-                <span className="text-[#505050] dark:text-zinc-500">+</span>
-              </p>
-              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
-                {impactsData.metric_label}
-              </p>
-            </div>
-          </div>
+            )}
 
-          {/* Tall dark rating tile */}
-          <div className="flex min-w-0 flex-col justify-between rounded-3xl bg-[#131313] p-6 text-white sm:row-span-2 dark:bg-zinc-900">
-            <p className="max-w-[52ch] text-[15px] leading-relaxed font-medium text-zinc-100">
-              Every page published, every install tracked — our numbers reflect real progress made by real makers like you.
-            </p>
-            <div className="mt-10">
-              <p className="font-display text-5xl font-semibold tracking-tight">
-                {(impactsData.rating_score || 4.9).toFixed(1)}
-                <span className="text-zinc-500">/5</span>
-              </p>
-              <div
-                className="mt-3 flex items-center gap-1"
-                role="img"
-                aria-label={`Average maker rating: ${impactsData.rating_score} out of 5 stars`}
-              >
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className="h-4 w-4 fill-yellow-400 text-yellow-400"
-                    aria-hidden="true"
-                  />
-                ))}
+            {/* SLA tile */}
+            {impactsData.sla_stat && (
+              <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+                <div className="mt-8">
+                  <p className="font-display text-5xl font-semibold tracking-tight">
+                    {impactsData.sla_stat}
+                  </p>
+                  <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
+                    {impactsData.sla_label}
+                  </p>
+                </div>
               </div>
-              <p className="mt-2 text-[13px] text-zinc-400">
-                {impactsData.rating_reviews_label}
-              </p>
-            </div>
-          </div>
+            )}
 
-          {/* Uptime SLA tile */}
-          <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-            <p className="max-w-[52ch] text-[15px] leading-relaxed font-medium">
-              Our platform is built to deliver measurable results — from quicker launches to stronger install conversion.
-            </p>
-            <div className="mt-8">
-              <p className="font-display text-5xl font-semibold tracking-tight">
-                {impactsData.sla_stat}
-              </p>
-              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
-                {impactsData.sla_label}
-              </p>
-            </div>
+            {/* Speed tile */}
+            {impactsData.speed_stat && (
+              <div className="flex min-w-0 items-center gap-3 rounded-3xl border border-zinc-200 bg-white p-6 sm:col-span-2 lg:col-span-1 dark:border-zinc-800 dark:bg-zinc-950">
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-base font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                  aria-hidden="true"
+                >
+                  ⚡
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold whitespace-nowrap">
+                    {impactsData.speed_stat} launch time
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-[#505050] dark:text-zinc-400">
+                    {impactsData.speed_label}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Speed chip tile */}
-          <div className="flex min-w-0 items-center gap-3 rounded-3xl border border-zinc-200 bg-white p-6 sm:col-span-2 lg:col-span-1 dark:border-zinc-800 dark:bg-zinc-950">
-            <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-base font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-              aria-hidden="true"
-            >
-              ⚡
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold whitespace-nowrap">
-                {impactsData.speed_stat} launch time
-              </p>
-              <p className="mt-0.5 text-[13px] text-[#505050] dark:text-zinc-400">
-                {impactsData.speed_label}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Features — 3 Annotated Proof Rows */}
       {features.length > 0 && (
@@ -745,7 +769,15 @@ export function SiteRenderer({
             {features.map((feature: FeatureItem, idx) => {
               const IconComponent = getFeatureIcon(feature.icon);
               const isEven = idx % 2 === 0;
-              const proofType = feature.proof_type || (idx === 0 ? "checklist" : idx === 1 ? "chart" : "readiness");
+              const proofType = feature.proof_type;
+              const hasProof =
+                (proofType === "checklist" &&
+                  Boolean(feature.proof_meta?.checklist_items?.length)) ||
+                (proofType === "chart" &&
+                  Boolean(feature.proof_meta?.chart_stat)) ||
+                (proofType === "readiness" &&
+                  Boolean(feature.proof_meta?.readiness_items?.length)) ||
+                (proofType === "image" && Boolean(feature.image_url));
 
               return (
                 <article
@@ -753,9 +785,10 @@ export function SiteRenderer({
                   aria-labelledby={`feature-title-${idx}`}
                   className={`grid grid-cols-1 items-center gap-8 rounded-3xl border border-zinc-200 p-6 sm:p-10 ${
                     isEven ? "bg-[#f7f7f7] dark:bg-zinc-900/30" : "bg-white dark:bg-zinc-950"
-                  } ${isMobileView ? "" : "md:grid-cols-2"} dark:border-zinc-800`}
+                  } ${isMobileView || !hasProof ? "" : "md:grid-cols-2"} dark:border-zinc-800`}
                 >
                   {/* Proof Graphic Column */}
+                  {hasProof && (
                   <div
                     className={`min-w-0 ${
                       !isEven && !isMobileView ? "md:order-2" : ""
@@ -767,13 +800,7 @@ export function SiteRenderer({
                         aria-hidden="true"
                       >
                         <ul className="space-y-3">
-                          {(
-                            feature.proof_meta?.checklist_items || [
-                              { label: "App icon + screenshots", date: "Feb 19", status: "Ready", urgent: false },
-                              { label: "Store badges + QR", date: "Feb 20", status: "High priority", urgent: true },
-                              { label: "Ratings + reviews", date: "Feb 21", status: "Normal", urgent: false },
-                            ]
-                          ).map((item, i) => (
+                          {(feature.proof_meta?.checklist_items ?? []).map((item, i) => (
                             <li
                               key={i}
                               className="rounded-xl border border-zinc-200 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
@@ -811,19 +838,19 @@ export function SiteRenderer({
                       >
                         <div className="flex items-center justify-between">
                           <p className="text-[11px] font-semibold tracking-widest text-[#505050] uppercase dark:text-zinc-500">
-                            {feature.proof_meta?.chart_stat?.label || "Weekly installs"}
+                            {feature.proof_meta?.chart_stat?.label}
                           </p>
-                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                            {feature.proof_meta?.chart_stat?.ctr || "+24.8% CTR"}
-                          </span>
+                          {feature.proof_meta?.chart_stat?.ctr && (
+                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                              {feature.proof_meta?.chart_stat?.ctr}
+                            </span>
+                          )}
                         </div>
                         <p className="mt-1 font-mono text-2xl font-semibold">
-                          {feature.proof_meta?.chart_stat?.value || "14,820 installs"}
+                          {feature.proof_meta?.chart_stat?.value}
                         </p>
                         <div className="mt-3 flex h-16 items-end gap-1.5" aria-hidden="true">
-                          {(
-                            feature.proof_meta?.chart_stat?.bars || [35, 55, 40, 70, 52, 85, 64]
-                          ).map((h, i) => (
+                          {(feature.proof_meta?.chart_stat?.bars ?? []).map((h, i) => (
                             <span
                               key={i}
                               className="w-full rounded-xs bg-blue-600 transition-all hover:bg-blue-500"
@@ -853,13 +880,7 @@ export function SiteRenderer({
                           </span>
                         </div>
                         <ul className="mt-3 space-y-2.5 text-[13px]">
-                          {(
-                            feature.proof_meta?.readiness_items || [
-                              { key: "Launch checklist", value: "12 / 12 items verified" },
-                              { key: "Mobile Launch Suite", value: "Apple & Android ready" },
-                              { key: "Automatic SSL/TLS", value: "Active (Let's Encrypt)" },
-                            ]
-                          ).map((item, i) => (
+                          {(feature.proof_meta?.readiness_items ?? []).map((item, i) => (
                             <li
                               key={i}
                               className="flex items-center justify-between gap-2 border-b border-zinc-100 pb-2.5 last:border-0 last:pb-0 dark:border-zinc-800"
@@ -885,11 +906,12 @@ export function SiteRenderer({
                       </div>
                     )}
                   </div>
+                  )}
 
                   {/* Feature Text Column */}
                   <div
                     className={`min-w-0 ${
-                      !isEven && !isMobileView ? "md:order-1" : ""
+                      hasProof && !isEven && !isMobileView ? "md:order-1" : ""
                     }`}
                   >
                     <p

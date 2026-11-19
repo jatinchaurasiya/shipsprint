@@ -36,27 +36,16 @@ export function getFlagshipDefaultContent(
       device_screenshot_url_secondary: "",
       primary_cta_label: "Start building",
       secondary_cta_label: "See How It Works",
-      rating_stars: 5,
-      rating_text: "Built for App Store launches",
       email_capture_enabled: false,
       email_placeholder: "Enter your email for early access",
       email_cta_label: "Get Early Access",
       email_success_message: "You're on the list. We'll be in touch.",
     },
     impacts: {
-      eyebrow: "Our impacts",
-      title: "Real results. Real impact.",
-      description: `See how indie makers turn visitors into installs. From faster launches to calmer workflows, ${appName} helps you ship more — every single day.`,
-      trust_avatars: ["ZH", "FF", "SA"],
-      trust_headline: "Trusted by indie makers",
-      metric_stat: "1,200+",
-      metric_label: "Live app landing pages published worldwide",
-      rating_score: 4.9,
-      rating_reviews_label: "Average indie maker rating across launches",
-      sla_stat: "99.9%",
-      sla_label: "Uptime SLA via Caddy edge & automated TLS",
-      speed_stat: "< 2 min",
-      speed_label: "From setup to live custom domain",
+      eyebrow: `Why ${appName}`,
+      title: "Built for your launch.",
+      description:
+        "Everything your visitors need to understand your app and download it — structured, fast, and on-brand.",
     },
     features: [
       {
@@ -68,9 +57,9 @@ export function getFlagshipDefaultContent(
         proof_type: "checklist",
         proof_meta: {
           checklist_items: [
-            { label: "App icon + screenshots", date: "Feb 19", status: "Ready", urgent: false },
-            { label: "Store badges + QR", date: "Feb 20", status: "High priority", urgent: true },
-            { label: "Ratings + reviews", date: "Feb 21", status: "Normal", urgent: false },
+            { label: "App icon + screenshots", status: "Required" },
+            { label: "Store links", status: "Required" },
+            { label: "Custom domain", status: "Optional" },
           ],
         },
       },
@@ -80,15 +69,6 @@ export function getFlagshipDefaultContent(
         title: "Store buttons that convert",
         description:
           "App Store and Google Play buttons with cookieless tap tracking. See which visits become installs — no banners, no cookies.",
-        proof_type: "chart",
-        proof_meta: {
-          chart_stat: {
-            value: "14,820 installs",
-            label: "Weekly installs",
-            ctr: "+24.8% CTR",
-            bars: [35, 55, 40, 70, 52, 85, 64],
-          },
-        },
       },
       {
         id: "feat-3",
@@ -99,9 +79,9 @@ export function getFlagshipDefaultContent(
         proof_type: "readiness",
         proof_meta: {
           readiness_items: [
-            { key: "Launch checklist", value: "12 / 12 items verified" },
-            { key: "Mobile Launch Suite", value: "Apple & Android ready" },
-            { key: "Automatic SSL/TLS", value: "Active (Let's Encrypt)" },
+            { key: "App icon + screenshots", value: "Add" },
+            { key: "Store links", value: "Connect" },
+            { key: "Automatic SSL/TLS", value: "Included" },
           ],
         },
       },

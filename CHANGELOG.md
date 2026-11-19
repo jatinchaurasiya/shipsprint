@@ -347,6 +347,54 @@ database, then verify with the post-apply checks at the bottom of the file.
 
 ---
 
+## H2 — Remove fabricated metrics (homepage + every new site)
+
+**Severity:** HIGH · **Audit ref:** `audit/H2-fabricated-metrics.md`
+
+**The hole.** The marketing homepage hard-coded 120 published sites, a 4.9/5
+rating, 120 reviews, 842 weekly installs, an 18.4% CTR and 99.9% uptime, then
+clamped real values with `Math.max(DEFAULT, real)` so the fiction could never
+be undercut. `getFlagshipDefaultContent()` seeded the same fake social proof
+into **every new customer site** (1,200+ pages, 4.9/5, 99.9% uptime, 14,820
+installs, +24.8% CTR), and the editor pre-filled 1,200+ / 4.9 / 99.9% in the
+impacts fields. That is false advertising, and it made customers publish
+fabricated numbers to their own users.
+
+**The fix.**
+
+- `lib/metrics.ts` — returns only real values (`publishedSites`, `totalClicks`
+  from `get_platform_metrics()`); no defaults and no fabricated floor. Missing
+  env/DB → an honest `0` state.
+- `app/page.tsx` — removed the fake stars/rating/avatars/uptime/CTR/installs.
+  The section is now honest product facts (free to publish, the real published
+  count, custom domain, cookieless analytics, store buttons, no code).
+- `lib/templates.ts` — new sites get no `rating_stars`, no fabricated `impacts`
+  metrics, and no fake chart/checklist/readiness numbers.
+- `components/renderer/site-renderer.tsx` — the impacts section renders
+  **only** when the owner provides data; the hero rating only when
+  `rating_stars` is set; proof graphics only when `proof_meta` has content (no
+  index-based defaults, no hard-coded fallback numbers).
+- `components/editor/editor-panel.tsx` — impacts and hero-rating inputs no
+  longer prefill fake values (`1,200+`, `4.9`, `99.9%`); they start empty.
+- Tests — `tests/metrics.test.ts` rewritten; new
+  `tests/no-fabricated-metrics.test.tsx` (default-content assertions + a real
+  `renderToStaticMarkup` of the default site + static source checks).
+
+**Verification.**
+
+```
+npm run typecheck   pass
+npm run lint        pass
+npm run test        365 passed (27 files)
+npm run build       pass
+```
+
+The prerendered homepage contains **0** occurrences of `4.9/5`, `1,200`,
+`14,820`, `18.4`, `842`, `99.9`, "Trusted by indie makers" or "Starred by
+indie makers".
+
+---
+
 ## Starting state
 
 `node_modules` had never been installed. There was no `.env` file, no

@@ -394,16 +394,12 @@ export interface AnalyticsCtaRow {
   clicks: number;
 }
 
-/** Aggregate platform-wide telemetry and marketing proof metrics. */
+/** Aggregate platform-wide telemetry for the marketing homepage. */
 export interface PlatformMetrics {
+  /** Number of published landing pages (real count). */
   publishedSites: number;
-  activeTemplates: number;
-  uptimePercent: number;
-  launchSpeedMinutes: number;
-  makerRating: number;
-  reviewCount: number;
-  weeklyInstallsSample: number;
-  conversionRate: number;
+  /** Aggregate store taps recorded across all sites (real sum). */
+  totalClicks: number;
 }
 
 export interface SiteSubscriber {

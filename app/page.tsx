@@ -9,7 +9,7 @@ import { fetchCatalogue, groupTiers } from "@/lib/catalogue";
 import { fetchPlatformMetrics } from "@/lib/metrics";
 import { FREE_PLAN, formatPrice, PLAN_FEATURES, planForDisplay } from "@/lib/plans";
 import { yearlySavingPercent } from "@/types/billing";
-import { ArrowRight, Check, Star } from "lucide-react";
+import { ArrowRight, Check, Gift, Globe, Link2, BarChart3, Smartphone, Code2 } from "lucide-react";
 
 /**
  * Prices come from the `products` table, not from literals in this file.
@@ -130,14 +130,9 @@ export default async function HomePage() {
                   <span>See How It Works</span>
                 </Link>
               </div>
-              <p className="mt-8 flex flex-wrap items-center gap-2.5 leading-tight sm:flex-nowrap" role="img" aria-label="Starred by indie makers">
-                <span className="flex items-center gap-1 shrink-0" aria-hidden="true">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-yellow-300 text-yellow-300" aria-hidden="true" />
-                  ))}
-                </span>
+              <p className="mt-8 flex flex-wrap items-center gap-2.5 leading-tight sm:flex-nowrap">
                 <span className="text-xs font-semibold tracking-wider uppercase text-white/95">
-                  Built for App Store launches
+                  Free to publish · No credit card
                 </span>
               </p>
             </div>
@@ -188,101 +183,105 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Impacts — F1 Bento mosaic (mirrors reference shape, ShipSprint copy) */}
+      {/* Why ShipSprint — honest product facts + real platform count */}
       <section id="impacts" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 md:py-24 lg:px-8">
         <div className="section__head block">
           <p className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-            Our impacts
+            Why ShipSprint
           </p>
         </div>
         <div className="mt-4 grid grid-cols-1 gap-8 md:grid-cols-7">
           <h2 className="section__title font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl md:col-span-4">
-            Real results.
+            Everything you need
             <br />
-            Real impact.
+            to launch.
           </h2>
           <p className="max-w-[52ch] self-end text-sm leading-relaxed text-[#505050] md:col-span-3 dark:text-zinc-300">
-            See how indie makers turn visitors into installs. From faster
-            launches to calmer workflows, ShipSprint helps you ship more —
-            every single day.
+            Publish a credible app page without design skills, hosting setup,
+            or code. Your page is live on a real HTTPS URL the moment you
+            publish.
           </p>
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Avatar trust tile */}
+          {/* Free to publish */}
           <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2" aria-hidden="true">
-                {["ZH", "FF", "SA"].map((t) => (
-                  <span key={t} className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#f7f7f7] text-[11px] font-semibold text-[#262424] dark:border-zinc-950 dark:bg-zinc-800 dark:text-zinc-200">
-                    {t}
-                  </span>
-                ))}
-              </div>
-              <p className="text-[11px] font-semibold tracking-widest whitespace-nowrap text-[#505050] uppercase dark:text-zinc-400">
-                Trusted by indie makers
-              </p>
-            </div>
-            <div className="mt-8">
-              <p className="max-w-[52ch] text-[15px] leading-relaxed font-medium">
-                Our platform helps you stay focused, meet launch day, and
-                achieve more with every release.
-              </p>
-              <p className="mt-6 font-display text-5xl font-semibold tracking-tight">
-                {metrics.publishedSites}
-                <span className="text-[#505050] dark:text-zinc-500">+</span>
-              </p>
-              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
-                Live app landing pages published worldwide
-              </p>
-            </div>
-          </div>
-
-          {/* Tall dark rating tile */}
-          <div className="flex min-w-0 flex-col justify-between rounded-3xl bg-[#131313] p-6 text-white sm:row-span-2 dark:bg-zinc-900">
-            <p className="max-w-[52ch] text-[15px] leading-relaxed font-medium text-zinc-100">
-              Every page published, every install tracked — our numbers reflect
-              real progress made by real makers like you.
-            </p>
-            <div className="mt-10">
-              <p className="font-display text-5xl font-semibold tracking-tight">
-                {metrics.makerRating.toFixed(1)}
-                <span className="text-zinc-500">/5</span>
-              </p>
-              <div className="mt-3 flex items-center gap-1" role="img" aria-label={`Average indie maker rating: ${metrics.makerRating} out of 5 stars`}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden="true" />
-                ))}
-              </div>
-              <p className="mt-2 text-[13px] text-zinc-400">
-                Average indie maker rating across launches
-              </p>
-            </div>
-          </div>
-
-          {/* Uptime tile */}
-          <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-            <p className="max-w-[52ch] text-[15px] leading-relaxed font-medium">
-              Our platform is built to deliver measurable results — from
-              quicker launches to stronger install conversion.
-            </p>
-            <div className="mt-8">
-              <p className="font-display text-5xl font-semibold tracking-tight">{metrics.uptimePercent}%</p>
-              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
-                Uptime SLA via Caddy edge &amp; automated TLS
-              </p>
-            </div>
-          </div>
-
-          {/* Speed chip tile */}
-          <div className="flex min-w-0 items-center gap-3 rounded-3xl border border-zinc-200 bg-white p-6 sm:col-span-2 lg:col-span-1 dark:border-zinc-800 dark:bg-zinc-950">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-base font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" aria-hidden="true">
-              ⚡
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-400" aria-hidden="true">
+              <Gift className="h-5 w-5" />
             </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold whitespace-nowrap">&lt; {metrics.launchSpeedMinutes} min launch time</p>
-              <p className="mt-0.5 text-[13px] text-[#505050] dark:text-zinc-400">
-                From app name to live custom domain
+            <div className="mt-8">
+              <p className="font-display text-4xl font-semibold tracking-tight">Free</p>
+              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
+                One page, free forever. No credit card.
+              </p>
+            </div>
+          </div>
+
+          {/* Real published count */}
+          <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600/10 text-emerald-600 dark:text-emerald-400" aria-hidden="true">
+              <Globe className="h-5 w-5" />
+            </span>
+            <div className="mt-8">
+              <p className="font-display text-4xl font-semibold tracking-tight">
+                {metrics.publishedSites > 0 ? metrics.publishedSites : "—"}
+              </p>
+              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
+                {metrics.publishedSites > 0
+                  ? "landing pages published on ShipSprint"
+                  : "Be the first to publish a page"}
+              </p>
+            </div>
+          </div>
+
+          {/* Custom domain */}
+          <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-400" aria-hidden="true">
+              <Link2 className="h-5 w-5" />
+            </span>
+            <div className="mt-8">
+              <p className="text-sm font-semibold">Your own domain</p>
+              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
+                Connect a custom domain with automatic TLS on Basic and Pro.
+              </p>
+            </div>
+          </div>
+
+          {/* Cookieless analytics */}
+          <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-400" aria-hidden="true">
+              <BarChart3 className="h-5 w-5" />
+            </span>
+            <div className="mt-8">
+              <p className="text-sm font-semibold">Cookieless analytics</p>
+              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
+                Pro includes aggregate analytics — no cookies, no fingerprints.
+              </p>
+            </div>
+          </div>
+
+          {/* Store buttons */}
+          <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-400" aria-hidden="true">
+              <Smartphone className="h-5 w-5" />
+            </span>
+            <div className="mt-8">
+              <p className="text-sm font-semibold">Store buttons</p>
+              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
+                App Store and Google Play buttons, wired for mobile.
+              </p>
+            </div>
+          </div>
+
+          {/* No code */}
+          <div className="flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-400" aria-hidden="true">
+              <Code2 className="h-5 w-5" />
+            </span>
+            <div className="mt-8">
+              <p className="text-sm font-semibold">No code</p>
+              <p className="mt-2 text-[13px] text-[#505050] dark:text-zinc-400">
+                Structured fields and templates — no layout tools to learn.
               </p>
             </div>
           </div>
@@ -310,9 +309,9 @@ export default async function HomePage() {
             <div className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950" aria-hidden="true">
               <ul className="space-y-3">
                 {[
-                  { t: "App icon + screenshots", d: "Feb 19", pill: "Ready", hot: false },
-                  { t: "Store badges + QR", d: "Feb 20", pill: "High priority", hot: true },
-                  { t: "Ratings + reviews", d: "Feb 21", pill: "Normal", hot: false },
+                  { t: "App icon + screenshots", pill: "Required" },
+                  { t: "Store links", pill: "Required" },
+                  { t: "Custom domain", pill: "Optional" },
                 ].map((r) => (
                   <li key={r.t} className="rounded-xl border border-zinc-200 bg-white p-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                     <div className="flex items-center justify-between gap-3">
@@ -320,12 +319,8 @@ export default async function HomePage() {
                         <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
                         <span className="truncate">{r.t}</span>
                       </p>
-                      <span className="shrink-0 text-[11px] whitespace-nowrap text-[#505050] dark:text-zinc-500">{r.d}</span>
+                      <span className="shrink-0 text-[11px] whitespace-nowrap text-[#505050] dark:text-zinc-500">{r.pill}</span>
                     </div>
-                    <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-[#505050] dark:bg-zinc-800 dark:text-zinc-300">
-                      <span className={`h-1.5 w-1.5 rounded-full ${r.hot ? "bg-red-500" : "bg-zinc-400"}`} aria-hidden="true" />
-                      {r.pill}
-                    </p>
                   </li>
                 ))}
               </ul>
@@ -352,20 +347,19 @@ export default async function HomePage() {
             </div>
             <div className="min-w-0 rounded-2xl border border-zinc-200 bg-[#f7f7f7] p-5 dark:border-zinc-800 dark:bg-zinc-900/40" aria-hidden="true">
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold tracking-widest text-[#505050] uppercase dark:text-zinc-500">Weekly installs</p>
+                <p className="text-[11px] font-semibold tracking-widest text-[#505050] uppercase dark:text-zinc-500">Cookieless store attribution</p>
                 <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                  +{metrics.conversionRate}% CTR
+                  No cookies
                 </span>
               </div>
-              <p className="mt-1 font-mono text-2xl font-semibold">{metrics.weeklyInstallsSample.toLocaleString()} installs</p>
               <div className="mt-3 flex h-16 items-end gap-1.5" aria-hidden="true">
                 {[35, 55, 40, 70, 52, 85, 64].map((h, i) => (
                   <span key={i} className="w-full rounded-sm bg-blue-600 transition-all hover:bg-blue-500" style={{ height: `${h}%` }} />
                 ))}
               </div>
               <div className="mt-2 flex items-center justify-between text-[11px] text-[#505050] dark:text-zinc-500">
-                <span>Mon – Sun</span>
-                <span>Cookieless store attribution</span>
+                <span>App Store</span>
+                <span>Google Play</span>
               </div>
             </div>
           </div>
@@ -374,17 +368,17 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 items-center gap-8 rounded-3xl border border-zinc-200 bg-[#f7f7f7] p-6 sm:p-10 md:grid-cols-2 dark:border-zinc-800 dark:bg-zinc-900/30">
             <div className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:order-1 dark:border-zinc-800 dark:bg-zinc-950" aria-hidden="true">
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold tracking-widest text-[#505050] uppercase dark:text-zinc-500">Launch Readiness</p>
+                <p className="text-[11px] font-semibold tracking-widest text-[#505050] uppercase dark:text-zinc-500">Launch checklist</p>
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                   <Check className="h-3 w-3" aria-hidden="true" />
-                  <span>Ready</span>
+                  <span>Setup</span>
                 </span>
               </div>
               <ul className="mt-3 space-y-2.5 text-[13px]">
                 {[
-                  ["Launch checklist", "12 / 12 items verified"],
-                  ["Mobile Launch Suite", "Apple & Android ready"],
-                  ["Automatic SSL/TLS", "Active (Let's Encrypt)"],
+                  ["App icon + screenshots", "Add"],
+                  ["Store links", "Connect"],
+                  ["Automatic SSL/TLS", "Included"],
                 ].map(([k, v]) => (
                   <li key={k} className="flex items-center justify-between gap-3 border-b border-zinc-100 pb-2.5 last:border-0 last:pb-0 dark:border-zinc-800">
                     <span className="font-medium">{k}</span>
