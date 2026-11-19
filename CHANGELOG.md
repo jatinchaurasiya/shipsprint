@@ -393,6 +393,15 @@ The prerendered homepage contains **0** occurrences of `4.9/5`, `1,200`,
 `14,820`, `18.4`, `842`, `99.9`, "Trusted by indie makers" or "Starred by
 indie makers".
 
+**Existing sites (data migration).** The app fix stops new sites from getting
+fake numbers, but the 3 live published sites created before the fix still have
+the old defaults stored in `sites.content`.
+`supabase/migrations/015_clean_fabricated_metrics.sql` removes them with
+**exact-combination matching** (so customer lookalikes are never touched) and
+is idempotent. Verified on a real PostgreSQL 16 cluster: **18/18 checks**.
+Run the preview query at the top of the migration, apply it, then the
+post-check must return 0 rows.
+
 ---
 
 ## Starting state
