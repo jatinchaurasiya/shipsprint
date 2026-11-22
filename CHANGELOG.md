@@ -418,7 +418,57 @@ illustrative mockup / social-proof data (published-site count, rating, uptime,
 CTR, installs, avatars, stars). It is the marketing surface, not a customer
 page. The H2 fix remains scoped to **user sites**: neutral default content,
 neutral renderer fallbacks, no prefilled editor values, and data migrations
-`015` / `016` for existing customer sites.
+`015` / `016` / `017` for existing customer sites.
+
+---
+
+## H3 — Pricing table matches what the app enforces
+
+**Severity:** HIGH · **Audit ref:** `audit/H3-pricing-overpromise.md`
+
+The pricing page promised features the app did not deliver — three concrete
+mismatches, all live on shipsprint.site:
+
+1. **Analytics:** Basic showed "Analytics dashboard" but the DB seed had
+   `has_analytics_dashboard = false`, so Basic users hit a Pro upsell.
+2. **Email capture:** Free showed "Email capture" but the subscribe API 403'd
+   free-tier submissions, and the editor exposed the toggle with no gate — a
+   visibly broken form for free users.
+3. **Branding:** Every paid plan showed "Remove ShipSprint branding" but there
+   was no branding to remove; `has_branding` was never read at render time.
+
+**Fix (product decision, user-confirmed):**
+
+- **Analytics** — Basic gets the limited (7-day) dashboard; Pro gets the
+  complete (7/30/90-day + per-site + referrer + device) dashboard. The DB seed
+  sets basic `has_analytics_dashboard = true`; the analytics page clamps Basic
+  to a 7-day window even if the URL says `?period=90d`; the view shows Basic
+  the real aggregate metrics with a clear "limited" banner and hides the
+  Pro-only breakdown tiles. Free still gets the lock wall.
+- **Email capture** — available on every plan. Free is capped at 100
+  subscribers, enforced by a database trigger
+  (`enforce_free_email_capture_cap`) so the cap holds even for direct SQL
+  inserts. The subscribe API maps the trigger's 23514 to a friendly 403; the
+  editor shows the count against the cap and disables the toggle at the
+  limit; the subscribers endpoint reports the cap. The old
+  `has_email_capture === false` gate is gone.
+- **Branding** — Free pages now show a real "Made with ShipSprint" badge
+  (`components/ui/made-with-shipsprint-badge.tsx`) in the bottom-right corner;
+  Basic/Pro (`has_branding = false`) do not. The badge is rendered by both
+  `SiteRenderer` and `PageRenderer`, gated on the plan prop — which is now
+  actually consumed (the old `plan: _plan` destructure discarded it, which is
+  what let the branding row drift).
+
+**Plan capabilities are now single-sourced:** `PLAN_FEATURES` reads only
+`Plan` fields (no ad-hoc `p.id === "pro"` string checks); `PLAN_CAPABILITIES`
+mirrors the schema.sql seed; the new `h3-pricing-capabilities` test asserts
+the feature matrix matches the DB seed and the app behaviour.
+
+**Migration 018** (`supabase/migrations/018_email_capture_free_limit.sql`)
+seeds the new plan flags and installs the trigger. `schema.sql` is convergent
+(new seed values + trigger + revoke). Verified on real PostgreSQL 16: 15/15
+functional checks (cap accepts 100, rejects 101st, paid unlimited, idempotent).
+383 unit tests (+16 H3), typecheck, lint, build, db:validate all pass.
 
 ---
 
