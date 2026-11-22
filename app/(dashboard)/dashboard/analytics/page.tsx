@@ -62,14 +62,18 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   let sources: AnalyticsSourceRow[] = [];
   let ctaBreakdown: AnalyticsCtaRow[] = [];
 
-  // Query SQL views using the user's authenticated client (security_invoker)
+  // Query SQL views using the user's authenticated client (security_invoker).
+  // Basic and Pro both get analytics (H3): Basic is limited to a 7-day window,
+  // Pro gets 7/30/90-day windows, per-site filtering and the full breakdown.
+  // The window itself is clamped below — a Basic user who hand-edits the URL
+  // to `?period=90d` still only gets 7 days of data.
   if (siteIds.length > 0 && plan.has_analytics_dashboard) {
     const daysMap: Record<AnalyticsPeriod, number> = {
       "7d": 7,
       "30d": 30,
       "90d": 90,
     };
-    const numDays = daysMap[period];
+    const numDays = plan.id === "pro" ? daysMap[period] : daysMap["7d"];
     const cutoffDate = new Date();
     cutoffDate.setUTCDate(cutoffDate.getUTCDate() - (numDays - 1));
     const cutoffStr = cutoffDate.toISOString().slice(0, 10);

@@ -6,7 +6,6 @@ import { subscribeSchema, firstIssue } from "@/lib/validation";
 import { rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { buildAnalyticsRow } from "@/lib/track";
 import { logger } from "@/lib/logger";
-import type { Plan } from "@/types/database";
 
 /**
  * Public email capture & waitlist subscription endpoint.
@@ -86,20 +85,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify owner's plan has email capture enabled
-    const profile = Array.isArray(site.profiles) ? site.profiles[0] : site.profiles;
-    const rawPlan = profile && typeof profile === "object" && "plans" in profile
-      ? (profile as { plans: Plan | Plan[] | null }).plans
-      : null;
-    const plan = Array.isArray(rawPlan) ? rawPlan[0] : rawPlan;
-    if (plan && plan.has_email_capture === false) {
-      return NextResponse.json(
-        { error: "Email capture is not enabled for this site" },
-        { status: 403 }
-      );
-    }
-
-    // 6. Insert subscriber row (case-insensitive deduplication)
+    // Email capture is enabled on every plan (H3). The Free tier is capped at
+    // 100 subscribers per site; the cap is enforced by the database trigger
+    // (`enforce_free_email_capture_cap`) so it also covers direct SQL inserts.
+    // A 23514 from that trigger means the owner hit the Free cap — return a
+    // friendly, honest message instead of a raw constraint violation.
     const { error: insertError } = await supabase
       .from("site_subscribers")
       .insert({
@@ -108,7 +98,22 @@ export async function POST(request: NextRequest) {
       });
 
     // Code 23505 is PostgreSQL unique_violation: if already subscribed, succeed idempotently
-    if (insertError && insertError.code !== "23505") {
+    if (insertError && insertError.code === "23505") {
+      // already subscribed — idempotent success, falls through to analytics
+    } else if (
+      insertError &&
+      insertError.code === "23514" &&
+      /free plan email capture limit reached/i.test(insertError.message)
+    ) {
+      logger.warn("free plan email capture limit reached", { site_id });
+      return NextResponse.json(
+        {
+          error:
+            "This site has reached its email capture limit. Please try again later.",
+        },
+        { status: 403 }
+      );
+    } else if (insertError) {
       logger.error("failed to record subscriber", {
         detail: insertError.message,
         site_id,

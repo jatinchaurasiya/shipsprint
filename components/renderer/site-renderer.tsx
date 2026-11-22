@@ -7,6 +7,7 @@ import { trackEvent } from "@/lib/track-client";
 import { ArrowRight, Check, Star, Signal, Wifi, Battery } from "lucide-react";
 import { getFeatureIcon } from "@/lib/icons";
 import { AppStoreBadge, GooglePlayBadge, TestFlightBadge } from "@/components/ui/store-badges";
+import { MadeWithShipSprintBadge } from "@/components/ui/made-with-shipsprint-badge";
 import { normalizeImageUrl } from "@/lib/storage/image-url";
 
 interface SiteRendererProps {
@@ -143,7 +144,7 @@ function AppleIPhoneMockup({
 
 export function SiteRenderer({
   content,
-  plan: _plan,
+  plan,
   isPreview = false,
   siteId,
   theme: _theme,
@@ -1150,6 +1151,13 @@ export function SiteRenderer({
           </div>
         </div>
       </footer>
+
+      {/* Made with ShipSprint badge — Free plan only (H3). Paid plans have
+          has_branding = false and the badge is hidden. This is the real
+          difference the "Remove ShipSprint branding" pricing row sells. */}
+      {plan?.has_branding !== false && (
+        <MadeWithShipSprintBadge isPreview={isPreview} />
+      )}
     </div>
   );
 }

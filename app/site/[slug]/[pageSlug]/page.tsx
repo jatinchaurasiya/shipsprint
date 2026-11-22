@@ -222,6 +222,10 @@ export default async function PublicSubpage({ params }: SubpageProps) {
         })
       : null;
 
+  // H3: the owner's plan controls the "Made with ShipSprint" badge. The
+  // lookup already resolved it (best-effort; degrades to Free).
+  const ownerPlan = resolved.plan;
+
   return (
     <>
       {jsonLd && (
@@ -235,6 +239,7 @@ export default async function PublicSubpage({ params }: SubpageProps) {
         page={page}
         homeHref={homeHref}
         siteId={isPublished ? site.id : undefined}
+        plan={ownerPlan}
       />
     </>
   );

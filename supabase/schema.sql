@@ -88,9 +88,9 @@ insert into public.plans
    has_analytics_dashboard, has_email_capture, has_ai_discovery, sort_order)
 values
   ('free',  'Free',  'One landing page to get started.',
-   1,  true,  false, false, false, false, 10),
+   1,  true,  false, false, true,  false, 10),
   ('basic', 'Basic', 'For a solo launch with a real domain.',
-   3,  false, true,  false, true,  false, 20),
+   3,  false, true,  true,  true,  false, 20),
   ('pro',   'Pro',   'Multiple apps with analytics.',
    10, false, true,  true,  true,  true,  30)
 on conflict (id) do update
@@ -471,6 +471,48 @@ create unique index if not exists idx_site_subscribers_unique
 
 create index if not exists idx_site_subscribers_site_created
   on public.site_subscribers (site_id, created_at desc);
+
+-- Free-tier email capture cap (H3): a Free owner may collect at most 100
+-- subscribers per site. Paid tiers are unlimited. Enforced here so the
+-- database is the single truth even for direct SQL inserts; the API maps the
+-- error to a friendly 403.
+create or replace function public.enforce_free_email_capture_cap()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_is_free boolean;
+  v_count   integer;
+begin
+  select (p.id = 'free') into v_is_free
+  from public.sites s
+  join public.profiles pr on pr.id = s.user_id
+  join public.plans p on p.id = pr.plan_id
+  where s.id = new.site_id;
+
+  if v_is_free is not true then
+    return new;
+  end if;
+
+  select count(*) into v_count
+  from public.site_subscribers
+  where site_id = new.site_id;
+
+  if v_count >= 100 then
+    raise exception 'free plan email capture limit reached (100 subscribers)'
+      using errcode = '23514';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_free_email_capture_cap on public.site_subscribers;
+create trigger trg_enforce_free_email_capture_cap
+  before insert on public.site_subscribers
+  for each row execute function public.enforce_free_email_capture_cap();
 
 -- ===========================================================================
 -- 12. DATA MIGRATION
@@ -1291,6 +1333,7 @@ revoke execute on function public.guard_profile_plan()    from public, anon, aut
 revoke execute on function public.enforce_site_limit()    from public, anon, authenticated;
 revoke execute on function public.reject_reserved_slug()  from public, anon, authenticated;
 revoke execute on function public.handle_new_user()       from public, anon, authenticated;
+revoke execute on function public.enforce_free_email_capture_cap() from public, anon, authenticated;
 revoke execute on function public.guard_custom_domain()   from public, anon, authenticated;
 grant execute on function public.set_updated_at()       to service_role;
 grant execute on function public.guard_profile_plan()   to service_role;

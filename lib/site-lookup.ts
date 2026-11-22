@@ -39,7 +39,7 @@ export const FREE_PLAN: Plan = {
   has_branding: true,
   has_custom_domain: false,
   has_analytics_dashboard: false,
-  has_email_capture: false,
+  has_email_capture: true,
   sort_order: 0,
   is_active: true,
 };

@@ -7,6 +7,7 @@ import { trackEvent } from "@/lib/track-client";
 import { safeHref } from "@/lib/validation";
 import Link from "next/link";
 import { MarkdownViewer } from "@/components/renderer/markdown-viewer";
+import { MadeWithShipSprintBadge } from "@/components/ui/made-with-shipsprint-badge";
 import {
   ArrowLeft,
   Mail,
@@ -23,6 +24,8 @@ interface PageRendererProps {
   page: SitePage;
   homeHref?: string;
   siteId?: string;
+  /** The owner's plan — controls the "Made with ShipSprint" badge (H3). */
+  plan?: import("@/types/database").Plan | null;
 }
 
 export function PageRenderer({
@@ -30,6 +33,7 @@ export function PageRenderer({
   page,
   homeHref = "/",
   siteId,
+  plan,
 }: PageRendererProps) {
   const brand = content?.brand || { name: "App" };
   const appName = brand.name || content?.hero?.app_name || "App";
@@ -266,6 +270,11 @@ export function PageRenderer({
           </div>
         </div>
       </footer>
+
+      {/* Made with ShipSprint badge — Free plan only (H3). */}
+      {plan?.has_branding !== false && (
+        <MadeWithShipSprintBadge isPreview={false} />
+      )}
     </div>
   );
 }

@@ -26,6 +26,7 @@ import {
   Play,
   Laptop,
   Tablet,
+  Sparkles,
 } from "lucide-react";
 
 interface AnalyticsViewProps {
@@ -64,7 +65,18 @@ export function AnalyticsView({
       ? periodParam
       : initialPeriod;
 
-  const isPro = plan.has_analytics_dashboard;
+  // H3: Basic gets the limited analytics dashboard (7-day window, aggregate
+  // traffic and store clicks). Pro gets the complete analytics: 7/30/90-day
+  // windows, per-site filtering, referrer and device breakdowns, and the full
+  // conversion metrics. The server clamps the window for Basic; this view
+  // additionally hides the Pro-only controls so the UI matches the promise.
+  const isPro = plan.id === "pro";
+  const hasAnalytics = Boolean(plan.has_analytics_dashboard);
+
+  // The window actually used for the displayed data. Basic is always 7 days
+  // even if the URL says otherwise (the server already clamps the query; this
+  // keeps the period pills and the header honest).
+  const effectivePeriod: AnalyticsPeriod = isPro ? period : "7d";
 
   const handlePeriodChange = (newPeriod: AnalyticsPeriod) => {
     const params = new URLSearchParams(searchParams?.toString() || "");
@@ -94,7 +106,7 @@ export function AnalyticsView({
     let tablet = 0;
     let desktop = 0;
 
-    const numDays = period === "7d" ? 7 : period === "90d" ? 90 : 30;
+    const numDays = effectivePeriod === "7d" ? 7 : effectivePeriod === "90d" ? 90 : 30;
 
     // Generate dailyMap in pure UTC to match database (created_at at time zone 'utc')::date
     const dailyMap: Record<string, { views: number; clicks: number }> = {};
@@ -168,15 +180,15 @@ export function AnalyticsView({
       date,
       label: new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
         timeZone: "UTC",
-        weekday: period === "7d" ? "short" : undefined,
+        weekday: effectivePeriod === "7d" ? "short" : undefined,
         month: "numeric",
         day: "numeric",
       }),
       shortLabel: new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
         timeZone: "UTC",
-        weekday: period === "7d" ? "short" : undefined,
-        month: period === "7d" ? undefined : "numeric",
-        day: period === "7d" ? undefined : "numeric",
+        weekday: effectivePeriod === "7d" ? "short" : undefined,
+        month: effectivePeriod === "7d" ? undefined : "numeric",
+        day: effectivePeriod === "7d" ? undefined : "numeric",
       }),
       fullDate: new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
         timeZone: "UTC",
@@ -213,14 +225,14 @@ export function AnalyticsView({
       timeline,
       maxDayViews,
     };
-  }, [filteredSummary, filteredSources, filteredCta, period]);
+  }, [filteredSummary, filteredSources, filteredCta, effectivePeriod]);
 
   const periodLabel =
-    period === "7d" ? "Last 7 days" : period === "90d" ? "Last 90 days" : "Last 30 days";
+    effectivePeriod === "7d" ? "Last 7 days" : effectivePeriod === "90d" ? "Last 90 days" : "Last 30 days";
 
   const tickIndices = useMemo(
-    () => getChartTickIndices(metrics.timeline.length, period),
-    [metrics.timeline.length, period]
+    () => getChartTickIndices(metrics.timeline.length, effectivePeriod),
+    [metrics.timeline.length, effectivePeriod]
   );
 
   return (
@@ -256,13 +268,16 @@ export function AnalyticsView({
             aria-label="Time period selection"
           >
             {(["7d", "30d", "90d"] as const).map((p) => {
-              const active = period === p;
+              const active = effectivePeriod === p;
+              // Basic is limited to the 7-day window; 30D/90D are Pro-only.
+              const periodAllowed = isPro || p === "7d";
               return (
                 <button
                   key={p}
                   type="button"
                   onClick={() => handlePeriodChange(p)}
-                  disabled={!isPro}
+                  disabled={!periodAllowed}
+                  title={!periodAllowed ? "Available on Pro" : undefined}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                     active
                       ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-sm"
@@ -275,15 +290,14 @@ export function AnalyticsView({
             })}
           </div>
 
-          {/* Site Selector Dropdown */}
-          {sites.length > 0 && (
+          {/* Site Selector Dropdown (Pro only — Basic sees the aggregate) */}
+          {isPro && sites.length > 0 && (
             <div className="relative">
               <select
                 value={selectedSiteId}
                 onChange={(e) => setSelectedSiteId(e.target.value)}
-                disabled={!isPro}
                 aria-label="Select landing page"
-                className="appearance-none pl-3.5 pr-9 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500/20 shadow-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-55"
+                className="appearance-none pl-3.5 pr-9 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500/20 shadow-sm cursor-pointer"
               >
                 <option value="all">All Landing Pages ({sites.length})</option>
                 {sites.map((site) => (
@@ -301,8 +315,11 @@ export function AnalyticsView({
         </div>
       </div>
 
-      {/* Pro Tier Lock Wall (If on Free/Basic) */}
-      {!isPro ? (
+      {/* Free tier: no analytics at all -> lock wall. Basic: limited (7d
+          aggregate) dashboard -> the real numbers with a Pro upsell banner.
+          Pro: full dashboard. H3 — the tier a plan gets is exactly what the
+          pricing table promises. */}
+      {!hasAnalytics ? (
         <div className="relative overflow-hidden rounded-3xl border border-purple-200/80 dark:border-purple-900/40 bg-gradient-to-b from-purple-50/40 via-white to-white dark:from-purple-950/20 dark:via-zinc-950 dark:to-zinc-950 p-8 sm:p-12 text-center">
           <div className="max-w-md mx-auto space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-sm">
@@ -312,7 +329,9 @@ export function AnalyticsView({
               Enable ShipSprint Analytics
             </h2>
             <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Understand which marketing channels drive actual app downloads. Access real-time visitor counts, store link click-through rates (CTR), and referral attribution with ShipSprint Pro.
+              Understand which marketing channels drive actual app downloads.
+              Access real-time visitor counts, store link click-through rates
+              (CTR), and referral attribution with a paid plan.
             </p>
 
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -325,36 +344,40 @@ export function AnalyticsView({
               </Link>
             </div>
           </div>
-
-          {/* Background Blurred Teaser Metrics with Explicit Sample Label */}
-          <div className="mt-12 pt-8 border-t border-purple-100 dark:border-purple-950/60 text-left">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
-                Sample Metrics Preview (Demo Only)
-              </span>
-            </div>
-            <div className="opacity-40 blur-[1px] pointer-events-none grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <div className="text-xs text-zinc-600">Total Views</div>
-                <div className="text-2xl font-bold mt-1">4,289</div>
-              </div>
-              <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <div className="text-xs text-zinc-600">Store Clicks</div>
-                <div className="text-2xl font-bold mt-1">1,048</div>
-              </div>
-              <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <div className="text-xs text-zinc-600">Conversion Rate</div>
-                <div className="text-2xl font-bold mt-1">24.4%</div>
-              </div>
-              <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <div className="text-xs text-zinc-600">Mobile Share</div>
-                <div className="text-2xl font-bold mt-1">88.2%</div>
-              </div>
-            </div>
-          </div>
         </div>
       ) : (
         <div className="space-y-8">
+          {/* Basic tier: clear "limited" banner + Pro upsell. The metrics below
+              are real (7-day window); the banner tells the user exactly what
+              more they get on Pro. */}
+          {!isPro && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-2xl border border-purple-200/70 bg-purple-50/60 dark:border-purple-900/50 dark:bg-purple-950/20">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4" aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
+                    You&apos;re on the Basic analytics dashboard (last 7 days)
+                  </p>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                    Pro adds 30/90-day windows, per-site filtering, referrer
+                    and device breakdowns, and unlimited history.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/dashboard/billing"
+                className="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-semibold shadow-sm transition-colors"
+              >
+                Upgrade to Pro
+                <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </Link>
+            </div>
+          )}
+          {/* Pro-only sections (referrer + device breakdown) are hidden for
+              Basic below; the aggregate metrics and the traffic chart are
+              shown for both Basic and Pro. */}
           {/* Top Metric Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* 1. Page Views */}
@@ -522,9 +545,9 @@ export function AnalyticsView({
                     onMouseEnter={() => setHoveredDay(day)}
                     onMouseLeave={() => setHoveredDay(null)}
                     className={`flex-1 flex flex-col items-center h-full justify-end group cursor-pointer transition-opacity duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm ${
-                      period === "7d"
+                      effectivePeriod === "7d"
                         ? "min-w-[32px] sm:min-w-[44px]"
-                        : period === "30d"
+                        : effectivePeriod === "30d"
                         ? "min-w-[14px] sm:min-w-[18px]"
                         : "min-w-[7px] sm:min-w-[9px]"
                     } ${anyHovered && !isHovered ? "opacity-45" : "opacity-100"}`}
@@ -534,9 +557,9 @@ export function AnalyticsView({
                       {viewHeight > 0 ? (
                         <div
                           className={`w-full ${
-                            period === "7d"
+                            effectivePeriod === "7d"
                               ? "max-w-[18px] sm:max-w-[22px]"
-                              : period === "30d"
+                              : effectivePeriod === "30d"
                               ? "max-w-[8px] sm:max-w-[11px]"
                               : "max-w-[4px] sm:max-w-[5px]"
                           } bg-blue-600 rounded-t-sm transition-all duration-200 ${
@@ -554,9 +577,9 @@ export function AnalyticsView({
                       {clickHeight > 0 ? (
                         <div
                           className={`w-full ${
-                            period === "7d"
+                            effectivePeriod === "7d"
                               ? "max-w-[18px] sm:max-w-[22px]"
-                              : period === "30d"
+                              : effectivePeriod === "30d"
                               ? "max-w-[8px] sm:max-w-[11px]"
                               : "max-w-[4px] sm:max-w-[5px]"
                           } bg-emerald-500 rounded-t-sm transition-all duration-200 ${
@@ -577,7 +600,7 @@ export function AnalyticsView({
                         <span
                           className={`absolute ${labelAlignClass} text-[10px] text-zinc-500 dark:text-zinc-400 font-mono whitespace-nowrap pointer-events-none select-none`}
                         >
-                          {period === "7d" ? (
+                          {effectivePeriod === "7d" ? (
                             <>
                               <span className="hidden sm:inline">{day.label}</span>
                               <span className="sm:hidden">{day.shortLabel}</span>
@@ -594,8 +617,9 @@ export function AnalyticsView({
             </div>
           </div>
 
-          {/* Breakdown Grid: Store Platform Split + Top Traffic Sources + Devices */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Breakdown Grid: Store Platform Split (all tiers) + Top Traffic
+              Sources + Devices (Pro only — Basic sees the aggregate above). */}
+          <div className={`grid grid-cols-1 gap-6 ${isPro ? "md:grid-cols-3" : "md:grid-cols-1"}`}>
             {/* 1. App Store vs. Google Play Split */}
             <div className="p-6 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col justify-between">
               <div>
@@ -696,7 +720,8 @@ export function AnalyticsView({
               </div>
             </div>
 
-            {/* 2. Top Traffic Sources (Referrers) */}
+            {/* 2. Top Traffic Sources (Referrers) — Pro only */}
+            {isPro && (
             <div className="p-6 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">
@@ -744,8 +769,10 @@ export function AnalyticsView({
                 Filtered and aggregated across {periodLabel}
               </div>
             </div>
+            )}
 
-            {/* 3. Device Hardware Split (Scoped to Page Views) */}
+            {/* 3. Device Hardware Split (Scoped to Page Views) — Pro only */}
+            {isPro && (
             <div className="p-6 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">
@@ -809,6 +836,7 @@ export function AnalyticsView({
                 Unique visits scoped to page loads
               </div>
             </div>
+            )}
           </div>
         </div>
       )}

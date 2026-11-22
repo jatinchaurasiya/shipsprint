@@ -244,6 +244,14 @@ export function EditorPanel({
   };
 
   const isCustomDomainAllowed = plan?.has_custom_domain ?? false;
+  // H3: email capture is enabled on every plan. Free is capped at 100
+  // subscribers (enforced in the database); the editor shows the count
+  // against the cap so the owner sees the limit before hitting it.
+  const emailCaptureAllowed = plan?.has_email_capture ?? true;
+  const freeEmailCap = 100;
+  const emailCapReached =
+    (subscribersCount ?? 0) >= freeEmailCap &&
+    (plan?.id ?? "free") === "free";
   const domainCopy = domainStatusCopy(domainState);
   const domainInstructions = domainState?.instructions ?? null;
 
@@ -1198,11 +1206,15 @@ export function EditorPanel({
                   </label>
                   <span className="text-[11px] text-zinc-500">
                     Collect visitor emails directly from the hero
+                    {plan?.id === "free" && subscribersCount !== null
+                      ? ` · ${subscribersCount} / ${freeEmailCap}`
+                      : ""}
                   </span>
                 </div>
                 <button
                   id="toggle-email-capture"
                   type="button"
+                  disabled={!emailCaptureAllowed || emailCapReached}
                   onClick={() =>
                     updateContent((prev) => ({
                       ...prev,
@@ -1214,7 +1226,7 @@ export function EditorPanel({
                       },
                     }))
                   }
-                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     content.hero?.email_capture_enabled
                       ? "bg-zinc-900 dark:bg-zinc-100"
                       : "bg-zinc-200 dark:bg-zinc-700"
@@ -1231,6 +1243,18 @@ export function EditorPanel({
                   />
                 </button>
               </div>
+
+              {!emailCaptureAllowed && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                  Email capture is not available on your plan.
+                </p>
+              )}
+              {emailCaptureAllowed && emailCapReached && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                  You&apos;ve reached the Free plan limit of {freeEmailCap}{" "}
+                  subscribers. Upgrade to keep collecting emails.
+                </p>
+              )}
 
               {content.hero?.email_capture_enabled && (
                 <div className="space-y-3 pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">

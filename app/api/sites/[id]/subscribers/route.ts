@@ -40,6 +40,19 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
     return NextResponse.json({ error: "Site not found" }, { status: 404 });
   }
 
+  // H3: report the owner's email-capture cap so the editor can show the
+  // count against it. Free is capped at 100; paid tiers are unlimited.
+  const { data: planRow } = await supabase
+    .from("profiles")
+    .select("plans(id)")
+    .eq("id", user.id)
+    .maybeSingle();
+  const ownerPlanId =
+    (planRow as { plans?: { id: string } | { id: string }[] | null } | null)
+      ?.plans;
+  const planId = Array.isArray(ownerPlanId) ? ownerPlanId[0]?.id : ownerPlanId?.id;
+  const emailCap: number | null = planId === "free" ? 100 : null;
+
   const format = request.nextUrl.searchParams.get("format");
 
   // CSV Export format
@@ -100,6 +113,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
   return NextResponse.json({
     subscribers: subscribers || [],
     count: count ?? (subscribers?.length || 0),
+    email_cap: emailCap,
   });
 }
 
