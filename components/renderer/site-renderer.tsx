@@ -325,8 +325,10 @@ export function SiteRenderer({
       impactsData.speed_stat,
   );
 
-  // How it works steps — only what the user provided (no ShipSprint defaults).
-  const stepsData: HowItWorksStep[] = how_it_works ?? [];
+  // How it works steps — only steps the owner actually filled in.
+  const stepsData: HowItWorksStep[] = (how_it_works ?? []).filter(
+    (s) => (s.title?.trim() ?? "") !== "" || (s.description?.trim() ?? "") !== "",
+  );
 
   // Categories — only what the user provided.
   const categories = brand.categories ?? [];
@@ -928,7 +930,7 @@ export function SiteRenderer({
               How it works
             </p>
             <h2 className="section__title mt-4 font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-              Live in 3 simple steps.
+              How it works
             </h2>
           </div>
           <ol

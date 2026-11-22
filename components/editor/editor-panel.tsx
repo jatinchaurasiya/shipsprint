@@ -1360,7 +1360,7 @@ export function EditorPanel({
                 </label>
                 <input
                   type="text"
-                  value={content.impacts?.eyebrow || "Our impacts"}
+                  value={content.impacts?.eyebrow ?? ""}
                   onChange={(e) =>
                     updateContent((prev) => ({
                       ...prev,
@@ -1368,7 +1368,7 @@ export function EditorPanel({
                     }))
                   }
                   className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 transition-all"
-                  placeholder="Our impacts"
+                  placeholder="e.g. Customer stories"
                 />
               </div>
 
@@ -1378,7 +1378,7 @@ export function EditorPanel({
                 </label>
                 <input
                   type="text"
-                  value={content.impacts?.title || "Real results. Real impact."}
+                  value={content.impacts?.title ?? ""}
                   onChange={(e) =>
                     updateContent((prev) => ({
                       ...prev,
@@ -1386,7 +1386,7 @@ export function EditorPanel({
                     }))
                   }
                   className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 transition-all"
-                  placeholder="Real results. Real impact."
+                  placeholder="e.g. Why people love this app"
                 />
               </div>
             </div>
@@ -1405,7 +1405,7 @@ export function EditorPanel({
                   }))
                 }
                 className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/10 transition-all leading-relaxed"
-                placeholder="See how indie makers turn visitors into installs..."
+                placeholder="A short subtitle for this section."
               />
             </div>
 
@@ -1779,24 +1779,9 @@ export function EditorPanel({
               {(content.how_it_works && content.how_it_works.length > 0
                 ? content.how_it_works
                 : [
-                    {
-                      step: "Step 1",
-                      title: "Set up your brand",
-                      description:
-                        "Add your icon, screenshots, store links, and copy. Watch the live preview update instantly with zero drift.",
-                    },
-                    {
-                      step: "Step 2",
-                      title: "Verified milestones & proof",
-                      description:
-                        "Highlight core capabilities, checklist milestones, and verified ratings to establish clear credibility with visitors.",
-                    },
-                    {
-                      step: "Step 3",
-                      title: "Publish & track installs",
-                      description:
-                        "Publish to your subdomain or custom domain with automated TLS. Track cookieless store taps from day one.",
-                    },
+                    { step: "Step 1", title: "", description: "" },
+                    { step: "Step 2", title: "", description: "" },
+                    { step: "Step 3", title: "", description: "" },
                   ]
               ).map((stepItem, idx) => (
                 <div
@@ -1815,29 +1800,15 @@ export function EditorPanel({
                     <input
                       type="text"
                       value={stepItem.title}
+                      placeholder={`e.g. Download the app`}
                       onChange={(e) => {
                         const current =
                           content.how_it_works && content.how_it_works.length > 0
                             ? [...content.how_it_works]
                             : [
-                                {
-                                  step: "Step 1",
-                                  title: "Set up your brand",
-                                  description:
-                                    "Add your icon, screenshots, store links, and copy.",
-                                },
-                                {
-                                  step: "Step 2",
-                                  title: "Verified milestones & proof",
-                                  description:
-                                    "Highlight core capabilities, checklist milestones, and ratings.",
-                                },
-                                {
-                                  step: "Step 3",
-                                  title: "Publish & track installs",
-                                  description:
-                                    "Publish to your custom domain with automated TLS.",
-                                },
+                                { step: "Step 1", title: "", description: "" },
+                                { step: "Step 2", title: "", description: "" },
+                                { step: "Step 3", title: "", description: "" },
                               ];
                         current[idx] = { ...current[idx]!, title: e.target.value };
                         updateContent((prev) => ({ ...prev, how_it_works: current }));
@@ -1852,29 +1823,15 @@ export function EditorPanel({
                     <textarea
                       rows={2}
                       value={stepItem.description}
+                      placeholder="Explain this step in a sentence or two."
                       onChange={(e) => {
                         const current =
                           content.how_it_works && content.how_it_works.length > 0
                             ? [...content.how_it_works]
                             : [
-                                {
-                                  step: "Step 1",
-                                  title: "Set up your brand",
-                                  description:
-                                    "Add your icon, screenshots, store links, and copy.",
-                                },
-                                {
-                                  step: "Step 2",
-                                  title: "Verified milestones & proof",
-                                  description:
-                                    "Highlight core capabilities, checklist milestones, and ratings.",
-                                },
-                                {
-                                  step: "Step 3",
-                                  title: "Publish & track installs",
-                                  description:
-                                    "Publish to your custom domain with automated TLS.",
-                                },
+                                { step: "Step 1", title: "", description: "" },
+                                { step: "Step 2", title: "", description: "" },
+                                { step: "Step 3", title: "", description: "" },
                               ];
                         current[idx] = {
                           ...current[idx]!,

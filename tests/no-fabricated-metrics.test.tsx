@@ -125,7 +125,31 @@ describe("H2 — user sites never inherit ShipSprint marketing", () => {
       join(ROOT, "components/editor/editor-panel.tsx"),
       "utf8",
     );
-    expect(src).not.toContain("Built for indie app makers");
-    expect(src).not.toContain("Launch your app page. Without the code.");
+    for (const s of [
+      "Built for indie app makers",
+      "Launch your app page. Without the code.",
+      // Impacts section fallbacks (re-seeded ShipSprint copy when the user
+      // types one character into an empty field).
+      "Real results. Real impact.",
+      "Our impacts",
+      // How-it-works section fallbacks (re-seeded ShipSprint onboarding
+      // steps when the user adds a step to an empty section).
+      "Set up your brand",
+      "Verified milestones & proof",
+      "Publish & track installs",
+    ]) {
+      expect(src, `editor must not prefill ${s}`).not.toContain(s);
+    }
+  });
+
+  it("the renderer hides how-it-works when no step has real content", () => {
+    const src = readFileSync(
+      join(ROOT, "components/renderer/site-renderer.tsx"),
+      "utf8",
+    );
+    // The steps array must be filtered to non-empty steps before the
+    // section is conditionally rendered.
+    expect(src).toMatch(/how_it_works \?\? \[\]\)\.filter/);
+    expect(src).not.toContain("Live in 3 simple steps.");
   });
 });
